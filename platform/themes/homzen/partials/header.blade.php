@@ -24,6 +24,53 @@
                         </nav>
                     </div>
                     <div class="header-account">
+                        @if (is_plugin_active('real-estate'))
+                            <div class="header-currency-switcher">
+                                {!! Theme::partial('currency-switcher') !!}
+                            </div>
+                        @endif
+
+                        @if (is_plugin_active('real-estate') && RealEstateHelper::isLoginEnabled())
+                            @auth('account')
+                                <a href="{{ route('public.account.dashboard') }}" class="header-user-link">
+                                    {{ RvMedia::image(auth('account')->user()->avatar_url, auth('account')->user()->name, attributes: ['class' => 'rounded-circle']) }}
+                                    <span class="header-user-name">{{ auth('account')->user()->name }}</span>
+                                </a>
+                            @else
+                                <div class="register header-register">
+                                    <ul class="d-flex align-items-center">
+                                        <li>
+                                            <a
+                                                @if(theme_option('use_modal_for_authentication', true))
+                                                    href="#modalLogin"
+                                                    data-bs-toggle="modal"
+                                                @else
+                                                    href="{{ route('public.account.login') }}"
+                                                @endif
+                                            >
+                                                {{ __('Login') }}
+                                            </a>
+                                        </li>
+                                        @if (RealEstateHelper::isRegisterEnabled())
+                                            <li class="separator">/</li>
+                                            <li>
+                                                <a
+                                                    @if(theme_option('use_modal_for_authentication', true))
+                                                        href="#modalRegister"
+                                                    data-bs-toggle="modal"
+                                                    @else
+                                                        href="{{ route('public.account.register') }}"
+                                                    @endif
+                                                >
+                                                    {{ __('Register') }}
+                                                </a>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            @endauth
+                        @endif
+
                         @if (is_plugin_active('real-estate') && RealEstateHelper::isLoginEnabled())
                             <div class="flat-bt-top">
                                 <a class="tf-btn primary" href="{{ route('public.account.properties.index') }}">{{ __('Submit Property') }}</a>

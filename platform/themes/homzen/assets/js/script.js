@@ -2214,6 +2214,9 @@ $(() => {
                     }
 
                     $dataListing.html(data)
+                    if (typeof initAllCardSliders === 'function') {
+                        initAllCardSliders()
+                    }
 
                     if (typeof Theme.lazyLoadInstance !== 'undefined') {
                         Theme.lazyLoadInstance.update()
@@ -2429,6 +2432,9 @@ $(() => {
             el.style.visibility = 'visible'
             el.classList.add('animated')
         })
+        if (typeof initAllCardSliders === 'function') {
+            initAllCardSliders()
+        }
     })
 
     if ($("[data-countdown]").length > 0) {
@@ -2822,6 +2828,15 @@ $(() => {
             },
         })
     }
+
+    window.initAllCardSliders = function () {
+        if (typeof Swiper === 'undefined') return
+        document.querySelectorAll('.card-image-slider[data-swipe-init="false"]').forEach(function (el) {
+            initCardImageSlider(el)
+        })
+    }
+
+    initAllCardSliders()
 
     ;['pointerenter', 'touchstart'].forEach(function (evt) {
         document.addEventListener(

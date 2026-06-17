@@ -105,7 +105,7 @@ class PropertyTable extends TableAbstract
                     ->name('project_id')
                     ->title(trans('plugins/real-estate::property.form.project'))
                     ->searchable()
-                    ->choices(fn () => Project::query()->pluck('name', 'id')->all()),
+                    ->choices(fn() => Project::query()->pluck('name', 'id')->all()),
                 CreatedAtBulkChange::make(),
                 IsFeaturedBulkChange::make(),
             ])
@@ -156,12 +156,7 @@ class PropertyTable extends TableAbstract
                 );
             })
             ->onFilterQuery(
-                function (
-                    EloquentBuilder|QueryBuilder|EloquentRelation $query,
-                    string $key,
-                    string $operator,
-                    ?string $value
-                ) {
+                function (EloquentBuilder|QueryBuilder|EloquentRelation $query, string $key, string $operator, ?string $value) {
                     if ($key == 'status') {
                         switch ($value) {
                             case 'expired':

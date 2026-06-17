@@ -9,7 +9,6 @@ Thumbs.db
 .env
 .env.backup
 /.idea
-/.vscode
 /.vagrant
 Homestead.json
 Homestead.yaml
@@ -64,3 +63,7 @@ storage/framework/maintenance.php
 AGENTS.md
 plans/templates/
 release-manifest.json
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore

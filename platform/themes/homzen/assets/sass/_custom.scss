@@ -38,8 +38,14 @@ svg {
 .card-image-slider {
     position: relative;
     overflow: hidden;
-    height: 100%;
     width: 100%;
+    aspect-ratio: 16 / 9;
+
+    .list-style-1 &,
+    .list-style-2 & {
+        height: 100%;
+        aspect-ratio: auto;
+    }
 
     // Let Swiper own the horizontal gesture; allow vertical scroll and pinch.
     touch-action: pan-y pinch-zoom;
@@ -1048,6 +1054,12 @@ svg {
             }
         }
     }
+}
+
+.flat-map {
+    position: relative;
+    z-index: 10;
+    overflow: visible;
 }
 
 .leaflet-pane {
@@ -2217,6 +2229,24 @@ a {
 }
 
 .homeya-box {
+    .images-style {
+        aspect-ratio: 16 / 9;
+        background-color: #f0f1f3;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    &.list-style-1,
+    &.list-style-2 {
+        .images-style {
+            aspect-ratio: auto;
+        }
+    }
+
     .content {
         min-height: 133px;
     }
@@ -2779,3 +2809,431 @@ body[dir="rtl"] {
         opacity: 1;
     }
 }
+
+.modern-card {
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    border: 1px solid #e4e4e4 !important;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden !important;
+    
+    .archive-top {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .images-group {
+        position: relative;
+        display: block;
+        
+        &::after {
+            display: none !important;
+        }
+        
+        .top, .bottom {
+            display: none !important;
+        }
+    }
+
+    .images-style {
+        border-radius: 8px 8px 0 0 !important;
+    }
+
+    .modern-overlays {
+        position: absolute;
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        z-index: 5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .overlay-tag {
+        pointer-events: auto;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #ffffff !important;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+
+        &.tag-status {
+            background-color: var(--primary-color) !important;
+            
+            i {
+                font-size: 11px;
+            }
+        }
+
+        &.tag-time {
+            background-color: rgba(17, 17, 17, 0.7) !important;
+        }
+    }
+
+    .modern-content {
+        padding: 12px 16px 12px !important;
+        min-height: unset !important;
+        border-bottom: none !important;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 4px !important;
+        }
+
+        .modern-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: #161e29;
+            font-family: inherit;
+        }
+
+        .modern-wishlist-btn {
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            color: #161e29 !important;
+            cursor: pointer;
+            outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, color 0.2s ease;
+            width: 32px;
+            height: 32px;
+            
+            svg {
+                width: 24px;
+                height: 24px;
+                stroke-width: 2;
+            }
+
+            &:hover {
+                transform: scale(1.1);
+                color: #e53935 !important;
+            }
+
+            &.active {
+                color: #e53935 !important;
+                
+                svg {
+                    fill: currentColor;
+                }
+            }
+        }
+
+        .modern-specs {
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            color: #4b5563;
+            font-weight: 500;
+            margin-bottom: 4px !important;
+
+            .spec-item {
+                margin-right: 12px;
+            }
+        }
+
+        .modern-address {
+            font-size: 16px;
+            font-weight: 600;
+            color: #161e29;
+            line-height: 1.4;
+            margin-bottom: 4px !important;
+
+            a {
+                color: #161e29;
+                &:hover {
+                    color: var(--primary-color, #db1d24);
+                }
+            }
+        }
+
+        .modern-meta {
+            font-size: 14px;
+            color: #9299a0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .dot-separator {
+                color: #c4c4c4;
+            }
+        }
+    }
+
+    .archive-bottom {
+        display: none !important;
+    }
+}
+
+/* ==========================================================================
+   Compact Minimalist Header Overrides (Inspiration from Zolo/Questrade)
+   ========================================================================== */
+
+// 1. Lower the main header and header-lower heights from 80px to 64px.
+.main-header {
+    height: 64px !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+    display: flex;
+    align-items: center;
+    
+    &.header-style-2 {
+        margin-bottom: -64px !important;
+        
+        &.is-fixed {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        }
+    }
+
+    // Ensure fixed/sticky state aligns to the top cleanly
+    &.fixed-header {
+        height: 64px !important;
+    }
+}
+
+// 2. Align child container items to vertically center them in the new height.
+.main-header .header-lower {
+    height: 100% !important;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 !important;
+    
+    .row, .col-lg-12, .inner-container {
+        height: 100% !important;
+        width: 100%;
+    }
+    
+    .inner-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+// 3. Compact Logo Image
+.main-header .logo-box .logo img {
+    max-height: 34px !important;
+    width: auto;
+    object-fit: contain;
+}
+
+// 4. Compact Main Menu links and spacing
+.main-header .main-menu .navigation > li {
+    padding-inline-end: 24px !important; // reduce lateral spacing between links from 55px
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+}
+
+.main-header .main-menu .navigation > li > a {
+    padding: 19px 0 !important; // center the links vertically (26px line-height + 19px * 2 = 64px height)
+    font-size: 15px !important; // clean, readable font size
+    font-weight: 500 !important; // clean, minimalist weight
+    letter-spacing: -0.1px !important;
+    
+    &::before {
+        bottom: 10px !important; // line active highlight positioned closer to text
+        height: 2px !important;
+    }
+}
+
+// Fix dropdown submenus: explicitly anchor them at the bottom of the li
+// Since li is now inline-flex + height:100%, absolute positioning without top
+// causes the dropdown to float inside the li instead of below the header.
+.main-header .main-menu .navigation > li > ul {
+    top: 100% !important; // pin dropdown right below the header bar
+}
+
+// Also fix the dropdown arrow icon position for the compact link size
+.main-header .main-menu .navigation > li.dropdown2 > a::after {
+    inset-inline-end: -16px !important; // tighter since spacing is reduced
+    font-size: 14px !important;
+}
+
+// Ensure the last menu item doesn't have excess padding
+.main-header .main-menu .navigation > li:last-child {
+    padding-inline-end: 0 !important;
+}
+
+// 5. Minimalist Capsule/Pill Style for the Action Button ("Submit Property")
+.main-header .header-account {
+    display: flex !important;
+    align-items: center !important;
+    gap: 20px !important; // clean spacing between items in header-account
+    
+    .flat-bt-top {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .header-currency-switcher {
+        position: relative;
+        display: flex !important;
+        align-items: center !important;
+        margin-right: 18px !important;
+        
+        .dropdown {
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            color: var(--main-header-text-color, #161e2d) !important;
+            text-transform: uppercase;
+            text-decoration: none !important;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            
+            &::after {
+                font-size: 11px !important;
+                vertical-align: middle !important;
+                margin-left: 2px !important;
+            }
+            
+            &:hover {
+                color: var(--primary-color, #db1d24) !important;
+            }
+        }
+        
+        .dropdown-menu {
+            position: absolute !important;
+            top: 100% !important;
+            margin-top: 8px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            padding: 6px 0 !important;
+            min-width: 80px !important;
+            background-color: #fff !important;
+            
+            .dropdown-item {
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                padding: 6px 16px !important;
+                color: #161e2d !important;
+                background: none !important;
+                
+                &:hover, &.active {
+                    background-color: var(--primary-color, #db1d24) !important;
+                    color: #fff !important;
+                }
+            }
+        }
+    }
+
+    .header-register {
+        display: flex !important;
+        align-items: center !important;
+        margin-right: 18px !important;
+
+        ul {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            
+            li {
+                display: inline-flex !important;
+                align-items: center !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                color: var(--main-header-text-color, #161e2d) !important;
+                
+                &.separator {
+                    color: rgba(0, 0, 0, 0.15) !important;
+                    user-select: none;
+                }
+                
+                a {
+                    color: var(--main-header-text-color, #161e2d) !important;
+                    text-decoration: none !important;
+                    transition: color 0.2s ease;
+                    
+                    &:hover {
+                        color: var(--primary-color, #db1d24) !important;
+                    }
+                }
+            }
+        }
+    }
+
+    .header-user-link {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin-right: 18px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        color: var(--main-header-text-color, #161e2d) !important;
+        text-decoration: none !important;
+        
+        img {
+            width: 26px !important;
+            height: 26px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
+
+        &:hover {
+            color: var(--primary-color, #db1d24) !important;
+        }
+    }
+
+    .tf-btn.primary {
+        background-color: var(--primary-color, #db1d24) !important;
+        border: 1px solid var(--primary-color, #db1d24) !important;
+        color: #fff !important;
+        padding: 6px 18px !important; // Thin, compact padding
+        font-size: 14px !important; // Compact, clean font size
+        font-weight: 600 !important; // Strong but clean weight
+        border-radius: 99px !important; // Capsule pill look
+        box-shadow: 0 2px 4px rgba(219, 29, 36, 0.12) !important;
+        transition: all 0.2s ease-in-out !important;
+        height: auto !important;
+        line-height: 20px !important; // Adjust line height for thin button padding
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        
+        &:hover {
+            background-color: #c0141a !important;
+            border-color: #c0141a !important;
+            box-shadow: 0 3px 6px rgba(219, 29, 36, 0.2) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        &:active {
+            transform: translateY(0px) !important;
+        }
+    }
+}
+
+// Sticky header overrides to ensure the styling remains compact during scroll
+.main-header.is-fixed {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
