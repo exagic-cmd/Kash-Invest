@@ -1,3 +1,4 @@
+{{--
 <section class="flat-section flat-service-v4" @style(["background-color: $shortcode->background_color" => $shortcode->background_color])>
     <div class="container">
         <div class="wrap-service-v4 wow fadeInUpSmall" data-wow-delay=".2s" data-wow-duration="2000ms">
@@ -12,13 +13,13 @@
                 @if($shortcode->title || $shortcode->description || $shortcode->subtitle)
                     <div class="box-title">
                         @if($shortcode->subtitle)
-                            <div class="text-subtitle text-primary">{!! BaseHelper::clean($shortcode->subtitle) !!}</div>
+                             <div class="text-subtitle text-primary">{!! BaseHelper::clean($shortcode->subtitle) !!}</div>
                         @endif
                         @if($shortcode->title)
-                            <h2 class="section-title mt-4">{!! BaseHelper::clean($shortcode->title) !!}</h2>
+                             <h2 class="section-title mt-4">{!! BaseHelper::clean($shortcode->title) !!}</h2>
                         @endif
                         @if($shortcode->description)
-                            <p class="desc">{!! BaseHelper::clean($shortcode->description) !!}</p>
+                             <p class="desc">{!! BaseHelper::clean($shortcode->description) !!}</p>
                         @endif
                     </div>
                 @endif
@@ -52,3 +53,4 @@
         </div>
     </div>
 </section>
+--}}

@@ -1,3 +1,4 @@
+{{--
 <section class="flat-benefit-v2">
     <div class="container">
         <div class="row wrap-benefit-v2">
@@ -56,3 +57,4 @@
         </div>
     </div>
 </section>
+--}}

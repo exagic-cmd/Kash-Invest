@@ -1,3 +1,4 @@
+{{--
 <section class="flat-property-v3">
     <div class="container-full">
         <div class="wrap-property-v2">
@@ -93,3 +94,5 @@
         </div>
     </div>
 </section>
+--}}
+

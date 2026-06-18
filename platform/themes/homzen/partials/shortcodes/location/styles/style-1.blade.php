@@ -1,3 +1,4 @@
+{{--
 <section
     class="flat-section-v3 flat-location"
     @style(["background-color: $shortcode->background_color" => $shortcode->background_color])
@@ -41,3 +42,4 @@
         </div>
     </div>
 </section>
+--}}

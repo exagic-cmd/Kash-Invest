@@ -8,12 +8,53 @@ use Botble\Theme\Facades\ThemeOption;
 use Botble\Theme\ThemeOption\Fields\ColorField;
 use Botble\Theme\ThemeOption\Fields\MediaImageField;
 use Botble\Theme\ThemeOption\Fields\SelectField;
+use Botble\Theme\ThemeOption\Fields\TextareaField;
 use Botble\Theme\ThemeOption\Fields\TextField;
 use Botble\Theme\ThemeOption\Fields\ToggleField;
 use Botble\Theme\ThemeOption\Fields\UiSelectorField;
 use Botble\Theme\ThemeOption\ThemeOptionSection;
 
 app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
+    ThemeOption::setSection(
+        ThemeOptionSection::make('opt-text-subsection-footer-cta')
+            ->title(__('Footer Call to Action'))
+            ->icon('ti ti-layout-grid')
+            ->fields([
+                ToggleField::make()
+                    ->name('footer_cta_enabled')
+                    ->label(__('Enable Footer Call to Action?'))
+                    ->defaultValue(true),
+                TextField::make()
+                    ->name('footer_cta_subtitle')
+                    ->label(__('Subtitle'))
+                    ->defaultValue('BECOME PARTNERS'),
+                TextField::make()
+                    ->name('footer_cta_title')
+                    ->label(__('Title'))
+                    ->defaultValue('List Your Properties On Homzen, Join Us Now!'),
+                TextField::make()
+                    ->name('footer_cta_button_label')
+                    ->label(__('Button Label'))
+                    ->defaultValue('Become A Hosting'),
+                TextField::make()
+                    ->name('footer_cta_button_url')
+                    ->label(__('Button URL'))
+                    ->defaultValue('/contact'),
+                TextareaField::make()
+                    ->name('footer_disclaimer_1')
+                    ->label(__('Disclaimer Paragraph 1'))
+                    ->defaultValue('Kash Invest and its subsidiaries, websites, and applications operate as a technology platform connecting real estate buyers, sellers, and investors. All transactions, listings, and investments are subject to terms, conditions, and verification.'),
+                TextareaField::make()
+                    ->name('footer_disclaimer_2')
+                    ->label(__('Disclaimer Paragraph 2'))
+                    ->defaultValue('Mortgage calculators, projections, and financial estimates are provided for illustrative purposes only. They do not constitute financial, legal, or tax advice. Please consult with certified professionals before making investment decisions.'),
+                TextareaField::make()
+                    ->name('footer_disclaimer_3')
+                    ->label(__('Disclaimer Paragraph 3'))
+                    ->defaultValue('The REALTOR® and MLS® trademarks are properties of their respective owners and indicate adherence to professional standards and cooperative selling systems.'),
+            ])
+    );
+
     ThemeOption::setSection(
         ThemeOptionSection::make('opt-text-subsection-styles')
             ->title(__('Styles'))

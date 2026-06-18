@@ -24,25 +24,24 @@ if (! is_plugin_active('faq')) {
 
 Event::listen(RouteMatched::class, function (): void {
     Shortcode::register('faqs', __('FAQs'), __('FAQs'), function (ShortcodeCompiler $shortcode): ?string {
-        if (! $categoryIds = Shortcode::fields()->parseIds($shortcode->category_ids)) {
-            return null;
-        }
+        $categoryIds = Shortcode::fields()->parseIds($shortcode->category_ids);
 
         $limit = (int) $shortcode->limit ?: 5;
         $faqs = collect();
         $categories = collect();
 
         if ($shortcode->display_type === 'list') {
-            $faqs = Faq::query()
-                ->whereIn('category_id', $categoryIds)
-                ->wherePublished()
-                ->take($limit)
-                ->get();
+            $faqsQuery = Faq::query()->wherePublished();
+            if ($categoryIds) {
+                $faqsQuery->whereIn('category_id', $categoryIds);
+            }
+            $faqs = $faqsQuery->take($limit)->get();
         } else {
-            $categories = FaqCategory::query()
-                ->whereIn('id', $categoryIds)
-                ->with('faqs')
-                ->get();
+            $categoriesQuery = FaqCategory::query();
+            if ($categoryIds) {
+                $categoriesQuery->whereIn('id', $categoryIds);
+            }
+            $categories = $categoriesQuery->with('faqs')->get();
         }
 
         return Theme::partial('shortcodes.faqs.index', compact('shortcode', 'faqs', 'categories'));
