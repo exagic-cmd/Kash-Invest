@@ -6,7 +6,7 @@
 >
     <div class="container">
         @if($shortcode->title || $shortcode->subtitle || $shortcode->description)
-            <div class="box-title text-center position-relative">
+            <div class="box-title position-relative">
                 @if($shortcode->subtitle)
                     <div class="text-subtitle text-white">
                         {!! BaseHelper::clean($shortcode->subtitle) !!}

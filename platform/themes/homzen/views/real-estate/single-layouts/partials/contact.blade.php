@@ -40,46 +40,48 @@
     @if (RealEstateHelper::isEnabledConsultForm())
         {!! apply_filters('before_consult_form', null, $model) !!}
 
-        {!! \Botble\RealEstate\Forms\Fronts\ConsultForm::create()
-            ->formClass('contact-form')
-            ->setFormInputWrapperClass('ip-group')
-            ->modify('content', 'textarea', ['attr' => ['class' => 'form-control']])
-            ->modify('submit', 'submit', ['attr' => ['class' => 'tf-btn primary w-100']])
-            ->add('type', 'hidden', ['attr' => ['value' => $isProject ? 'project' : 'property']])
-            ->add('data_id', 'hidden', ['attr' => ['value' => $model->getKey()]])
-            ->addBefore('content', 'data_name', 'text', ['label' => false, 'attr' => ['value' => $model->name, 'disabled' => true, 'aria-label' => $isProject ? __('Project name') : __('Property name')]])
-            ->renderForm()
-        !!}
+        <div class="consult-form-header mt-3">
+            <h3 class="h6 fw-bold mb-3 text-dark">{{ __('Ask About this Home') }}</h3>
+        </div>
+
+        @php
+            $form = \Botble\RealEstate\Forms\Fronts\ConsultForm::create()
+                ->formClass('contact-form')
+                ->setFormInputWrapperClass('ip-group')
+                ->modify('name', 'text', [
+                    'label' => false,
+                    'attr' => ['placeholder' => __('Full Name')]
+                ])
+                ->modify('email', 'email', [
+                    'label' => false,
+                    'attr' => ['placeholder' => __('Email Address')]
+                ])
+                ->modify('phone', 'text', [
+                    'label' => false,
+                    'attr' => ['placeholder' => __('Phone Number (Mobile)')]
+                ])
+                ->modify('content', 'textarea', [
+                    'label' => false,
+                    'value' => __('I would like more information regarding the property at :name', ['name' => $model->name]),
+                    'attr' => ['class' => 'form-control', 'rows' => 4]
+                ])
+                ->modify('submit', 'submit', ['attr' => ['class' => 'tf-btn primary w-100 btn-send-message']])
+                ->add('type', 'hidden', ['attr' => ['value' => $isProject ? 'project' : 'property']])
+                ->add('data_id', 'hidden', ['attr' => ['value' => $model->getKey()]]);
+
+            // Clean up custom fields or extra checkboxes (e.g. Schedule a Tour or Privacy Checkboxes)
+            $allowedFields = ['name', 'email', 'phone', 'content', 'submit', 'type', 'data_id'];
+            $fields = $form->getFields();
+            foreach (array_keys($fields) as $fieldName) {
+                if (!in_array($fieldName, $allowedFields)) {
+                    $form->remove($fieldName);
+                }
+            }
+        @endphp
+
+        {!! $form->renderForm() !!}
 
         {!! apply_filters('after_consult_form', null, $model) !!}
-    @endif
-
-    @php
-        $whatsappNumber = null;
-
-        if (! RealEstateHelper::hideAgentInfoInPropertyDetailPage() && ($account = $model->author) && $account->exists && $account->whatsapp) {
-            $whatsappNumber = $account->whatsapp;
-        } elseif ($globalWhatsapp = theme_option('whatsapp_phone_number')) {
-            $whatsappNumber = $globalWhatsapp;
-        }
-    @endphp
-
-    @if ($whatsappNumber && theme_option('enable_whatsapp_button', 'yes') === 'yes')
-        @php
-            $whatsappMessage = theme_option('whatsapp_inquiry_message', __('Hi, I have an inquiry about this property: [property_url]'));
-            $whatsappMessage = str_replace('[property_url]', $model->url, $whatsappMessage);
-        @endphp
-        <div class="whatsapp-contact-section mt-4 pt-4" style="border-top: 1px solid #e4e4e4;">
-            <div class="text-center mb-3">
-                <p class="mb-2" style="color: #666; font-size: 14px;">{{ __('Or get instant response via WhatsApp') }}</p>
-            </div>
-            <div class="text-center">
-                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $whatsappNumber) }}?text={{ urlencode($whatsappMessage) }}" target="_blank" class="contact-whatsapp-btn justify-content-center">
-                    <x-core::icon name="ti ti-brand-whatsapp" />
-                    <span>{{ __('Chat on WhatsApp') }}</span>
-                </a>
-            </div>
-        </div>
     @endif
 </div>
 

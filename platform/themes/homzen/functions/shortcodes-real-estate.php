@@ -5,11 +5,15 @@ use Botble\Base\Forms\FieldOptions\NumberFieldOption;
 use Botble\Base\Forms\FieldOptions\OnOffFieldOption;
 use Botble\Base\Forms\FieldOptions\SelectFieldOption;
 use Botble\Base\Forms\FieldOptions\UiSelectorFieldOption;
+use Botble\Base\Forms\FieldOptions\TextFieldOption;
+use Botble\Base\Forms\FieldOptions\TextareaFieldOption;
 use Botble\Base\Forms\Fields\MediaImageField;
 use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\OnOffField;
 use Botble\Base\Forms\Fields\SelectField;
 use Botble\Base\Forms\Fields\UiSelectorField;
+use Botble\Base\Forms\Fields\TextField;
+use Botble\Base\Forms\Fields\TextareaField;
 use Botble\RealEstate\Enums\PropertyTypeEnum;
 use Botble\RealEstate\Facades\RealEstateHelper;
 use Botble\RealEstate\Models\Account;
@@ -172,7 +176,7 @@ app()->booted(function (): void {
                     UiSelectorFieldOption::make()
                         ->label(__('Style'))
                         ->choices(
-                            collect(range(1, 7))
+                            collect(range(1, 8))
                                 ->mapWithKeys(fn ($number) => [
                                     $number => [
                                         'label' => __('Style :number', ['number' => $number]),
@@ -209,6 +213,33 @@ app()->booted(function (): void {
                 )
                 ->addLimitField()
                 ->addSectionButtonAction()
+                ->add(
+                    'left_title',
+                    TextField::class,
+                    TextFieldOption::make()
+                        ->label(__('Left Card Title'))
+                        ->helperText(__('Title of the left featured card (e.g. New Homes in Ontario)'))
+                        ->value(Arr::get($attributes, 'left_title'))
+                        ->collapsible('style', '8', Arr::get($attributes, 'style', '1'))
+                )
+                ->add(
+                    'left_description',
+                    TextareaField::class,
+                    TextareaFieldOption::make()
+                        ->label(__('Left Card Description'))
+                        ->helperText(__('Description text inside the left card'))
+                        ->value(Arr::get($attributes, 'left_description'))
+                        ->collapsible('style', '8', Arr::get($attributes, 'style', '1'))
+                )
+                ->add(
+                    'left_image',
+                    MediaImageField::class,
+                    MediaImageFieldOption::make()
+                        ->label(__('Left Card Icon/Image'))
+                        ->helperText(__('Icon or image to show at the top of the left card'))
+                        ->value(Arr::get($attributes, 'left_image'))
+                        ->collapsible('style', '8', Arr::get($attributes, 'style', '1'))
+                )
                 ->add(
                     'background_image',
                     MediaImageField::class,

@@ -5,7 +5,7 @@
 <section class="flat-section-v3" style="background-color: {{ $backgroundColor }}">
     <div class="container">
         @if($shortcode->subtitle || $shortcode->title)
-            <div class="box-title text-center wow fadeInUpSmall" data-wow-delay=".2s" data-wow-duration="2000ms">
+            <div class="box-title wow fadeInUpSmall" data-wow-delay=".2s" data-wow-duration="2000ms">
                 @if($shortcode->subtitle)
                     <div class="text-subtitle text-white">{!! BaseHelper::clean($shortcode->subtitle) !!}</div>
                 @endif

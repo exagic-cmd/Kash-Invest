@@ -6,6 +6,15 @@
         <meta content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, user-scalable=1" name="viewport"/>
 
         @php
+            // Dynamically override site name and browser tab title to Kash Invest
+            config(['app.name' => 'Kash Invest']);
+            $currentTitle = \Botble\SeoHelper\Facades\SeoHelper::getTitle();
+            if (empty(trim($currentTitle)) || trim($currentTitle) === 'Homzen') {
+                \Botble\SeoHelper\Facades\SeoHelper::setTitle('Kash Invest');
+            } else if (str_contains($currentTitle, 'Homzen')) {
+                \Botble\SeoHelper\Facades\SeoHelper::setTitle(str_replace('Homzen', 'Kash Invest', $currentTitle));
+            }
+
             // Anchor icomoon URLs to the theme that owns style.css so the preload + inline @font-face
             // match the relative URLs compiled into style.css. Prevents duplicate font downloads when
             // a child theme inherits the parent's CSS but ships its own /fonts/ copies.

@@ -1,5 +1,9 @@
 @php
-    Theme::layout('full-width');
+    if (request()->query('view-gallery')) {
+        Theme::layout('no-layout');
+    } else {
+        Theme::layout('full-width');
+    }
     Theme::set('breadcrumbEnabled', 'no');
 
     Theme::asset()->usePath()->add('leaflet', 'plugins/leaflet/leaflet.css');
@@ -21,7 +25,11 @@
     Theme::set('headerMeta', $headerMeta);
 @endphp
 
-@include(Theme::getThemeNamespace("views.real-estate.single-layouts.style-$style"), ['model' => $property])
+@if (request()->query('view-gallery'))
+    @include(Theme::getThemeNamespace('views.real-estate.partials.property-gallery-grid'), ['model' => $property])
+@else
+    @include(Theme::getThemeNamespace("views.real-estate.single-layouts.style-$style"), ['model' => $property])
+@endif
 
 <template id="map-popup-content">
     <div class="map-listing-item">

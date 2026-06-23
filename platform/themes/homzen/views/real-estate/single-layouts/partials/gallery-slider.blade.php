@@ -1,27 +1,51 @@
 @if ($model->images && is_array($model->images))
-    <section class="flat-location flat-slider-detail-v1">
-        <div class="swiper tf-sw-location" data-preview-lg="2.03" data-preview-md="2" data-preview-sm="2" data-space="20" data-centered="true" data-loop="true">
-            <div class="swiper-wrapper">
-                @foreach ($model->images as $image)
-                    <div class="swiper-slide">
-                        <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="box-imgage-detail d-block">
-                            @if ($loop->first)
-                                {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['width' => '100%', 'fetchpriority' => 'high', 'loading' => 'eager'], lazy: false) }}
-                            @else
-                                {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['width' => '100%']) }}
-                            @endif
+    @php
+        $imagesCount = count($model->images);
+    @endphp
+    <section class="flat-gallery-three-cols px-md-4 px-2 mt-4">
+        <div class="gallery-grid-row">
+            {{-- Loop through all images --}}
+            @foreach ($model->images as $image)
+                @if ($loop->first)
+                    {{-- First image (Left column) --}}
+                    <div class="gallery-col col-main">
+                        <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="gallery-img-link d-block">
+                            {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['fetchpriority' => 'high', 'loading' => 'eager'], lazy: false) }}
+                            
+                            {{-- Mobile View All Photos Button --}}
+                            <div class="col-main-mobile-btn d-none">
+                                <x-core::icon name="ti ti-camera" class="icon" />
+                                <span>{{ __('See all :count Photos', ['count' => $imagesCount]) }}</span>
+                            </div>
                         </a>
                     </div>
-                @endforeach
-            </div>
-            <div class="box-navigation">
-                <div class="navigation swiper-nav-next nav-next-location">
-                    <x-core::icon name="ti ti-chevron-left" class="icon" />
-                </div>
-                <div class="navigation swiper-nav-prev nav-prev-location">
-                    <x-core::icon name="ti ti-chevron-right" class="icon" />
-                </div>
-            </div>
+                @elseif ($loop->iteration == 2)
+                    {{-- Second image (Center column) --}}
+                    <div class="gallery-col col-second">
+                        <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="gallery-img-link d-block">
+                            {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['loading' => 'eager'], lazy: false) }}
+                        </a>
+                    </div>
+                @elseif ($loop->iteration == 3)
+                    {{-- Third image (Right column) with Overlay --}}
+                    <div class="gallery-col col-third">
+                        <a href="{{ $model->url . '?view-gallery=1' }}" class="gallery-img-link d-block position-relative">
+                            {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['loading' => 'eager'], lazy: false) }}
+                            
+                            {{-- Dark Overlay --}}
+                            <div class="gallery-overlay d-flex flex-column align-items-center justify-content-center">
+                                <div class="overlay-content text-center text-white">
+                                    <x-core::icon name="ti ti-camera" class="overlay-icon mb-2" />
+                                    <span class="overlay-text d-block">{{ __('See all :count Photos', ['count' => $imagesCount]) }}</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                @else
+                    {{-- Hidden images for Fancybox navigation --}}
+                    <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="d-none"></a>
+                @endif
+            @endforeach
         </div>
     </section>
 @endif

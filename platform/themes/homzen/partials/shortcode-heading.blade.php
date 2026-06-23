@@ -1,6 +1,6 @@
 @php
     $animation ??= true;
-    $centered ??= true;
+    $centered = false;
     $buttonLabel ??= $shortcode->button_label;
     $buttonUrl ??= $shortcode->button_url;
     $hasButton ??= $buttonLabel && $buttonUrl;
