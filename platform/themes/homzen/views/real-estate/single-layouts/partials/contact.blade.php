@@ -3,7 +3,7 @@
     $isProject = $model instanceof \Botble\RealEstate\Models\Project;
 @endphp
 
-<div @class(['widget-box single-property-contact', $class ?? null])>
+<div id="contact-form" @class(['widget-box single-property-contact', $class ?? null])>
     @if (! RealEstateHelper::hideAgentInfoInPropertyDetailPage() && ($account = $model->author) && $account->exists)
         <div class="h7 title fw-7">{{ __('Contact Agency') }}</div>
 

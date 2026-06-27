@@ -36,6 +36,20 @@
                         </div>
                     </div>
                 @endforeach
+                
+                {{-- CTA box at the very end of the images gallery --}}
+                <div class="col">
+                    <div class="gallery-item-wrapper overflow-hidden bg-dark rounded">
+                        <a href="{{ $model->url . '#contact-form' }}" class="d-block w-100 h-100 text-decoration-none text-white text-center">
+                            <div class="ratio ratio-16x9">
+                                <div class="d-flex flex-column align-items-center justify-content-center w-100 h-100 p-4" style="background: linear-gradient(135deg, #555, #222);">
+                                    <h3 class="fw-bold mb-3 text-white">{{ __('Ask About this Home') }}</h3>
+                                    <span class="text-white fw-semibold" style="font-size: 16px; text-decoration: underline;">{{ __('Send Message') }} &raquo;</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
             </div>
         @else
             <div class="text-center py-5">

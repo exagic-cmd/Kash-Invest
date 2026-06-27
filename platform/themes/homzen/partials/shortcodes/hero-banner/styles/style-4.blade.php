@@ -1,22 +1,26 @@
+@php
     Theme::set('headerClass', '');
 
     $propertiesUrl = '#';
     $categories = [];
     $defaultCategoryId = '';
-    $defaultCategoryName = __('Category');
+    $defaultCategoryName = __('All Categories');
+    $bedrooms = [];
+    $currencySymbol = '$';
 
     if (is_plugin_active('real-estate')) {
         $propertiesUrl = RealEstateHelper::getPropertiesListPageUrl();
         $categories = \Botble\RealEstate\Models\Category::query()->wherePublished()->pluck('name', 'id')->all();
-        
-        // Find the 'House' category dynamically
-        $houseCategory = \Botble\RealEstate\Models\Category::query()
-            ->where('name', 'like', '%House%')
-            ->first();
-        if ($houseCategory) {
-            $defaultCategoryId = $houseCategory->id;
-            $defaultCategoryName = $houseCategory->name;
-        }
+        $bedrooms = \Botble\RealEstate\Models\Property::query()
+            ->wherePublished()
+            ->whereNotNull('number_bedroom')
+            ->where('number_bedroom', '>', 0)
+            ->distinct('number_bedroom')
+            ->pluck('number_bedroom')
+            ->sort()
+            ->values()
+            ->all();
+        $currencySymbol = get_application_currency()->symbol;
     }
 
     $selectedTabs = explode(',', $shortcode->tabs ?: 'project,rent,sale');
@@ -32,7 +36,7 @@
     ];
 @endphp
 
-<section class="flat-map hero-banner-4" style="background-color: #f7f7f7; padding: 60px 0;">
+<section class="flat-map hero-banner-4">
     @if(is_plugin_active('real-estate') && $shortcode->search_box_enabled)
         <div class="container">
             <div class="wrap-filter-search">
@@ -80,10 +84,10 @@
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="filterBedroomsDropdown">
                             <li><a class="dropdown-item filter-bedroom-option" data-value="" href="javascript:void(0);">{{ __('Any Bedrooms') }}</a></li>
-                            @foreach(range(1, 5) as $i)
+                            @foreach($bedrooms as $i)
                                 <li>
                                     <a class="dropdown-item filter-bedroom-option" data-value="{{ $i }}" href="javascript:void(0);">
-                                        {{ $i === 5 ? __(':number+ Bed', ['number' => $i]) : __(':number Bed', ['number' => $i]) }}
+                                        {{ __(':number Bed', ['number' => $i]) }}
                                     </a>
                                 </li>
                             @endforeach
@@ -205,13 +209,14 @@
             setFormValue('min_price', min);
             setFormValue('max_price', max);
             
+            var currencySymbol = '{!! $currencySymbol !!}';
             var label = '{{ __("Any Price") }}';
             if (min && max) {
-                label = '$' + min + ' - $' + max;
+                label = currencySymbol + min + ' - ' + currencySymbol + max;
             } else if (min) {
-                label = '>= $' + min;
+                label = '>= ' + currencySymbol + min;
             } else if (max) {
-                label = '<= $' + max;
+                label = '<= ' + currencySymbol + max;
             }
             $('#filterPriceDropdown').text(label);
             

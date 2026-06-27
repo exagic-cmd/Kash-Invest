@@ -8,15 +8,15 @@
             @foreach ($model->images as $image)
                 @if ($loop->first)
                     {{-- First image (Left column) --}}
-                    <div class="gallery-col col-main">
+                    <div class="gallery-col col-main position-relative">
                         <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="gallery-img-link d-block">
                             {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['fetchpriority' => 'high', 'loading' => 'eager'], lazy: false) }}
-                            
-                            {{-- Mobile View All Photos Button --}}
-                            <div class="col-main-mobile-btn d-none">
-                                <x-core::icon name="ti ti-camera" class="icon" />
-                                <span>{{ __('See all :count Photos', ['count' => $imagesCount]) }}</span>
-                            </div>
+                        </a>
+                        
+                        {{-- Mobile View All Photos Button --}}
+                        <a href="{{ $model->url . '?view-gallery=1' }}" class="col-main-mobile-btn d-none text-decoration-none" style="pointer-events: auto !important; z-index: 10;">
+                            <x-core::icon name="ti ti-camera" class="icon" />
+                            <span>{{ __('See all :count Photos', ['count' => $imagesCount]) }}</span>
                         </a>
                     </div>
                 @elseif ($loop->iteration == 2)
