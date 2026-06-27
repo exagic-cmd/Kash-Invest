@@ -1,12 +1,12 @@
-@if ($model->images && is_array($model->images))
-    @php
-        $imagesCount = count($model->images);
-    @endphp
-    <section class="flat-gallery-three-cols px-md-4 px-2 mt-4">
-        <div class="gallery-grid-row">
-            {{-- Loop through all images --}}
-            @foreach ($model->images as $image)
-                @if ($loop->first)
+@php
+    $images = $model->images && is_array($model->images) && count($model->images) > 0 ? $model->images : [null, null, null];
+    $imagesCount = is_array($model->images) ? count($model->images) : 0;
+@endphp
+<section class="flat-gallery-three-cols px-md-4 px-2 mt-4">
+    <div class="gallery-grid-row">
+        {{-- Loop through all images --}}
+        @foreach ($images as $image)
+            @if ($loop->first)
                     {{-- First image (Left column) --}}
                     <div class="gallery-col col-main position-relative">
                         <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="gallery-img-link d-block">
@@ -16,7 +16,7 @@
                         {{-- Mobile View All Photos Button --}}
                         <a href="{{ $model->url . '?view-gallery=1' }}" class="col-main-mobile-btn d-none text-decoration-none" style="pointer-events: auto !important; z-index: 10;">
                             <x-core::icon name="ti ti-camera" class="icon" />
-                            <span>{{ __('See all :count Photos', ['count' => $imagesCount]) }}</span>
+                            <span>{{ $imagesCount > 0 ? __('See all :count Photos', ['count' => $imagesCount]) : __('See all Photos') }}</span>
                         </a>
                     </div>
                 @elseif ($loop->iteration == 2)
@@ -36,7 +36,7 @@
                             <div class="gallery-overlay d-flex flex-column align-items-center justify-content-center">
                                 <div class="overlay-content text-center text-white">
                                     <x-core::icon name="ti ti-camera" class="overlay-icon mb-2" />
-                                    <span class="overlay-text d-block">{{ __('See all :count Photos', ['count' => $imagesCount]) }}</span>
+                                    <span class="overlay-text d-block">{{ $imagesCount > 0 ? __('See all :count Photos', ['count' => $imagesCount]) : __('See all Photos') }}</span>
                                 </div>
                             </div>
                         </a>
@@ -48,4 +48,3 @@
             @endforeach
         </div>
     </section>
-@endif

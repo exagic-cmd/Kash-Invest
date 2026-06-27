@@ -23,9 +23,11 @@
 
     {{-- Compact 2-Column Image List --}}
     <div class="container-fluid p-2">
-        @if ($model->images && is_array($model->images))
-            <div class="row row-cols-1 row-cols-md-2 g-2">
-                @foreach ($model->images as $image)
+        @php
+            $images = $model->images && is_array($model->images) && count($model->images) > 0 ? $model->images : [null];
+        @endphp
+        <div class="row row-cols-1 row-cols-md-2 g-2">
+            @foreach ($images as $image)
                     <div class="col">
                         <div class="gallery-item-wrapper overflow-hidden">
                             <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery-page" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="d-block w-100 h-100">
@@ -51,11 +53,6 @@
                     </div>
                 </div>
             </div>
-        @else
-            <div class="text-center py-5">
-                <p class="text-variant-1">{{ __('No images found for this property.') }}</p>
-            </div>
-        @endif
     </div>
 </div>
 
