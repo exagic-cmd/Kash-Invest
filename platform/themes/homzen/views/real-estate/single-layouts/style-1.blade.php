@@ -14,21 +14,21 @@
 
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.description'), ['class' => 'single-property-element', 'model' => $model])
 
-                {{-- @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.video'), ['class' => 'single-property-element', 'model' => $model]) --}}
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.video'), ['class' => 'single-property-element', 'model' => $model])
 
-                {{-- @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.features'), ['class' => 'single-property-element', 'model' => $model]) --}}
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.features'), ['class' => 'single-property-element', 'model' => $model])
 
-                {{-- @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.facilities'), ['class' => 'single-property-element', 'model' => $model]) --}}
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.facilities'), ['class' => 'single-property-element', 'model' => $model])
 
-                {{-- @if (!($model instanceof \Botble\RealEstate\Models\Project))
+                @if (!($model instanceof \Botble\RealEstate\Models\Project))
                     @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.project'), ['class' => 'single-property-element', 'model' => $model])
-                @endif --}}
+                @endif
 
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.related-properties'), ['model' => $model])
 
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.map'), ['class' => 'single-property-element', 'model' => $model])
 
-                {{-- @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.floor-plans'), ['class' => 'single-property-element', 'model' => $model]) --}}
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.floor-plans'), ['class' => 'single-property-element', 'model' => $model])
 
                 {!! apply_filters('after_single_content_detail', null, $model) !!}
 
@@ -42,7 +42,7 @@
 
                 {!! dynamic_sidebar('bottom_property_detail_sidebar') !!}
 
-                {{-- @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.reviews'), ['model' => $model, 'class' => 'single-property-element']) --}}
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.reviews'), ['model' => $model, 'class' => 'single-property-element'])
             </div>
             <div class="col-lg-4">
                 <div class="widget-sidebar wrapper-sidebar-right sticky-top" style="top: 20px; z-index: 10;">

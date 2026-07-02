@@ -113,6 +113,14 @@ class ProjectForm extends FormAbstract
         $this
             ->model(Project::class)
             ->setValidatorClass(ProjectRequest::class)
+            ->add('import_csv_alert', 'html', [
+                'html' => '<div class="alert alert-info d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <i class="ti ti-upload"></i> <strong>Bulk Upload:</strong> Do you want to import multiple projects at once from a CSV?
+                    </div>
+                    <a href="' . route('tools.data-synchronize.import.projects.index') . '" class="btn btn-primary btn-sm">Import Projects CSV</a>
+                </div>',
+            ])
             ->add('name', TextField::class, NameFieldOption::make()->required()->toArray())
             ->add('description', TextareaField::class, DescriptionFieldOption::make()->toArray())
             ->add(
@@ -295,6 +303,234 @@ class ProjectForm extends FormAbstract
                     ->toArray()
             )
             ->add('rowClose2', 'html', [
+                'html' => '</div>',
+            ])
+            // Unit & Suite Details
+            ->add('unit_suite_details_header', 'html', [
+                'html' => '<h4 class="mt-4 mb-3">Unit & Suite Details</h4><hr>',
+            ])
+            ->add('rowOpenUnitDetails', 'html', [
+                'html' => '<div class="row">',
+            ])
+            ->add('suites_starting_floor', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.suites_starting_floor'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.suites_starting_floor'),
+                ],
+            ])
+            ->add('number_of_suites_per_floor', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.number_of_suites_per_floor'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.number_of_suites_per_floor'),
+                ],
+            ])
+            ->add('price_per_sqft_from', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.price_per_sqft_from'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.price_per_sqft_from'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('suite_size_from', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.suite_size_from'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-6',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.suite_size_from'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('suite_size_to', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.suite_size_to'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-6',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.suite_size_to'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('rowCloseUnitDetails', 'html', [
+                'html' => '</div>',
+            ])
+            // Financials & Deposits
+            ->add('financials_deposits_header', 'html', [
+                'html' => '<h4 class="mt-4 mb-3">Financials & Deposits</h4><hr>',
+            ])
+            ->add('rowOpenFinancials', 'html', [
+                'html' => '<div class="row">',
+            ])
+            ->add('total_min_deposit', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.total_min_deposit'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.total_min_deposit'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('parking_price', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.parking_price'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.parking_price'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('locker_price', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.locker_price'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.locker_price'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('development_levies', TextField::class, [
+                'label' => trans('plugins/real-estate::project.form.development_levies'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-6',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.development_levies'),
+                    'data-counter' => 255,
+                ],
+            ])
+            ->add('assignment_policy', TextField::class, [
+                'label' => trans('plugins/real-estate::project.form.assignment_policy'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-6',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.assignment_policy'),
+                    'data-counter' => 255,
+                ],
+            ])
+            ->add('deposit_notes', TextareaField::class, [
+                'label' => trans('plugins/real-estate::project.form.deposit_notes'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-12',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.deposit_notes'),
+                    'rows' => 3,
+                ],
+            ])
+            ->add('rowCloseFinancials', 'html', [
+                'html' => '</div>',
+            ])
+            // Maintenance & Taxes
+            ->add('maintenance_taxes_header', 'html', [
+                'html' => '<h4 class="mt-4 mb-3">Maintenance & Taxes</h4><hr>',
+            ])
+            ->add('rowOpenMaintenance', 'html', [
+                'html' => '<div class="row">',
+            ])
+            ->add('est_maint', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.est_maint'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-3',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.est_maint'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('locker_maint', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.locker_maint'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-3',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.locker_maint'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('parking_maint', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.parking_maint'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-3',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.parking_maint'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('est_property_tax', NumberField::class, [
+                'label' => trans('plugins/real-estate::project.form.est_property_tax'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-3',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.est_property_tax'),
+                    'step' => '0.01',
+                ],
+            ])
+            ->add('maintenance_notes', TextareaField::class, [
+                'label' => trans('plugins/real-estate::project.form.maintenance_notes'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-12',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.maintenance_notes'),
+                    'rows' => 3,
+                ],
+            ])
+            ->add('rowCloseMaintenance', 'html', [
+                'html' => '</div>',
+            ])
+            // Location & Team
+            ->add('location_team_header', 'html', [
+                'html' => '<h4 class="mt-4 mb-3">Location & Team</h4><hr>',
+            ])
+            ->add('rowOpenLocationTeam', 'html', [
+                'html' => '<div class="row">',
+            ])
+            ->add('neighbour', TextField::class, [
+                'label' => trans('plugins/real-estate::project.form.neighbour'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.neighbour'),
+                    'data-counter' => 255,
+                ],
+            ])
+            ->add('intersection', TextField::class, [
+                'label' => trans('plugins/real-estate::project.form.intersection'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.intersection'),
+                    'data-counter' => 255,
+                ],
+            ])
+            ->add('architects', TextField::class, [
+                'label' => trans('plugins/real-estate::project.form.architects'),
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-4',
+                ],
+                'attr' => [
+                    'placeholder' => trans('plugins/real-estate::project.form.architects'),
+                    'data-counter' => 255,
+                ],
+            ])
+            ->add('rowCloseLocationTeam', 'html', [
                 'html' => '</div>',
             ])
             ->add(

@@ -12,7 +12,7 @@
     'ajaxUrl' => $ajaxUrl ?? route('public.properties'),
     'mapUrl' => $mapUrl ?? route('public.ajax.properties.map-all'),
     'itemLayout' => request()->input('layout', 'grid'),
-    'layout' => theme_option('real_estate_property_listing_layout', 'top-map'),
+    'layout' => 'without-map',
     'perPages' => RealEstateHelper::getPropertiesPerPageList(),
     'filterViewPath' => Theme::getThemeNamespace('views.real-estate.partials.filters.property-search-box'),
     'itemsViewPath' => Theme::getThemeNamespace('views.real-estate.properties.index'),

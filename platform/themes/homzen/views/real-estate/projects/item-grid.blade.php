@@ -1,4 +1,11 @@
-<div @class(['homeya-box', $class ?? null]) @if ($project->latitude && $project->longitude) data-lat="{{ $project->latitude }}" data-lng="{{ $project->longitude }}" @endif>
+@php
+    $class ??= null;
+    $itemsPerRow ??= 3;
+    $author = $project->author;
+    $investor = $project->investor;
+@endphp
+
+<div @class(['property-item homeya-box modern-card', $class]) @if ($project->latitude && $project->longitude) data-lat="{{ $project->latitude }}" data-lng="{{ $project->longitude }}" @endif>
     <div class="archive-top">
         <a href="{{ $project->url }}" class="images-group">
             <div class="images-style">
@@ -8,14 +15,32 @@
                     'size' => 'medium-rectangle',
                 ])
             </div>
-            <div class="top">
-                <div class="d-flex gap-8">
-                    @if($project->is_featured)
-                        <span class="flag-tag success">{{ __('Featured') }}</span>
+            
+            <div class="modern-overlays">
+                <span class="overlay-tag tag-status">
+                    <i class="icon icon-home"></i> 
+                    @if($project->status)
+                        {{ $project->status->label() }}
+                    @else
+                        {{ __('Selling') }}
                     @endif
-                </div>
+                </span>
+                @if($project->date_finish)
+                    <span class="overlay-tag tag-time">
+                        {{ $project->date_finish->format('Y') }}
+                    </span>
+                @endif
+            </div>
+        </a>
+        
+        <div class="content modern-content">
+            <div class="price-row mb-2">
+                @if (!setting('real_estate_hide_price', false))
+                    <div class="modern-price">{{ $project->formatted_price }}</div>
+                @endif
+                
                 @if (RealEstateHelper::isEnabledWishlist())
-                    <button type="button" class="box-icon w-32"
+                    <button type="button" class="modern-wishlist-btn"
                             data-type="project"
                             data-bb-toggle="add-to-wishlist"
                             data-id="{{ $project->getKey() }}"
@@ -23,54 +48,47 @@
                             data-remove-message="{{ __('Removed ":name" from wishlist successfully!', ['name' => $project->name]) }}"
                             aria-label="{{ __('Add to wishlist') }}"
                     >
-                        <x-core::icon name="ti ti-heart" />
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                            <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"></path>
+                        </svg>
                     </button>
                 @endif
             </div>
-            @if($project->category)
-                <div class="bottom">
-                    <span class="flag-tag style-2">{{ $project->category->name }}</span>
-                </div>
-            @endif
-        </a>
-        <div class="content">
-            <div class="text-capitalize h7 fw-7">
-                <a href="{{ $project->url }}" class="link line-clamp-1" title="{{ $project->name }}">{!! BaseHelper::clean($project->name) !!}</a>
-            </div>
-            @if($project->short_address)
-                <div class="desc">
-                    <i class="icon icon-mapPin"></i>
-                    <p class="line-clamp-1">{{ $project->short_address }}</p>
-                </div>
-            @endif
 
-            <ul class="meta-list">
+            <div class="modern-specs mb-2">
                 @if($project->number_block)
-                    <li class="item">
-                        <x-core::icon name="ti ti-packages" />
-                        <span>{{ number_format($project->number_block) }}</span>
-                    </li>
+                    <span class="spec-item">{{ $project->number_block }} {{ __('blocks') }}</span>
                 @endif
                 @if($project->number_floor)
-                    <li class="item">
-                        <x-core::icon name="ti ti-stairs" />
-                        <span>{{ number_format($project->number_floor) }}</span>
-                    </li>
+                    <span class="spec-item">{{ $project->number_floor }} {{ __('floors') }}</span>
                 @endif
                 @if($project->number_flat)
-                    <li class="item">
-                        <x-core::icon name="ti ti-building" />
-                        <span>{{ number_format($project->number_flat) }}</span>
-                    </li>
+                    <span class="spec-item">{{ $project->number_flat }} {{ __('flats') }}</span>
                 @endif
-            </ul>
-        </div>
-    </div>
-    <div class="archive-bottom d-flex justify-content-between align-items-center">
-        @if (!setting('real_estate_hide_price', false))
-            <div class="d-flex align-items-center">
-                <span class="h6">{{ $project->formatted_price }}</span>
+                @if($project->category)
+                    <span class="spec-item">{{ $project->category->name }}</span>
+                @endif
             </div>
-        @endif
+
+            <div class="modern-address mb-2">
+                <a href="{{ $project->url }}" class="line-clamp-1" title="{{ $project->name }}">
+                    {!! BaseHelper::clean($project->name) !!}
+                </a>
+            </div>
+
+            <div class="modern-meta mt-auto">
+                @if($project->unique_id)
+                    <span>ID: {{ $project->unique_id }}</span>
+                @endif
+                @if($investor && $investor->exists)
+                    <span class="dot-separator">•</span>
+                    <span>{{ $investor->name }}</span>
+                @elseif($author && $author->exists)
+                    <span class="dot-separator">•</span>
+                    <span>{{ $author->name }}</span>
+                @endif
+            </div>
+        </div>
     </div>
 </div>

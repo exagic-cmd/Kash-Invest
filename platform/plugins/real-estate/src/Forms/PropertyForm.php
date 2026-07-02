@@ -144,6 +144,14 @@ class PropertyForm extends FormAbstract
             ->model(Property::class)
             ->setValidatorClass(PropertyRequest::class)
             ->template('plugins/real-estate::partials.forms.property-form')
+            ->add('import_csv_alert', 'html', [
+                'html' => '<div class="alert alert-info d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <i class="ti ti-upload"></i> <strong>Bulk Upload:</strong> Do you want to import multiple properties at once from a CSV?
+                    </div>
+                    <a href="' . route('tools.data-synchronize.import.properties.index') . '" class="btn btn-primary btn-sm">Import Properties CSV</a>
+                </div>',
+            ])
             ->add('name', TextField::class, NameFieldOption::make()->required())
             ->add('type', SelectField::class, [
                 'label' => trans('plugins/real-estate::property.form.type'),

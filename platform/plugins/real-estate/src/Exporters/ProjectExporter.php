@@ -129,6 +129,26 @@ class ProjectExporter extends Exporter
                 ->label('Video URL'),
             ExportColumn::make('video_thumbnail')
                 ->label('Video Thumbnail'),
+            ExportColumn::make('private_notes')->label('Private Notes'),
+            ExportColumn::make('suites_starting_floor')->label('Suites Starting Floor'),
+            ExportColumn::make('number_of_suites_per_floor')->label('Number of Suites per Floor'),
+            ExportColumn::make('suite_size_from')->label('Suite Size From'),
+            ExportColumn::make('suite_size_to')->label('Suite Size To'),
+            ExportColumn::make('price_per_sqft_from')->label('Price per SqFt From'),
+            ExportColumn::make('parking_price')->label('Parking Price'),
+            ExportColumn::make('locker_price')->label('Locker Price'),
+            ExportColumn::make('total_min_deposit')->label('Total Min Deposit'),
+            ExportColumn::make('deposit_notes')->label('Deposit Notes'),
+            ExportColumn::make('development_levies')->label('Development Levies'),
+            ExportColumn::make('assignment_policy')->label('Assignment Policy'),
+            ExportColumn::make('est_maint')->label('Est Maint'),
+            ExportColumn::make('locker_maint')->label('Locker Maint'),
+            ExportColumn::make('parking_maint')->label('Parking Maint'),
+            ExportColumn::make('est_property_tax')->label('Est Property Tax'),
+            ExportColumn::make('maintenance_notes')->label('Maintenance Notes'),
+            ExportColumn::make('neighbour')->label('Neighbour'),
+            ExportColumn::make('intersection')->label('Intersection'),
+            ExportColumn::make('architects')->label('Architects'),
         ];
     }
 

@@ -59,6 +59,25 @@ class Project extends BaseModel
         'unique_id',
         'private_notes',
         'floor_plans',
+        'suites_starting_floor',
+        'number_of_suites_per_floor',
+        'suite_size_from',
+        'suite_size_to',
+        'price_per_sqft_from',
+        'parking_price',
+        'locker_price',
+        'total_min_deposit',
+        'deposit_notes',
+        'development_levies',
+        'assignment_policy',
+        'est_maint',
+        'locker_maint',
+        'parking_maint',
+        'est_property_tax',
+        'maintenance_notes',
+        'neighbour',
+        'intersection',
+        'architects',
     ];
 
     protected $casts = [
@@ -79,6 +98,18 @@ class Project extends BaseModel
         'private_notes' => SafeContent::class,
         'images' => 'json',
         'floor_plans' => 'array',
+        'suites_starting_floor' => 'int',
+        'number_of_suites_per_floor' => 'int',
+        'suite_size_from' => 'float',
+        'suite_size_to' => 'float',
+        'price_per_sqft_from' => 'float',
+        'parking_price' => 'float',
+        'locker_price' => 'float',
+        'total_min_deposit' => 'float',
+        'est_maint' => 'float',
+        'locker_maint' => 'float',
+        'parking_maint' => 'float',
+        'est_property_tax' => 'float',
     ];
 
     protected static function booted(): void
@@ -309,7 +340,7 @@ class Project extends BaseModel
                 return '';
             }
 
-            if (! $this->price) {
+            if (! $this->price_from && ! $this->price_to) {
                 return trans('plugins/real-estate::real-estate.contact_for_price');
             }
 

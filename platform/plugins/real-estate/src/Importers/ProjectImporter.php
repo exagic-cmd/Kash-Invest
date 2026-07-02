@@ -51,10 +51,13 @@ class ProjectImporter extends Importer implements WithMapping
             ImportColumn::make('investor_id')
                 ->rules(['nullable', 'string']),
             ImportColumn::make('number_block')
+                ->nullable()
                 ->rules(['nullable', 'integer', 'min:0']),
             ImportColumn::make('number_floor')
+                ->nullable()
                 ->rules(['nullable', 'integer', 'min:0']),
             ImportColumn::make('number_flat')
+                ->nullable()
                 ->rules(['nullable', 'integer', 'min:0']),
             ImportColumn::make('is_featured')
                 ->boolean()
@@ -64,8 +67,10 @@ class ProjectImporter extends Importer implements WithMapping
             ImportColumn::make('date_sell')
                 ->rules(['nullable', 'date']),
             ImportColumn::make('price_from')
+                ->nullable()
                 ->rules(['nullable', 'numeric', 'min:0']),
             ImportColumn::make('price_to')
+                ->nullable()
                 ->rules(['nullable', 'numeric', 'min:0']),
             ImportColumn::make('currency')
                 ->rules(['nullable', 'string']),
@@ -80,8 +85,10 @@ class ProjectImporter extends Importer implements WithMapping
             ImportColumn::make('author_type')
                 ->rules(['nullable', 'string']),
             ImportColumn::make('longitude')
+                ->nullable()
                 ->rules(['nullable', 'numeric']),
             ImportColumn::make('latitude')
+                ->nullable()
                 ->rules(['nullable', 'numeric']),
         ];
 
@@ -108,6 +115,26 @@ class ProjectImporter extends Importer implements WithMapping
                 ->rules(['nullable', 'url']),
             ImportColumn::make('video_thumbnail')
                 ->rules(['nullable', 'string']),
+            ImportColumn::make('private_notes')->nullable()->rules(['nullable', 'string']),
+            ImportColumn::make('suites_starting_floor')->nullable()->rules(['nullable', 'integer', 'min:0']),
+            ImportColumn::make('number_of_suites_per_floor')->nullable()->rules(['nullable', 'integer', 'min:0']),
+            ImportColumn::make('suite_size_from')->nullable()->rules(['nullable', 'numeric', 'min:0']),
+            ImportColumn::make('suite_size_to')->nullable()->rules(['nullable', 'numeric', 'min:0']),
+            ImportColumn::make('price_per_sqft_from')->nullable()->rules(['nullable', 'numeric', 'min:0']),
+            ImportColumn::make('parking_price')->nullable()->rules(['nullable', 'numeric', 'min:0']),
+            ImportColumn::make('locker_price')->nullable()->rules(['nullable', 'numeric', 'min:0']),
+            ImportColumn::make('total_min_deposit')->rules(['nullable', 'string']),
+            ImportColumn::make('deposit_notes')->rules(['nullable', 'string']),
+            ImportColumn::make('development_levies')->rules(['nullable', 'string']),
+            ImportColumn::make('assignment_policy')->rules(['nullable', 'string']),
+            ImportColumn::make('est_maint')->rules(['nullable', 'string']),
+            ImportColumn::make('locker_maint')->rules(['nullable', 'string']),
+            ImportColumn::make('parking_maint')->rules(['nullable', 'string']),
+            ImportColumn::make('est_property_tax')->rules(['nullable', 'string']),
+            ImportColumn::make('maintenance_notes')->rules(['nullable', 'string']),
+            ImportColumn::make('neighbour')->rules(['nullable', 'string']),
+            ImportColumn::make('intersection')->rules(['nullable', 'string']),
+            ImportColumn::make('architects')->rules(['nullable', 'string']),
         ];
     }
 
@@ -232,6 +259,26 @@ class ProjectImporter extends Importer implements WithMapping
                 'unique_id' => 'PROJ-001',
                 'video_url' => 'https://www.youtube.com/watch?v=example',
                 'video_thumbnail' => 'https://via.placeholder.com/400x300',
+                'private_notes' => 'Some internal notes here',
+                'suites_starting_floor' => 2,
+                'number_of_suites_per_floor' => 10,
+                'suite_size_from' => 500,
+                'suite_size_to' => 1200,
+                'price_per_sqft_from' => 1000,
+                'parking_price' => 50000,
+                'locker_price' => 5000,
+                'total_min_deposit' => '20%',
+                'deposit_notes' => '5% on signing, 5% in 30 days',
+                'development_levies' => '$10,000 capped',
+                'assignment_policy' => 'Free assignment',
+                'est_maint' => '$0.60/sqft',
+                'locker_maint' => '$20/month',
+                'parking_maint' => '$50/month',
+                'est_property_tax' => '1% of purchase price',
+                'maintenance_notes' => 'Hydro metered separately',
+                'neighbour' => 'Downtown',
+                'intersection' => 'Main & 1st',
+                'architects' => 'ABC Architects',
             ],
             [
                 'name' => 'Green Valley Commercial Center',
@@ -264,6 +311,26 @@ class ProjectImporter extends Importer implements WithMapping
                 'unique_id' => 'PROJ-002',
                 'video_url' => '',
                 'video_thumbnail' => '',
+                'private_notes' => '',
+                'suites_starting_floor' => null,
+                'number_of_suites_per_floor' => null,
+                'suite_size_from' => null,
+                'suite_size_to' => null,
+                'price_per_sqft_from' => null,
+                'parking_price' => null,
+                'locker_price' => null,
+                'total_min_deposit' => '',
+                'deposit_notes' => '',
+                'development_levies' => '',
+                'assignment_policy' => '',
+                'est_maint' => '',
+                'locker_maint' => '',
+                'parking_maint' => '',
+                'est_property_tax' => '',
+                'maintenance_notes' => '',
+                'neighbour' => '',
+                'intersection' => '',
+                'architects' => '',
             ],
         ];
 
@@ -397,6 +464,26 @@ class ProjectImporter extends Importer implements WithMapping
             'images' => $images,
             'is_featured' => $this->convertToBoolean(Arr::get($row, 'is_featured')),
             'author_type' => $authorType,
+            'private_notes' => Arr::get($row, 'private_notes'),
+            'suites_starting_floor' => Arr::get($row, 'suites_starting_floor'),
+            'number_of_suites_per_floor' => Arr::get($row, 'number_of_suites_per_floor'),
+            'suite_size_from' => Arr::get($row, 'suite_size_from'),
+            'suite_size_to' => Arr::get($row, 'suite_size_to'),
+            'price_per_sqft_from' => Arr::get($row, 'price_per_sqft_from'),
+            'parking_price' => Arr::get($row, 'parking_price'),
+            'locker_price' => Arr::get($row, 'locker_price'),
+            'total_min_deposit' => Arr::get($row, 'total_min_deposit'),
+            'deposit_notes' => Arr::get($row, 'deposit_notes'),
+            'development_levies' => Arr::get($row, 'development_levies'),
+            'assignment_policy' => Arr::get($row, 'assignment_policy'),
+            'est_maint' => Arr::get($row, 'est_maint'),
+            'locker_maint' => Arr::get($row, 'locker_maint'),
+            'parking_maint' => Arr::get($row, 'parking_maint'),
+            'est_property_tax' => Arr::get($row, 'est_property_tax'),
+            'maintenance_notes' => Arr::get($row, 'maintenance_notes'),
+            'neighbour' => Arr::get($row, 'neighbour'),
+            'intersection' => Arr::get($row, 'intersection'),
+            'architects' => Arr::get($row, 'architects'),
         ];
     }
 

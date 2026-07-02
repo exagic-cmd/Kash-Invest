@@ -13,7 +13,7 @@
     'mapUrl' => $mapUrl ?? route('public.ajax.projects.map-all'),
     'perPages' => RealEstateHelper::getProjectsPerPageList(),
     'itemLayout' => request()->query('layout', 'grid'),
-    'layout' => theme_option('real_estate_project_listing_layout', 'top-map'),
+    'layout' => 'without-map',
     'filterViewPath' => Theme::getThemeNamespace('views.real-estate.partials.filters.project-search-box'),
     'itemsViewPath' => Theme::getThemeNamespace('views.real-estate.projects.index'),
 ])
