@@ -79,7 +79,6 @@ class Property extends BaseModel
         'private_notes' => SafeContent::class,
         'expire_date' => 'datetime',
         'images' => 'json',
-        'price' => 'float',
         'square' => 'float',
         'number_bedroom' => 'float',
         'number_bathroom' => 'float',
@@ -245,13 +244,17 @@ class Property extends BaseModel
                 return $this->price_formatted;
             }
 
+            if (!is_numeric(str_replace([',', ' '], '', $this->price))) {
+                return $this->price_formatted = $this->price;
+            }
+
             $currency = $this->currency;
 
             if (! $currency || ! $currency->getKey()) {
                 $currency = get_application_currency();
             }
 
-            return $this->price_formatted = format_price($this->price, $currency);
+            return $this->price_formatted = format_price((float)str_replace([',', ' '], '', $this->price), $currency);
         });
     }
 

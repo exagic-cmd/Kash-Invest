@@ -84,8 +84,6 @@ class Project extends BaseModel
         'status' => ProjectStatusEnum::class,
         'date_finish' => 'date',
         'date_sell' => 'date',
-        'price_from' => 'float',
-        'price_to' => 'float',
         'number_block' => 'int',
         'number_float' => 'int',
         'number_flat' => 'int',
@@ -297,14 +295,26 @@ class Project extends BaseModel
                 return '';
             }
 
+            if (!$this->price_from && !$this->price_to) {
+                return trans('plugins/real-estate::real-estate.contact_for_price');
+            }
+
             $text = '';
 
             if ($this->price_from) {
-                $text .= format_price($this->price_from, $this->currency);
+                if (is_numeric(str_replace([',', ' '], '', $this->price_from))) {
+                    $text .= format_price((float)str_replace([',', ' '], '', $this->price_from), $this->currency);
+                } else {
+                    $text .= $this->price_from;
+                }
             }
 
             if ($this->price_to) {
-                $text .= sprintf(' - %s', format_price($this->price_to, $this->currency));
+                if (is_numeric(str_replace([',', ' '], '', $this->price_to))) {
+                    $text .= sprintf(' - %s', format_price((float)str_replace([',', ' '], '', $this->price_to), $this->currency));
+                } else {
+                    $text .= sprintf(' - %s', $this->price_to);
+                }
             }
 
             return $text;
@@ -318,7 +328,11 @@ class Project extends BaseModel
                 return null;
             }
 
-            return format_price($this->price_from, $this->currency ?: get_application_currency());
+            if (!is_numeric(str_replace([',', ' '], '', $this->price_from))) {
+                return $this->price_from;
+            }
+
+            return format_price((float)str_replace([',', ' '], '', $this->price_from), $this->currency ?: get_application_currency());
         });
     }
 
@@ -329,7 +343,11 @@ class Project extends BaseModel
                 return null;
             }
 
-            return format_price($this->price_to, $this->currency ?: get_application_currency());
+            if (!is_numeric(str_replace([',', ' '], '', $this->price_to))) {
+                return $this->price_to;
+            }
+
+            return format_price((float)str_replace([',', ' '], '', $this->price_to), $this->currency ?: get_application_currency());
         });
     }
 
