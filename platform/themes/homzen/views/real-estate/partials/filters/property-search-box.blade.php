@@ -69,4 +69,25 @@
             </div>
         </div>
     </div>
+
+    <style>.wd-search-form { display: none; }</style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.filter-advanced').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var parent = btn.closest('form') || btn.closest('.flat-tab-form');
+                    if (parent) {
+                        parent.querySelectorAll('.wd-search-form').forEach(function(form) {
+                            if (form.style.display === 'none' || !form.offsetHeight) {
+                                form.style.display = 'block';
+                            } else {
+                                form.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 @endif
