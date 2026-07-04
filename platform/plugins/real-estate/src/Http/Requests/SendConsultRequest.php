@@ -61,7 +61,12 @@ class SendConsultRequest extends Request
         $customFields = $this->getCustomFields();
 
         if ($customFields->isNotEmpty()) {
-            $rules['consult_custom_fields'] = ['required', 'array'];
+            // Only force the custom-fields group to be present when at least one
+            // custom field is actually required. An optional custom field (e.g. a
+            // hidden "Schedule a Tour") must not block submissions from forms that
+            // intentionally don't render custom fields at all.
+            $groupRequired = $customFields->contains(fn ($field) => $field->required);
+            $rules['consult_custom_fields'] = [$groupRequired ? 'required' : 'nullable', 'array'];
         }
 
         foreach ($customFields as $customField) {

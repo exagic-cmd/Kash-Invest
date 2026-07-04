@@ -2140,6 +2140,7 @@ $(() => {
                 data: new FormData($form[0]),
                 contentType: false,
                 processData: false,
+                dataType: 'json',
                 beforeSend: () => $button.addClass('btn-loading'),
                 success: ({error, message}) => {
                     if (!error) {

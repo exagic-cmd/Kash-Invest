@@ -6,9 +6,8 @@ $response = $kernel->handle(
     $request = Illuminate\Http\Request::capture()
 );
 
-// Mock the Captcha validation if active
 if (is_plugin_active('captcha')) {
-    \Botble\Captcha\Facades\Captcha::shouldReceive('verify')->andReturn(true);
+    \Botble\Captcha\Facades\Captcha::shouldReceive('isEnabled')->andReturn(false);
 }
 
 $controller = app(\Botble\RealEstate\Http\Controllers\Fronts\PublicController::class);

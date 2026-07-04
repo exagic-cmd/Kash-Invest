@@ -7,6 +7,9 @@ use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Events\CreatedContentEvent;
 use Botble\Base\Facades\BaseHelper;
 use Botble\DataSynchronize\Contracts\Importer\WithMapping;
+use Botble\DataSynchronize\DataTransferObjects\ChunkImportResponse;
+use Botble\DataSynchronize\DataTransferObjects\ChunkValidateResponse;
+use Botble\DataSynchronize\Exporter\ExampleExporter;
 use Botble\DataSynchronize\Importer\ImportColumn;
 use Botble\DataSynchronize\Importer\Importer;
 use Botble\Location\Models\City;
@@ -22,14 +25,102 @@ use Botble\RealEstate\Models\Feature;
 use Botble\RealEstate\Models\Investor;
 use Botble\RealEstate\Models\Project;
 use Botble\Slug\Facades\SlugHelper;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProjectImporter extends Importer implements WithMapping
 {
+    /**
+     * Header alias map: maps snake_cased kash.xlsx headers to internal column names.
+     * The base Importer calls headersToSnakeCase() on the Excel reader, so
+     * "Number of Storeys" becomes "number_of_storeys", "Price / sq ft from" becomes
+     * "price_/_sq_ft_from", etc. This map normalises those to DB field names.
+     *
+     * The standard Botble export format columns (e.g. "name", "price_from") pass
+     * through unchanged because they already match the keys on the right side.
+     */
+    protected static array $headerAliases = [
+        // Kash xlsx header (after snake_case) => internal column name
+        'number_of_storeys'                    => 'number_floor',
+        'total_number_of_suites'               => 'number_flat',
+        'developers'                           => 'investor',
+        'number_of_suites/floor'               => 'number_of_suites_per_floor',
+        'number_of_suites_per_floor'           => 'number_of_suites_per_floor',
+        'price_/_sq_ft_from'                   => 'price_per_sqft_from',
+        'price_per_sqft_from'                  => 'price_per_sqft_from',
+        'amenities'                            => 'features',
+        'floor_plans'                          => 'floor_plans',
+        'est._occupancy'                       => 'date_finish',
+        'est_occupancy'                        => 'date_finish',
+        'vip_launch'                           => 'date_sell',
+        'total_min._deposit'                   => 'total_min_deposit',
+        'total_min_deposit'                    => 'total_min_deposit',
+        'est._maint'                           => 'est_maint',
+        'est_maint'                            => 'est_maint',
+        'est._property_tax'                    => 'est_property_tax',
+        'est_property_tax'                     => 'est_property_tax',
+        'is_featured?'                         => 'is_featured',
+        'is_featured'                          => 'is_featured',
+        'project_stage'                        => 'status',
+        'price_from'                           => 'price_from',
+        'price_to'                             => 'price_to',
+        's.no.'                                => '_skip_',
+        'sno'                                  => '_skip_',
+        'type'                                 => '_skip_',
+        'number_bedroom'                       => '_skip_',
+        'number_bathroom'                      => '_skip_',
+        'square'                               => '_skip_',
+        'author'                               => 'author_id',
+        'auto_renew'                           => '_skip_',
+        'project'                              => '_skip_',
+        'expire_date'                          => '_skip_',
+        'never_expired'                        => '_skip_',
+        'period'                               => '_skip_',
+        'moderation_status'                    => '_skip_',
+        'price'                                => '_skip_',
+    ];
+
+    /**
+     * Canadian province abbreviation map for resolving short codes.
+     */
+    protected static array $stateAbbreviations = [
+        'AB' => 'Alberta',
+        'BC' => 'British Columbia',
+        'MB' => 'Manitoba',
+        'NB' => 'New Brunswick',
+        'NL' => 'Newfoundland and Labrador',
+        'NS' => 'Nova Scotia',
+        'NT' => 'Northwest Territories',
+        'NU' => 'Nunavut',
+        'ON' => 'Ontario',
+        'PE' => 'Prince Edward Island',
+        'QC' => 'Quebec',
+        'SK' => 'Saskatchewan',
+        'YT' => 'Yukon',
+    ];
+
+    /**
+     * Project stage mapping from kash.xlsx values to ProjectStatusEnum values.
+     */
+    protected static array $stageToStatus = [
+        'planning'       => 'selling',
+        'pre-con'        => 'pre_sale',
+        'pre_con'        => 'pre_sale',
+        'preconstruction'=> 'pre_sale',
+        'construction'   => 'building',
+        'complete'       => 'sold',
+        'completed'      => 'sold',
+        'selling'        => 'selling',
+        'sold'           => 'sold',
+        'building'       => 'building',
+        'not_available'  => 'not_available',
+    ];
+
     public function getLabel(): string
     {
         return trans('plugins/real-estate::project.projects');
@@ -37,104 +128,117 @@ class ProjectImporter extends Importer implements WithMapping
 
     public function columns(): array
     {
+        // Validation rules are kept minimal ('nullable' only) because raw Excel
+        // data arrives as mixed types: numbers where we need strings, comma-separated
+        // text where we need arrays, "Yes"/"No" where we need booleans, etc.
+        // All actual type conversion and data cleaning is handled in map().
         $columns = [
             ImportColumn::make('name')
-                ->rules(['required', 'string', 'max:255']),
+                ->rules(['required', 'max:255']),
             ImportColumn::make('description')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('content')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('images')
-                ->rules(['nullable', 'array']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('location')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('investor_id')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('number_block')
                 ->nullable()
-                ->rules(['nullable', 'integer', 'min:0']),
+                ->rules(['nullable']),
             ImportColumn::make('number_floor')
                 ->nullable()
-                ->rules(['nullable', 'integer', 'min:0']),
+                ->rules(['nullable']),
             ImportColumn::make('number_flat')
                 ->nullable()
-                ->rules(['nullable', 'integer', 'min:0']),
+                ->rules(['nullable']),
             ImportColumn::make('is_featured')
-                ->boolean()
-                ->rules(['nullable', 'boolean']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('date_finish')
-                ->rules(['nullable', 'date']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('date_sell')
-                ->rules(['nullable', 'date']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('price_from')
                 ->nullable()
-                ->rules(['nullable', 'numeric', 'min:0']),
+                ->rules(['nullable']),
             ImportColumn::make('price_to')
                 ->nullable()
-                ->rules(['nullable', 'numeric', 'min:0']),
+                ->rules(['nullable']),
             ImportColumn::make('currency')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('city')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('country')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('state')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('author_id')
-                ->rules(['nullable', 'integer']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('author_type')
-                ->rules(['nullable', 'string']),
+                ->nullable()
+                ->rules(['nullable']),
             ImportColumn::make('longitude')
                 ->nullable()
-                ->rules(['nullable', 'numeric']),
+                ->rules(['nullable']),
             ImportColumn::make('latitude')
                 ->nullable()
-                ->rules(['nullable', 'numeric']),
+                ->rules(['nullable']),
         ];
 
         if (RealEstateHelper::isEnabledZipCode()) {
             $columns[] = ImportColumn::make('zip_code')
-                ->rules(['nullable', ...BaseHelper::getZipcodeValidationRule(true)]);
+                ->nullable()
+                ->rules(['nullable']);
         }
 
         return [
             ...$columns,
-            ImportColumn::make('status')
-                ->rules(['nullable', 'string', Rule::in(ProjectStatusEnum::values())]),
-            ImportColumn::make('categories')
-                ->rules(['nullable', 'array']),
-            ImportColumn::make('features')
-                ->rules(['nullable', 'array']),
-            ImportColumn::make('facilities')
-                ->rules(['nullable', 'array']),
-            ImportColumn::make('custom_fields')
-                ->rules(['nullable', 'array']),
-            ImportColumn::make('unique_id')
-                ->rules(['nullable', 'string']),
-            ImportColumn::make('video_url')
-                ->rules(['nullable', 'url']),
-            ImportColumn::make('video_thumbnail')
-                ->rules(['nullable', 'string']),
-            ImportColumn::make('private_notes')->nullable()->rules(['nullable', 'string']),
-            ImportColumn::make('suites_starting_floor')->nullable()->rules(['nullable', 'integer', 'min:0']),
-            ImportColumn::make('number_of_suites_per_floor')->nullable()->rules(['nullable', 'integer', 'min:0']),
-            ImportColumn::make('suite_size_from')->nullable()->rules(['nullable', 'numeric', 'min:0']),
-            ImportColumn::make('suite_size_to')->nullable()->rules(['nullable', 'numeric', 'min:0']),
-            ImportColumn::make('price_per_sqft_from')->nullable()->rules(['nullable', 'numeric', 'min:0']),
-            ImportColumn::make('parking_price')->nullable()->rules(['nullable', 'numeric', 'min:0']),
-            ImportColumn::make('locker_price')->nullable()->rules(['nullable', 'numeric', 'min:0']),
-            ImportColumn::make('total_min_deposit')->rules(['nullable', 'string']),
-            ImportColumn::make('deposit_notes')->rules(['nullable', 'string']),
-            ImportColumn::make('development_levies')->rules(['nullable', 'string']),
-            ImportColumn::make('assignment_policy')->rules(['nullable', 'string']),
-            ImportColumn::make('est_maint')->rules(['nullable', 'string']),
-            ImportColumn::make('locker_maint')->rules(['nullable', 'string']),
-            ImportColumn::make('parking_maint')->rules(['nullable', 'string']),
-            ImportColumn::make('est_property_tax')->rules(['nullable', 'string']),
-            ImportColumn::make('maintenance_notes')->rules(['nullable', 'string']),
-            ImportColumn::make('neighbour')->rules(['nullable', 'string']),
-            ImportColumn::make('intersection')->rules(['nullable', 'string']),
-            ImportColumn::make('architects')->rules(['nullable', 'string']),
+            ImportColumn::make('status')->nullable()->rules(['nullable']),
+            ImportColumn::make('categories')->nullable()->rules(['nullable']),
+            ImportColumn::make('features')->nullable()->rules(['nullable']),
+            ImportColumn::make('facilities')->nullable()->rules(['nullable']),
+            ImportColumn::make('custom_fields')->nullable()->rules(['nullable']),
+            ImportColumn::make('unique_id')->nullable()->rules(['nullable']),
+            ImportColumn::make('video_url')->nullable()->rules(['nullable']),
+            ImportColumn::make('video_thumbnail')->nullable()->rules(['nullable']),
+            ImportColumn::make('private_notes')->nullable()->rules(['nullable']),
+            ImportColumn::make('suites_starting_floor')->nullable()->rules(['nullable']),
+            ImportColumn::make('number_of_suites_per_floor')->nullable()->rules(['nullable']),
+            ImportColumn::make('suite_size_from')->nullable()->rules(['nullable']),
+            ImportColumn::make('suite_size_to')->nullable()->rules(['nullable']),
+            ImportColumn::make('price_per_sqft_from')->nullable()->rules(['nullable']),
+            ImportColumn::make('parking_price')->nullable()->rules(['nullable']),
+            ImportColumn::make('locker_price')->nullable()->rules(['nullable']),
+            ImportColumn::make('total_min_deposit')->nullable()->rules(['nullable']),
+            ImportColumn::make('deposit_notes')->nullable()->rules(['nullable']),
+            ImportColumn::make('development_levies')->nullable()->rules(['nullable']),
+            ImportColumn::make('assignment_policy')->nullable()->rules(['nullable']),
+            ImportColumn::make('est_maint')->nullable()->rules(['nullable']),
+            ImportColumn::make('locker_maint')->nullable()->rules(['nullable']),
+            ImportColumn::make('parking_maint')->nullable()->rules(['nullable']),
+            ImportColumn::make('est_property_tax')->nullable()->rules(['nullable']),
+            ImportColumn::make('maintenance_notes')->nullable()->rules(['nullable']),
+            ImportColumn::make('neighbour')->nullable()->rules(['nullable']),
+            ImportColumn::make('intersection')->nullable()->rules(['nullable']),
+            ImportColumn::make('architects')->nullable()->rules(['nullable']),
+            // Kash-specific columns accepted but handled in map()
+            ImportColumn::make('investor')->nullable()->rules(['nullable']),
+            ImportColumn::make('floor_plans')->nullable()->rules(['nullable']),
         ];
     }
 
@@ -145,7 +249,16 @@ class ProjectImporter extends Importer implements WithMapping
 
     public function chunkSize(): int
     {
-        return 10;
+        return 50;
+    }
+
+    /**
+     * Allow extra columns from kash.xlsx that are not defined in columns()
+     * to be passed through to transformRows so they can be remapped.
+     */
+    public function mergeWithUndefinedColumns(): bool
+    {
+        return true;
     }
 
     public function getValidateUrl(): string
@@ -168,6 +281,191 @@ class ProjectImporter extends Importer implements WithMapping
         return Auth::user()->hasPermission('project.export')
             ? route('tools.data-synchronize.export.projects.store')
             : null;
+    }
+
+    /**
+     * Override transformRows to apply header alias mapping before the standard
+     * column matching runs. This lets us accept both the standard Botble export
+     * format AND the Kash xlsx format from a single importer.
+     *
+     * NOTE: we intentionally do NOT call parent::transformRows(). The parent
+     * captures $row by value inside its column-pull closure, so the "leftover"
+     * row it spreads after map() still contains EVERY original column — which
+     * silently overwrites all values computed in map() (dates, features,
+     * images, status, ...). This implementation pulls defined columns out of
+     * the row properly before merging real leftovers.
+     */
+    public function transformRows(array $rows): array
+    {
+        $columns = $this->getColumns();
+
+        return array_map(function ($row) use ($columns) {
+            // Remap kash.xlsx headers to internal column names
+            $remapped = [];
+            foreach ($row as $key => $value) {
+                $normalised = strtolower(trim((string) $key));
+                $target = self::$headerAliases[$normalised] ?? $key;
+
+                // Skip columns explicitly marked for exclusion
+                if ($target === '_skip_') {
+                    continue;
+                }
+
+                // If the target already exists in the remapped array (e.g.
+                // the standard column was already set), prefer non-empty values
+                if (array_key_exists($target, $remapped) && ! empty($remapped[$target])) {
+                    continue;
+                }
+
+                $remapped[$target] = $value;
+            }
+
+            // Pull defined columns out of the row (dot-safe: plain unset, not Arr::pull)
+            $formatted = [];
+            foreach ($columns as $column) {
+                $heading = $column->getHeading();
+                $value = array_key_exists($heading, $remapped) ? $remapped[$heading] : null;
+                unset($remapped[$heading]);
+
+                $formatted[$column->getName()] = match (true) {
+                    $column->isNullable() && empty($value) => null,
+                    $column->isBoolean() && is_string($value) => $value === $column->getTrueValue() ? 1 : 0,
+                    default => $value,
+                };
+            }
+
+            // Real leftovers (undefined columns) first, mapped values win
+            return [
+                ...($this->mergeWithUndefinedColumns() ? $remapped : []),
+                ...$this->map($formatted),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * Windows-safe override of the vendor validate().
+     *
+     * The vendor renames the uploaded file to a new random name on the final
+     * (empty) chunk and tells the frontend to import THAT name. On Windows the
+     * Excel reader keeps the file handle open, so the rename silently fails
+     * (the 'local' disk is configured with 'throw' => false) and the import
+     * phase then dies with "File not found". We keep the original filename for
+     * the whole run so both phases read the same, existing file. Cleanup is
+     * handled best-effort in import().
+     */
+    public function validate(string $fileName, int $offset = 0, int $limit = 100): ChunkValidateResponse
+    {
+        $rows = $this->transformRows($this->getRowsByOffset($fileName, $offset, $limit));
+
+        $total = request()->integer('total') ?: $this->getRows($fileName)->count();
+
+        $validator = Validator::make($rows, $this->getValidationRules());
+
+        $errors = [];
+        if ($validator->fails()) {
+            $errors = array_map(fn ($error) => $error[0], $validator->errors()->toArray());
+        }
+
+        return new ChunkValidateResponse(
+            offset: $offset,
+            count: count($rows),
+            total: $total,
+            fileName: $fileName,
+            errors: array_values($errors),
+        );
+    }
+
+    /**
+     * Windows-safe override of the vendor import(). Identical logic, except the
+     * temp-file cleanup on the final chunk is best-effort: we release any open
+     * reader handle first and swallow delete failures so a locked temp file
+     * can never abort a successful import.
+     */
+    public function import(string $fileName, int $offset = 0, int $limit = 100): ChunkImportResponse
+    {
+        $rows = $this->getRowsByOffset($fileName, $offset, $limit);
+        $count = count($rows);
+        $rows = $this->transformRows($rows);
+
+        $failureRows = $this->failures()->map(fn ($failure) => $failure['row'])->all();
+        $rowNumber = 0;
+        $rows = array_filter($rows, function () use (&$rowNumber, $failureRows) {
+            $rowNumber++;
+
+            return ! in_array($rowNumber, $failureRows);
+        });
+
+        $imported = $this->handle($rows);
+
+        if ($count === 0) {
+            // Let PHP release the OpenSpout file handle before deleting
+            gc_collect_cycles();
+
+            $storageFolder = config('packages.data-synchronize.data-synchronize.storage.path');
+            $path = "$storageFolder/$fileName";
+
+            try {
+                if ($this->filesystem()->exists($path)) {
+                    $this->filesystem()->delete($path);
+                }
+            } catch (\Throwable) {
+                // Temp file is locked; harmless — it will be overwritten later
+            }
+        }
+
+        return new ChunkImportResponse(
+            offset: $offset,
+            count: $count,
+            imported: $imported,
+            failures: $this->failures()->all()
+        );
+    }
+
+    /**
+     * Hide the large "examples" table on the import page — it just clutters the
+     * screen. Returning an empty set makes the vendor view skip that section
+     * entirely. The "Download sample" buttons still work because
+     * downloadExample() below reads from examples() directly.
+     */
+    public function getExamples(): array
+    {
+        return [];
+    }
+
+    /**
+     * Keep the downloadable CSV/Excel sample populated with real rows even
+     * though getExamples() is emptied to hide the on-page table.
+     */
+    public function downloadExample(string $format): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $columns = $this->getColumns();
+
+        return (new ExampleExporter($this->examples(), $columns, $this->getLabel()))
+            ->format($format)
+            ->acceptedColumns(array_map(fn (ImportColumn $column) => $column->getName(), $columns))
+            ->export();
+    }
+
+    /**
+     * Don't render the default full-width rules table; we surface the column
+     * rules in a modal instead (see the custom import view / getView()).
+     */
+    public function showRulesCheatSheet(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Use a custom import view that keeps the standard upload form but shows the
+     * column rules in a modal rather than a big table.
+     */
+    protected function getView(): string
+    {
+        if ($this->renderWithoutLayout) {
+            return 'packages/data-synchronize::partials.importer';
+        }
+
+        return 'plugins/real-estate::import.projects-import';
     }
 
     public function examples(): array
@@ -353,6 +651,7 @@ class ProjectImporter extends Importer implements WithMapping
             $categories = $this->parseIdsFromString($categoriesStr, Category::class);
         }
 
+        // Support both standard "features" and kash.xlsx "amenities" (remapped to features)
         if ($featuresStr = Arr::get($row, 'features')) {
             $features = $this->parseIdsFromString($featuresStr, Feature::class);
         }
@@ -362,8 +661,8 @@ class ProjectImporter extends Importer implements WithMapping
             foreach ($facilitiesArray as $facility) {
                 $facilityExplode = explode(':', trim($facility));
                 if (count($facilityExplode) === 2) {
-                    $facilityName = trim($facilityExplode[0]);
-                    $distance = trim($facilityExplode[1]);
+                    $facilityName = Str::limit(trim($facilityExplode[0]), 120, '');
+                    $distance = Str::limit(trim($facilityExplode[1]), 120, '');
                     $facilityModel = Facility::query()->firstOrCreate(['name' => $facilityName]);
                     if ($facilityModel) {
                         $facilities[$facilityModel->id] = $distance;
@@ -378,19 +677,49 @@ class ProjectImporter extends Importer implements WithMapping
                 $fieldExplode = explode(':', trim($field));
                 if (count($fieldExplode) === 2) {
                     $customFields[] = [
-                        'name' => trim($fieldExplode[0]),
-                        'value' => trim($fieldExplode[1]),
+                        'name' => Str::limit(trim($fieldExplode[0]), 120, ''),
+                        'value' => Str::limit(trim($fieldExplode[1]), 120, ''),
                     ];
                 }
             }
         }
 
+        // kash.xlsx "Floor Plans" holds a plain count, not repeater data. The
+        // floor_plans DB column is an array cast, so keep the count as a custom
+        // field instead and drop it from the row.
+        $floorPlans = Arr::get($row, 'floor_plans');
+        if ($floorPlans !== null && $floorPlans !== '' && ! is_array($floorPlans)) {
+            $customFields[] = [
+                'name' => 'Floor Plans',
+                'value' => Str::limit(trim((string) $floorPlans), 120, ''),
+            ];
+        }
+        unset($row['floor_plans']);
+
+        // Resolve investor: accept "investor" key (standard) or "developers" (kash, remapped)
         $investorId = null;
-        if ($investorName = Arr::get($row, 'investor')) {
+        $investorNameRaw = Arr::get($row, 'investor') ?: Arr::get($row, 'investor_id');
+
+        // kash.xlsx separates multiple developers with "||" — the project only
+        // supports a single investor, so use the first one listed
+        if (is_string($investorNameRaw) && str_contains($investorNameRaw, '||')) {
+            $investorNameRaw = Arr::first(array_filter(array_map('trim', explode('||', $investorNameRaw))));
+        }
+
+        $investorName = is_string($investorNameRaw) ? Str::limit(trim($investorNameRaw), 120, '') : $investorNameRaw;
+        
+        if ($investorName && ! is_numeric($investorName)) {
             $investor = Investor::query()->where('name', $investorName)->first();
-            if ($investor) {
-                $investorId = $investor->id;
+            if (! $investor) {
+                // Auto-create investor from developer name if it doesn't exist
+                $investor = Investor::query()->create(['name' => $investorName]);
+                if (SlugHelper::isSupportedModel(Investor::class) && $investor->wasRecentlyCreated) {
+                    SlugHelper::createSlug($investor);
+                }
             }
+            $investorId = $investor->id;
+        } elseif ($investorName && is_numeric($investorName)) {
+            $investorId = (int) $investorName;
         }
 
         $countryId = null;
@@ -399,24 +728,50 @@ class ProjectImporter extends Importer implements WithMapping
 
         if (is_plugin_active('location')) {
             if ($countryName = Arr::get($row, 'country')) {
-                $country = Country::query()->where('name', $countryName)->first();
-                if ($country) {
-                    $countryId = $country->id;
+                $countryName = Str::limit(trim((string) $countryName), 120, '');
+                $country = Country::query()->firstOrCreate(['name' => $countryName]);
+                if (SlugHelper::isSupportedModel(Country::class) && $country->wasRecentlyCreated) {
+                    SlugHelper::createSlug($country);
                 }
+                $countryId = $country->id;
             }
 
             if ($stateName = Arr::get($row, 'state')) {
-                $state = State::query()->where('name', $stateName)->first();
-                if ($state) {
-                    $stateId = $state->id;
+                $stateName = trim((string) $stateName);
+                // Resolve state abbreviation (e.g. "ON" -> "Ontario")
+                $fullStateName = self::$stateAbbreviations[strtoupper($stateName)] ?? $stateName;
+                $state = State::query()->where('name', $fullStateName)->first();
+                // Fallback: try the abbreviation as-is
+                if (! $state) {
+                    $state = State::query()->where('abbreviation', strtoupper($stateName))->first();
                 }
+                if (! $state) {
+                    $state = State::query()->where('name', $stateName)->first();
+                }
+                if (! $state) {
+                    // Auto-create missing state so location data isn't silently dropped
+                    $state = State::query()->create([
+                        'name' => Str::limit($fullStateName, 120, ''),
+                        'abbreviation' => strlen($stateName) <= 3 ? strtoupper($stateName) : null,
+                        'country_id' => $countryId,
+                    ]);
+                    if (SlugHelper::isSupportedModel(State::class)) {
+                        SlugHelper::createSlug($state);
+                    }
+                }
+                $stateId = $state->id;
             }
 
             if ($cityName = Arr::get($row, 'city')) {
-                $city = City::query()->where('name', $cityName)->first();
-                if ($city) {
-                    $cityId = $city->id;
+                $cityName = Str::limit(trim((string) $cityName), 120, '');
+                $city = City::query()->firstOrCreate(
+                    ['name' => $cityName],
+                    ['state_id' => $stateId, 'country_id' => $countryId]
+                );
+                if (SlugHelper::isSupportedModel(City::class) && $city->wasRecentlyCreated) {
+                    SlugHelper::createSlug($city);
                 }
+                $cityId = $city->id;
             }
         }
 
@@ -445,13 +800,25 @@ class ProjectImporter extends Importer implements WithMapping
             }
         }
 
+        // Resolve status from kash.xlsx "Project Stage" values
+        $status = Arr::get($row, 'status');
+        if ($status) {
+            $normalised = strtolower(trim(str_replace(['-', ' '], '_', $status)));
+            $status = self::$stageToStatus[$normalised] ?? $status;
+        }
+        if (! $status || ! in_array($status, ProjectStatusEnum::values())) {
+            $status = ProjectStatusEnum::SELLING;
+        }
+
         unset($row['country']);
         unset($row['state']);
         unset($row['city']);
         unset($row['currency']);
+        unset($row['investor']);
 
         return [
             ...$row,
+            'status' => $status,
             'categories' => $categories,
             'features' => $features,
             'facilities' => $facilities,
@@ -464,26 +831,40 @@ class ProjectImporter extends Importer implements WithMapping
             'images' => $images,
             'is_featured' => $this->convertToBoolean(Arr::get($row, 'is_featured')),
             'author_type' => $authorType,
-            'private_notes' => Arr::get($row, 'private_notes'),
-            'suites_starting_floor' => Arr::get($row, 'suites_starting_floor'),
-            'number_of_suites_per_floor' => Arr::get($row, 'number_of_suites_per_floor'),
-            'suite_size_from' => Arr::get($row, 'suite_size_from'),
-            'suite_size_to' => Arr::get($row, 'suite_size_to'),
-            'price_per_sqft_from' => Arr::get($row, 'price_per_sqft_from'),
-            'parking_price' => Arr::get($row, 'parking_price'),
-            'locker_price' => Arr::get($row, 'locker_price'),
-            'total_min_deposit' => Arr::get($row, 'total_min_deposit'),
-            'deposit_notes' => Arr::get($row, 'deposit_notes'),
-            'development_levies' => Arr::get($row, 'development_levies'),
-            'assignment_policy' => Arr::get($row, 'assignment_policy'),
-            'est_maint' => Arr::get($row, 'est_maint'),
-            'locker_maint' => Arr::get($row, 'locker_maint'),
-            'parking_maint' => Arr::get($row, 'parking_maint'),
-            'est_property_tax' => Arr::get($row, 'est_property_tax'),
-            'maintenance_notes' => Arr::get($row, 'maintenance_notes'),
-            'neighbour' => Arr::get($row, 'neighbour'),
-            'intersection' => Arr::get($row, 'intersection'),
-            'architects' => Arr::get($row, 'architects'),
+            // Normalise dates — kash.xlsx delivers "Q2 2025", "Summer 2018",
+            // "May, 2017", Excel serials, and native DateTime objects
+            'date_finish' => $this->normalizeDate(Arr::get($row, 'date_finish')),
+            'date_sell' => $this->normalizeDate(Arr::get($row, 'date_sell')),
+            // Guard varchar column limits
+            'description' => $this->limitString(Arr::get($row, 'description'), 400),
+            'location' => $this->limitString(Arr::get($row, 'location'), 255),
+            // Cast all text fields to string — Excel may deliver them as numbers
+            'price_from' => $this->castToString(Arr::get($row, 'price_from')),
+            'price_to' => $this->castToString(Arr::get($row, 'price_to')),
+            'private_notes' => $this->castToString(Arr::get($row, 'private_notes')),
+            // Numeric columns: junk like "n/a" or "TBA" becomes null instead of 0
+            'number_block' => $this->castToNumber(Arr::get($row, 'number_block')),
+            'number_floor' => $this->castToNumber(Arr::get($row, 'number_floor')),
+            'number_flat' => $this->castToNumber(Arr::get($row, 'number_flat')),
+            'suites_starting_floor' => $this->castToNumber(Arr::get($row, 'suites_starting_floor')),
+            'number_of_suites_per_floor' => $this->castToNumber(Arr::get($row, 'number_of_suites_per_floor')),
+            'suite_size_from' => $this->castToNumber(Arr::get($row, 'suite_size_from')),
+            'suite_size_to' => $this->castToNumber(Arr::get($row, 'suite_size_to')),
+            'price_per_sqft_from' => $this->castToNumber(Arr::get($row, 'price_per_sqft_from')),
+            'parking_price' => $this->castToNumber(Arr::get($row, 'parking_price')),
+            'locker_price' => $this->castToNumber(Arr::get($row, 'locker_price')),
+            'total_min_deposit' => $this->castToString(Arr::get($row, 'total_min_deposit')),
+            'deposit_notes' => $this->castToString(Arr::get($row, 'deposit_notes')),
+            'development_levies' => $this->limitString(Arr::get($row, 'development_levies'), 255),
+            'assignment_policy' => $this->limitString(Arr::get($row, 'assignment_policy'), 255),
+            'est_maint' => $this->limitString(Arr::get($row, 'est_maint'), 255),
+            'locker_maint' => $this->limitString(Arr::get($row, 'locker_maint'), 255),
+            'parking_maint' => $this->limitString(Arr::get($row, 'parking_maint'), 255),
+            'est_property_tax' => $this->limitString(Arr::get($row, 'est_property_tax'), 255),
+            'maintenance_notes' => $this->castToString(Arr::get($row, 'maintenance_notes')),
+            'neighbour' => $this->limitString(Arr::get($row, 'neighbour'), 255),
+            'intersection' => $this->limitString(Arr::get($row, 'intersection'), 255),
+            'architects' => $this->limitString(Arr::get($row, 'architects'), 255),
         ];
     }
 
@@ -492,6 +873,18 @@ class ProjectImporter extends Importer implements WithMapping
         $count = 0;
 
         foreach ($data as $row) {
+            // Skip rows without a name
+            if (empty(Arr::get($row, 'name'))) {
+                continue;
+            }
+
+            // Skip rows without any price (per user directive)
+            $priceFrom = Arr::get($row, 'price_from');
+            $priceTo = Arr::get($row, 'price_to');
+            if (empty($priceFrom) && empty($priceTo)) {
+                continue;
+            }
+
             $uniqueId = Arr::get($row, 'unique_id');
             $project = null;
 
@@ -504,6 +897,12 @@ class ProjectImporter extends Importer implements WithMapping
             }
 
             $projectData = Arr::except($row, ['categories', 'features', 'facilities', 'custom_fields', 'video_url', 'video_thumbnail']);
+
+            // Clean out any keys that aren't real fillable columns
+            $fillable = (new Project())->getFillable();
+            $extraKeys = ['country_id', 'state_id', 'city_id', 'currency_id', 'author_id', 'author_type', 'investor_id', 'status', 'is_featured', 'unique_id', 'views'];
+            $allowedKeys = array_merge($fillable, $extraKeys);
+            $projectData = Arr::only($projectData, $allowedKeys);
 
             $projectData['unique_id'] = $uniqueId ?: null;
 
@@ -521,6 +920,17 @@ class ProjectImporter extends Importer implements WithMapping
                 }
             }
 
+            // Make sure the referenced author actually exists — kash.xlsx hardcodes
+            // author ids that may not be present in this database
+            if (Arr::get($projectData, 'author_type') === User::class && Arr::get($projectData, 'author_id')) {
+                static $userExists = [];
+                $authorId = $projectData['author_id'];
+                $userExists[$authorId] ??= User::query()->whereKey($authorId)->exists();
+                if (! $userExists[$authorId]) {
+                    $projectData['author_id'] = Auth::id() ?: User::query()->orderBy('id')->value('id');
+                }
+            }
+
             $project->forceFill($projectData);
 
             /**
@@ -528,9 +938,10 @@ class ProjectImporter extends Importer implements WithMapping
              */
             $project->save();
 
-            if ($project->wasRecentlyCreated) {
-                SlugHelper::createSlug($project);
-            }
+            // Capture before later relation saves so we know whether this row
+            // created a new project or updated an existing one. Used to avoid
+            // generating duplicate slugs on re-import (see is_slug_editable below).
+            $isNewProject = $project->wasRecentlyCreated;
 
             if ($categories = Arr::get($row, 'categories')) {
                 $project->categories()->sync($categories);
@@ -577,10 +988,18 @@ class ProjectImporter extends Importer implements WithMapping
             $request->merge([
                 ...$row,
                 'slug' => Str::slug($project->name),
-                'is_slug_editable' => true,
+                // Only let the slug listener create a slug for brand-new projects.
+                // The CreatedContentListener always INSERTs a new slug row with no
+                // dedup check, so firing it for existing projects on every re-import
+                // would pile up duplicate slugs (and shadow the real one -> 404s).
+                'is_slug_editable' => $isNewProject,
             ]);
 
             event(new CreatedContentEvent(PROJECT_MODULE_SCREEN_NAME, $request, $project));
+
+            if (class_exists(\Botble\LanguageAdvanced\Supports\LanguageAdvancedManager::class)) {
+                \Botble\LanguageAdvanced\Supports\LanguageAdvancedManager::save($project, $request);
+            }
         }
 
         return $count;
@@ -590,8 +1009,12 @@ class ProjectImporter extends Importer implements WithMapping
     {
         return str($items)
             ->explode(',')
+            ->map(fn ($item) => trim($item))
+            ->filter(fn ($item) => ! empty($item))
             ->map(function ($item) use ($modelClass) {
-                $model = $modelClass::query()->firstOrCreate(['name' => trim($item)]);
+                // Truncate to 120 chars to avoid DB column overflow
+                $name = Str::limit($item, 120, '');
+                $model = $modelClass::query()->firstOrCreate(['name' => $name]);
 
                 if (SlugHelper::isSupportedModel($modelClass) && $model->wasRecentlyCreated) {
                     SlugHelper::createSlug($model);
@@ -608,6 +1031,116 @@ class ProjectImporter extends Importer implements WithMapping
             return $value;
         }
 
-        return in_array(strtolower($value), ['yes', '1', 'true', 'on']);
+        if (empty($value)) {
+            return false;
+        }
+
+        return in_array(strtolower((string) $value), ['yes', '1', 'true', 'on']);
+    }
+
+    /**
+     * Safely cast any value to a string or null.
+     * Excel often delivers numeric cells as int/float even when the DB column is varchar.
+     */
+    protected function castToString(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * Cast to string and hard-truncate to fit a varchar column.
+     */
+    protected function limitString(mixed $value, int $max): ?string
+    {
+        $value = $this->castToString($value);
+
+        return $value === null ? null : Str::limit($value, $max, '');
+    }
+
+    /**
+     * Cast to a number for int/decimal columns, or null when the cell holds
+     * junk like "n/a" or "TBA". Strips thousand separators and currency signs.
+     */
+    protected function castToNumber(mixed $value): int|float|null
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return $value;
+        }
+
+        $clean = str_replace([',', '$', ' '], '', trim((string) $value));
+
+        if (! is_numeric($clean)) {
+            return null;
+        }
+
+        return str_contains($clean, '.') ? (float) $clean : (int) $clean;
+    }
+
+    /**
+     * Normalise the many date formats found in import files to Y-m-d (or null).
+     *
+     * Handles: native DateTime objects (OpenSpout returns these for date-formatted
+     * cells), Excel serial numbers, quarter strings ("Q2 2025"), season strings
+     * ("Summer 2018"), and anything Carbon can parse ("May, 2017", "2024-06-01").
+     */
+    protected function normalizeDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_numeric($value)) {
+            $serial = (float) $value;
+
+            // Excel serial date range ~1955-2119; anything else is not a date
+            if ($serial > 20000 && $serial < 80000) {
+                return Carbon::create(1899, 12, 30)->addDays((int) $serial)->format('Y-m-d');
+            }
+
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        // "Q2 2025" => first day of that quarter
+        if (preg_match('/^Q([1-4])[\s,]*(\d{4})$/i', $value, $matches)) {
+            return Carbon::create((int) $matches[2], ((int) $matches[1] - 1) * 3 + 1, 1)->format('Y-m-d');
+        }
+
+        // "Summer 2018", "Fall 2024" => first month of that season
+        if (preg_match('/^(spring|summer|fall|autumn|winter)[\s,]*(\d{4})$/i', $value, $matches)) {
+            $month = match (strtolower($matches[1])) {
+                'spring' => 4,
+                'summer' => 7,
+                'fall', 'autumn' => 10,
+                'winter' => 1,
+            };
+
+            return Carbon::create((int) $matches[2], $month, 1)->format('Y-m-d');
+        }
+
+        // "May, 2017", "Nov 2018" => first day of that month. Handled explicitly
+        // because Carbon::parse('May, 2017') misreads "2017" as a time of day.
+        if (preg_match('/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[.,\s]+(\d{4})$/i', $value, $matches)) {
+            return Carbon::parse('1 ' . $matches[1] . ' ' . $matches[2])->format('Y-m-d');
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

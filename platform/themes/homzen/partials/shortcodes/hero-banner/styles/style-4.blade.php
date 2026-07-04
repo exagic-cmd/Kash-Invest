@@ -40,7 +40,7 @@
     @if(is_plugin_active('real-estate') && $shortcode->search_box_enabled)
         <div class="container">
             <div class="wrap-filter-search">
-                @include(Theme::getThemeNamespace('views.real-estate.partials.search-box'), ['style' => 4, 'centeredTabs' => true])
+                @include(Theme::getThemeNamespace('views.real-estate.partials.search-box'), ['style' => 4, 'centeredTabs' => true, 'showTabs' => false])
             </div>
 
             {{-- Interactive Dropdown Filter Pills --}}
@@ -246,6 +246,32 @@
 </script>
 
 <style>
+    /* Give the hero room below the header (was flush/cramped) and frame the
+       search on a soft background band so the white card reads intentionally. */
+    .hero-banner-4 {
+        background-color: #f7f7f7;
+        padding-top: 2.5rem;
+        padding-bottom: 1.25rem;
+    }
+    .hero-banner-4 .wrap-filter-search {
+        margin-top: 0;
+    }
+    /* The next section (.flat-section) ships with 100px top padding, which — on
+       top of the hero — left a big empty band. Trim it here (homepage only, since
+       this style block only loads with the hero). */
+    .flat-section.flat-recommended {
+        padding-top: 48px;
+    }
+    @media (max-width: 767px) {
+        .hero-banner-4 {
+            padding-top: 1.75rem;
+            padding-bottom: 1rem;
+        }
+        .flat-section.flat-recommended {
+            padding-top: 32px;
+        }
+    }
+
     .quick-filters-row {
         width: 100%;
     }

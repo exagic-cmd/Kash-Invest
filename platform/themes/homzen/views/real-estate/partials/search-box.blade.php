@@ -6,6 +6,7 @@
     $style ??= 1;
     $noLeftRound ??= false;
     $centeredTabs ??= false;
+    $showTabs ??= true;
 
     $projectsSearchEnabled = (bool) ($shortcode->projects_search_enabled ?? true);
 
@@ -36,7 +37,7 @@
 
 @if ($tabs->isNotEmpty())
     <div class="flat-tab flat-tab-form">
-        @if (count($tabs) > 1)
+        @if ($showTabs && count($tabs) > 1)
             <ul @class(['nav-tab-form', 'style-1' => $style === 1, 'style-2' => in_array($style, [2, 3]), 'style-3' => $style === 4, 'justify-content-center' => $centeredTabs]) role="tablist">
                 @foreach ($tabs as $key => $tab)
                     <li class="nav-tab-item" role="presentation">
@@ -115,4 +116,25 @@
             </div>
         </div>
     </div>
+
+    <style>.wd-search-form { display: none; }</style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.filter-advanced').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var parent = btn.closest('form') || btn.closest('.flat-tab-form');
+                    if (parent) {
+                        parent.querySelectorAll('.wd-search-form').forEach(function(form) {
+                            if (form.style.display === 'none' || !form.offsetHeight) {
+                                form.style.display = 'block';
+                            } else {
+                                form.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 @endif

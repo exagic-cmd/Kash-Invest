@@ -1,6 +1,20 @@
 @php
-    $images = $model->images && is_array($model->images) && count($model->images) > 0 ? $model->images : [null, null, null];
-    $imagesCount = is_array($model->images) ? count($model->images) : 0;
+    $validImages = [];
+    if ($model->images && is_array($model->images)) {
+        foreach ($model->images as $img) {
+            if (empty($img)) continue;
+            if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://')) {
+                $validImages[] = $img;
+            } else {
+                $path = public_path('storage/' . ltrim($img, '/'));
+                if (file_exists($path)) {
+                    $validImages[] = $img;
+                }
+            }
+        }
+    }
+    $images = count($validImages) > 0 ? $validImages : [null, null, null];
+    $imagesCount = count($validImages);
 @endphp
 <section class="flat-gallery-three-cols px-md-4 px-2 mt-4">
     <div class="gallery-grid-row">

@@ -24,7 +24,21 @@
     {{-- Compact 2-Column Image List --}}
     <div class="container-fluid p-2">
         @php
-            $images = $model->images && is_array($model->images) && count($model->images) > 0 ? $model->images : [null];
+            $validImages = [];
+            if ($model->images && is_array($model->images)) {
+                foreach ($model->images as $img) {
+                    if (empty($img)) continue;
+                    if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://')) {
+                        $validImages[] = $img;
+                    } else {
+                        $path = public_path('storage/' . ltrim($img, '/'));
+                        if (file_exists($path)) {
+                            $validImages[] = $img;
+                        }
+                    }
+                }
+            }
+            $images = count($validImages) > 0 ? $validImages : [null];
         @endphp
         <div class="row row-cols-1 row-cols-md-2 g-2">
             @foreach ($images as $image)
