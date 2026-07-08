@@ -64,9 +64,7 @@
             @if ($model->neighbour)
                 <div class="mb-2"><strong>{{ __('Neighbourhood') }}:</strong> {{ $model->neighbour }}</div>
             @endif
-            @if ($model->unique_id)
-                <div class="mb-2"><strong>{{ __('Project ID') }}:</strong> {{ $model->unique_id }}</div>
-            @endif
+            {{-- Project ID (unique_id) holds our internal source tag and is not shown publicly. --}}
             @if ($model->assignment_policy)
                 <div class="mb-2"><strong>{{ __('Assignment Policy') }}:</strong> {{ $model->assignment_policy }}</div>
             @endif
@@ -81,6 +79,27 @@
             @endif
         </div>
     </div>
+
+    {{-- Additional details captured from the data source (e.g. Buildify) that
+         don't have a dedicated column. Rendered in the same Zolo-style grid so
+         they read as more overview rows rather than a separate block. --}}
+    @if ($model->customFields->isNotEmpty())
+        <div class="row mb-4 style-zolo-overview" style="font-size: 0.95rem; line-height: 2.0; font-family: inherit;">
+            @foreach ($model->customFields as $customField)
+                @continue(! $customField->value)
+                <div class="col-md-6 col-12">
+                    <div class="mb-2">
+                        <strong>{{ __($customField->name) }}:</strong>
+                        @if (Str::startsWith($customField->value, ['http://', 'https://']))
+                            <a href="{{ $customField->value }}" target="_blank" rel="noopener noreferrer" class="text-dark text-break">{{ $customField->value }}</a>
+                        @else
+                            {!! BaseHelper::clean($customField->value) !!}
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
 
     @if ($model->deposit_notes || $model->maintenance_notes)
         <div class="row mb-4 style-zolo-notes" style="font-size: 0.95rem; line-height: 1.6; border-top: 1px solid #eaeaea; pt-3;">

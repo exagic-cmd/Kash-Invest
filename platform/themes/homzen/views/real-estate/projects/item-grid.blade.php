@@ -78,14 +78,11 @@
             </div>
 
             <div class="modern-meta mt-auto">
-                @if($project->unique_id)
-                    <span>ID: {{ $project->unique_id }}</span>
-                @endif
+                {{-- The unique_id carries our internal source tag (buildify-/excel-/manual-)
+                     and is intentionally not shown on the front end. --}}
                 @if($investor && $investor->exists)
-                    <span class="dot-separator">•</span>
                     <span>{{ $investor->name }}</span>
                 @elseif($author && $author->exists)
-                    <span class="dot-separator">•</span>
                     <span>{{ $author->name }}</span>
                 @endif
             </div>

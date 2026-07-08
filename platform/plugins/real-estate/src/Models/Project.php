@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 /**
  * @method static \Botble\RealEstate\QueryBuilders\ProjectBuilder<static> query()
@@ -110,8 +111,29 @@ class Project extends BaseModel
         'est_property_tax' => 'float',
     ];
 
+    /**
+     * unique_id prefixes that mark where a project came from. The API syncer and
+     * the Excel importer set their own prefix before saving; a brand-new project
+     * with no prefix is a manual admin creation and gets tagged here.
+     */
+    public const SOURCE_PREFIX_API = 'buildify-';
+
+    public const SOURCE_PREFIX_EXCEL = 'excel-';
+
+    public const SOURCE_PREFIX_MANUAL = 'manual-';
+
     protected static function booted(): void
     {
+        static::creating(function (Project $project): void {
+            // Only stamp a source tag if nothing set one yet — i.e. a manual
+            // admin creation. Buildify ("buildify-…") and Excel ("excel-…")
+            // already assigned their own unique_id before this fires, so they
+            // are left untouched.
+            if (blank($project->unique_id)) {
+                $project->unique_id = self::SOURCE_PREFIX_MANUAL . Str::lower(Str::random(8));
+            }
+        });
+
         static::deleting(function (Project $project): void {
             $project->categories()->detach();
             $project->customFields()->delete();
@@ -120,6 +142,24 @@ class Project extends BaseModel
             $project->facilities()->detach();
             $project->properties()->update(['project_id' => 0]);
             $project->metadata()->delete();
+        });
+    }
+
+    /**
+     * Where this project came from, derived from the unique_id prefix:
+     * 'api' (Buildify sync), 'excel' (spreadsheet import) or 'manual' (admin).
+     * Read it anywhere via $project->source.
+     */
+    protected function source(): Attribute
+    {
+        return Attribute::get(function (): string {
+            $uniqueId = (string) $this->unique_id;
+
+            return match (true) {
+                str_starts_with($uniqueId, self::SOURCE_PREFIX_API) => 'api',
+                str_starts_with($uniqueId, self::SOURCE_PREFIX_EXCEL) => 'excel',
+                default => 'manual',
+            };
         });
     }
 

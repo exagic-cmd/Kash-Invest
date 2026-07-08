@@ -26,7 +26,7 @@
                             @include(Theme::getThemeNamespace('partials.real-estate.card-image-slider'), [
                                 'item' => $project,
                                 'alt' => $project->name,
-                                'size' => 'thumb',
+                                'size' => 'medium-rectangle',
                             ])
                         </div>
                         @if($project->category)

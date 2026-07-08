@@ -24,7 +24,7 @@
                     {{-- First image (Left column) --}}
                     <div class="gallery-col col-main position-relative">
                         <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="gallery-img-link d-block">
-                            {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['fetchpriority' => 'high', 'loading' => 'eager'], lazy: false) }}
+                            {{ RvMedia::image($image, $model->name, null, attributes: ['fetchpriority' => 'high', 'loading' => 'eager'], lazy: false) }}
                         </a>
                         
                         {{-- Mobile View All Photos Button --}}
@@ -37,14 +37,14 @@
                     {{-- Second image (Center column) --}}
                     <div class="gallery-col col-second">
                         <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="gallery-img-link d-block">
-                            {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['loading' => 'eager'], lazy: false) }}
+                            {{ RvMedia::image($image, $model->name, null, attributes: ['loading' => 'eager'], lazy: false) }}
                         </a>
                     </div>
                 @elseif ($loop->iteration == 3)
                     {{-- Third image (Right column) with Overlay --}}
                     <div class="gallery-col col-third">
                         <a href="{{ $model->url . '?view-gallery=1' }}" class="gallery-img-link d-block position-relative">
-                            {{ RvMedia::image($image, $model->name, 'medium-rectangle', attributes: ['loading' => 'eager'], lazy: false) }}
+                            {{ RvMedia::image($image, $model->name, null, attributes: ['loading' => 'eager'], lazy: false) }}
                             
                             {{-- Dark Overlay --}}
                             <div class="gallery-overlay d-flex flex-column align-items-center justify-content-center">

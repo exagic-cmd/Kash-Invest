@@ -896,6 +896,13 @@ class ProjectImporter extends Importer implements WithMapping
                 $project = Project::query()->where('name', Arr::get($row, 'name'))->first();
             }
 
+            // If the project already exists (matched by unique_id or name), leave
+            // it completely untouched. Re-importing must never overwrite existing
+            // projects — only brand-new ones are created.
+            if ($project) {
+                continue;
+            }
+
             $projectData = Arr::except($row, ['categories', 'features', 'facilities', 'custom_fields', 'video_url', 'video_thumbnail']);
 
             // Clean out any keys that aren't real fillable columns
@@ -904,7 +911,7 @@ class ProjectImporter extends Importer implements WithMapping
             $allowedKeys = array_merge($fillable, $extraKeys);
             $projectData = Arr::only($projectData, $allowedKeys);
 
-            $projectData['unique_id'] = $uniqueId ?: null;
+            $projectData['unique_id'] = $uniqueId ?: 'excel-' . Str::slug(Arr::get($row, 'name')) . '-' . Str::random(5);
 
             if (! $project) {
                 $project = new Project();

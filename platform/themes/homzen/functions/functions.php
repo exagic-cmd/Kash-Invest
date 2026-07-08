@@ -233,7 +233,10 @@ app()->booted(function (): void {
 
     RvMedia::addSize('medium-square', 400, 400)
         ->addSize('medium-rectangle-column', 400, 560)
-        ->addSize('medium-rectangle', 400, 260);
+        // 800x520 (was 400x260 — same 20:13 ratio, 2x resolution). Cards, the
+        // homepage projects section, gallery grid and blog all render this size
+        // at display widths well above 400px, so 400px looked upscaled/blurry.
+        ->addSize('medium-rectangle', 800, 520);
 
     add_filter('theme_preloader_versions', function (array $versions): array {
         return [

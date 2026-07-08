@@ -2816,7 +2816,12 @@ body[dir="rtl"] {
     border: 1px solid #e4e4e4 !important;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.04) !important;
     overflow: hidden !important;
-    
+    // Fill the full height of the grid column so every card in a row is equal
+    // height regardless of how many spec lines (floors/flats) it has. The inner
+    // content is a flex column with `.modern-meta.mt-auto`, so the ID/developer
+    // line stays pinned to the bottom and the difference becomes even spacing.
+    height: 100% !important;
+
     .archive-top {
         display: flex;
         flex-direction: column;
@@ -2969,6 +2974,12 @@ body[dir="rtl"] {
             display: flex;
             align-items: center;
             gap: 8px;
+            // Keep the ID/developer line directly under the content instead of
+            // being pushed to the very bottom of the (equalised) card — that push
+            // is what opens a big empty gap on cards with fewer detail lines. Any
+            // leftover height now sits quietly at the card's bottom edge.
+            margin-top: 0 !important;
+            padding-top: 6px;
 
             .dot-separator {
                 color: #c4c4c4;
@@ -3750,7 +3761,9 @@ h6, .h6 {
         display: grid;
         grid-template-columns: 180px 1fr 1fr 1fr;
         gap: 16px;
-        align-items: start;
+        // Stretch every column to the tallest so all cards are equal height
+        // regardless of how many detail lines each project has.
+        align-items: stretch;
         
         @media (max-width: 991px) {
             grid-template-columns: 1fr 1fr;
@@ -3845,7 +3858,9 @@ h6, .h6 {
     }
     
     .card-image-wrapper {
-        height: 130px;
+        // Taller, proportional image so the (roughly 16:9) building photos
+        // aren't cropped into a thin strip. Scales with the card width.
+        aspect-ratio: 16 / 9;
         background-color: #f5f5f5;
         position: relative;
         overflow: hidden;
@@ -3886,6 +3901,9 @@ h6, .h6 {
     
     .card-content-wrapper {
         padding: 10px 12px;
+        // Grow to fill the equalised card height so the Request Info button
+        // stays pinned to the bottom and aligns across all cards.
+        flex: 1 0 auto;
     }
     
     .card-title {

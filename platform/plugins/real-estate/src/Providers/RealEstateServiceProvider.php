@@ -20,6 +20,7 @@ use Botble\Location\Facades\Location;
 use Botble\Location\Models\City;
 use Botble\Location\Models\State;
 use Botble\RealEstate\Commands\RenewPropertiesCommand;
+use Botble\RealEstate\Commands\SyncBuildifyProjectsCommand;
 use Botble\RealEstate\Facades\RealEstateHelper;
 use Botble\RealEstate\Forms\Fronts\Auth\ForgotPasswordForm;
 use Botble\RealEstate\Forms\Fronts\Auth\LoginForm;
@@ -196,7 +197,7 @@ class RealEstateServiceProvider extends ServiceProvider
         add_filter(IS_IN_ADMIN_FILTER, [$this, 'setInAdmin'], 128);
 
         $this->setNamespace('plugins/real-estate')
-            ->loadAndPublishConfigurations(['permissions', 'email', 'real-estate', 'general'])
+            ->loadAndPublishConfigurations(['permissions', 'email', 'real-estate', 'general', 'buildify'])
             ->loadMigrations()
             ->loadAndPublishViews()
             ->loadAndPublishTranslations()
@@ -803,6 +804,13 @@ class RealEstateServiceProvider extends ServiceProvider
             $schedule
                 ->command(RenewPropertiesCommand::class)
                 ->dailyAt('23:30');
+
+            if (config('plugins.real-estate.buildify.enabled')) {
+                $schedule
+                    ->command(SyncBuildifyProjectsCommand::class)
+                    ->dailyAt('02:00')
+                    ->withoutOverlapping();
+            }
         });
 
         if (is_plugin_active('captcha')) {
