@@ -7,6 +7,8 @@
 Thumbs.db
 /bower_components
 .env
+.env.*
+!.env.example
 .env.backup
 /.idea
 /.vagrant
@@ -32,7 +34,9 @@ bun.lockb
 
 public/mix-manifest.json
 
-public/themes
+public/themes/*
+!public/themes/homzen/
+!platform/themes/homzen/public/css/style.css
 public/docs
 resources/docs
 
