@@ -339,11 +339,17 @@ class Project extends BaseModel
                 return trans('plugins/real-estate::real-estate.contact_for_price');
             }
 
+            // Fall back to the site currency when the project has none (API-imported
+            // projects don't carry a currency_id), so the symbol always shows.
+            // Note: $this->currency uses withDefault(), so it's a truthy empty model
+            // when currency_id is null — check currency_id explicitly, not `?:`.
+            $currency = $this->currency_id ? $this->currency : get_application_currency();
+
             $text = '';
 
             if ($this->price_from) {
                 if (is_numeric(str_replace([',', ' '], '', $this->price_from))) {
-                    $text .= format_price((float)str_replace([',', ' '], '', $this->price_from), $this->currency);
+                    $text .= format_price((float)str_replace([',', ' '], '', $this->price_from), $currency);
                 } else {
                     $text .= $this->price_from;
                 }
@@ -351,7 +357,7 @@ class Project extends BaseModel
 
             if ($this->price_to) {
                 if (is_numeric(str_replace([',', ' '], '', $this->price_to))) {
-                    $text .= sprintf(' - %s', format_price((float)str_replace([',', ' '], '', $this->price_to), $this->currency));
+                    $text .= sprintf(' - %s', format_price((float)str_replace([',', ' '], '', $this->price_to), $currency));
                 } else {
                     $text .= sprintf(' - %s', $this->price_to);
                 }
@@ -372,7 +378,7 @@ class Project extends BaseModel
                 return $this->price_from;
             }
 
-            return format_price((float)str_replace([',', ' '], '', $this->price_from), $this->currency ?: get_application_currency());
+            return format_price((float)str_replace([',', ' '], '', $this->price_from), $this->currency_id ? $this->currency : get_application_currency());
         });
     }
 
@@ -387,7 +393,7 @@ class Project extends BaseModel
                 return $this->price_to;
             }
 
-            return format_price((float)str_replace([',', ' '], '', $this->price_to), $this->currency ?: get_application_currency());
+            return format_price((float)str_replace([',', ' '], '', $this->price_to), $this->currency_id ? $this->currency : get_application_currency());
         });
     }
 
