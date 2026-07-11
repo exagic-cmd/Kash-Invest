@@ -11,6 +11,11 @@ return [
         'parent_flag' => 'plugins.real-estate',
     ],
     [
+        'name' => 'API Sync',
+        'flag' => 'real-estate.api-sync',
+        'parent_flag' => 'plugins.real-estate',
+    ],
+    [
         'name' => 'Properties',
         'flag' => 'property.index',
         'parent_flag' => 'plugins.real-estate',

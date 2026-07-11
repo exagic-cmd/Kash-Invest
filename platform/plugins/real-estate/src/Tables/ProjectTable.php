@@ -22,6 +22,7 @@ use Botble\Table\Columns\StatusColumn;
 use Botble\Table\HeaderActions\CreateHeaderAction;
 use Botble\Table\HeaderActions\HeaderAction;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class ProjectTable extends TableAbstract
 {
@@ -91,6 +92,27 @@ class ProjectTable extends TableAbstract
                     ->getValueUsing(function (FormattedColumn $column) {
                         return BaseHelper::clean($column->getItem()->unique_id ?: '&mdash;');
                     }),
+                FormattedColumn::make('source')
+                    ->title(trans('plugins/real-estate::project.source'))
+                    ->width(120)
+                    ->orderable(false)
+                    ->searchable(false)
+                    ->getValueUsing(function (FormattedColumn $column) {
+                        $source = $column->getItem()->source;
+
+                        if (! $source) {
+                            return '&mdash;';
+                        }
+
+                        $color = match ($source) {
+                            'buildify' => 'info',
+                            'excel' => 'success',
+                            'manual' => 'secondary',
+                            default => 'primary',
+                        };
+
+                        return BaseHelper::renderBadge(Str::headline($source), $color);
+                    }),
                 CreatedAtColumn::make(),
                 StatusColumn::make(),
             ])
@@ -106,6 +128,10 @@ class ProjectTable extends TableAbstract
                     ->title(trans('plugins/real-estate::project.form.investor'))
                     ->searchable()
                     ->choices(fn () => Investor::query()->pluck('name', 'id')->all()),
+                SelectBulkChange::make()
+                    ->name('source')
+                    ->title(trans('plugins/real-estate::project.source'))
+                    ->choices(fn () => $this->sourceChoices()),
             ])
             ->queryUsing(function (Builder $query) {
                 return $query
@@ -117,6 +143,7 @@ class ProjectTable extends TableAbstract
                         'status',
                         'created_at',
                         'unique_id',
+                        'source',
                         'location',
                         'zip_code',
                     ])
@@ -151,5 +178,24 @@ class ProjectTable extends TableAbstract
                         })
                 );
             });
+    }
+
+    /**
+     * Filter options built from the distinct `source` values actually present in
+     * the database. New ingestion sources (e.g. another API) appear here on their
+     * own — no code change needed — as long as they stamp their own `source`.
+     *
+     * @return array<string, string>
+     */
+    protected function sourceChoices(): array
+    {
+        return Project::query()
+            ->whereNotNull('source')
+            ->where('source', '!=', '')
+            ->distinct()
+            ->orderBy('source')
+            ->pluck('source')
+            ->mapWithKeys(fn ($source) => [$source => Str::headline($source)])
+            ->all();
     }
 }

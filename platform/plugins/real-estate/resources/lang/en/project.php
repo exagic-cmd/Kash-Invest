@@ -64,6 +64,7 @@ return [
     'export_projects' => 'Export Projects',
     'views' => 'Views',
     'unique_id' => 'Unique ID',
+    'source' => 'Source',
     'private_notes' => 'Private notes',
     'private_notes_helper' => 'Private notes are only visible to admin. It won\'t be shown on the frontend.',
     'export' => [

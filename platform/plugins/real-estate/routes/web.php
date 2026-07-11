@@ -17,6 +17,26 @@ Route::group(['namespace' => 'Botble\RealEstate\Http\Controllers', 'middleware' 
         'prefix' => BaseHelper::getAdminPrefix() . '/real-estate',
         'middleware' => 'auth',
     ], function (): void {
+        Route::group(['prefix' => 'api-sync', 'as' => 'real-estate.api-sync.'], function (): void {
+            Route::get('/', [
+                'as' => 'index',
+                'uses' => 'ProjectSyncController@index',
+                'permission' => 'real-estate.api-sync',
+            ]);
+
+            Route::post('run', [
+                'as' => 'run',
+                'uses' => 'ProjectSyncController@run',
+                'permission' => 'real-estate.api-sync',
+            ]);
+
+            Route::get('status', [
+                'as' => 'status',
+                'uses' => 'ProjectSyncController@status',
+                'permission' => 'real-estate.api-sync',
+            ]);
+        });
+
         Route::group(['prefix' => 'settings', 'as' => 'real-estate.settings.'], function (): void {
             Route::get('general', [
                 'as' => 'general',

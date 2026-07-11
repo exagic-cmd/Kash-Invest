@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'name' => 'API Sync',
+    'description' => 'Run your API syncs on demand and see what each run pulled.',
+    'run_now' => 'Run Sync Now',
+    'running' => 'Running…',
+    'enabled' => 'Enabled',
+    'disabled' => 'Disabled',
+    'schedule' => 'Schedule',
+    'daily_at' => 'Daily at :time',
+    'last_run' => 'Last run',
+    'never_run' => 'Never run yet',
+    'view_projects' => 'View :count projects',
+    'run_finished' => 'Sync finished.',
+    'unknown_source' => 'Unknown sync source.',
+    'province' => 'Province',
+    'version' => 'Version',
+    'history' => 'Sync History',
+    'result_summary' => ':created created, :updated updated, :failed failed',
+    'no_history' => 'No syncs have run yet.',
+    'columns' => [
+        'source' => 'Source',
+        'status' => 'Status',
+        'trigger' => 'Trigger',
+        'created' => 'Created',
+        'updated' => 'Updated',
+        'failed' => 'Failed',
+        'duration' => 'Duration',
+        'when' => 'When',
+    ],
+];

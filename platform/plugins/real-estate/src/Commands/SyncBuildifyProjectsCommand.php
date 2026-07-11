@@ -2,11 +2,13 @@
 
 namespace Botble\RealEstate\Commands;
 
+use Botble\RealEstate\Models\ProjectSyncLog;
 use Botble\RealEstate\Services\Buildify\BuildifyProjectSyncer;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand('cms:buildify:sync-projects', 'Sync projects from the Buildify API')]
 class SyncBuildifyProjectsCommand extends Command
@@ -31,6 +33,14 @@ class SyncBuildifyProjectsCommand extends Command
             return self::FAILURE;
         }
 
+        // Record this run so the admin "API Sync" page can show what it pulled.
+        $log = ProjectSyncLog::query()->create([
+            'source' => BuildifyProjectSyncer::SOURCE,
+            'status' => 'running',
+            'triggered_by' => $this->option('trigger') === 'cron' ? 'cron' : 'manual',
+            'started_at' => Carbon::now(),
+        ]);
+
         $this->components->info('Fetching projects from Buildify...');
 
         try {
@@ -44,6 +54,12 @@ class SyncBuildifyProjectsCommand extends Command
             Log::error('[Buildify Sync] Aborted: ' . $e->getMessage(), ['exception' => $e]);
             $this->components->error('Buildify sync failed: ' . $e->getMessage());
 
+            $log->update([
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+                'finished_at' => Carbon::now(),
+            ]);
+
             return self::FAILURE;
         }
 
@@ -54,6 +70,18 @@ class SyncBuildifyProjectsCommand extends Command
             $result['updated'],
             $result['failed'],
         ));
+
+        $log->update([
+            'status' => 'success',
+            'created' => $result['created'],
+            'updated' => $result['updated'],
+            'failed' => $result['failed'],
+            'total' => $result['created'] + $result['updated'] + $result['failed'],
+            'message' => $result['failed'] > 0
+                ? ($result['failed'] . ' listing(s) failed to import — see the application log.')
+                : null,
+            'finished_at' => Carbon::now(),
+        ]);
 
         if ($result['failed'] > 0) {
             $this->components->warn('Some listings failed to import; see the log for details.');
@@ -68,5 +96,16 @@ class SyncBuildifyProjectsCommand extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    protected function configure(): void
+    {
+        $this->addOption(
+            'trigger',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Who triggered the run: manual (admin/CLI) or cron (scheduler).',
+            'manual'
+        );
     }
 }

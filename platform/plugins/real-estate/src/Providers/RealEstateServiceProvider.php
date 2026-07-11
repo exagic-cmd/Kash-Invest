@@ -271,6 +271,18 @@ class RealEstateServiceProvider extends ServiceProvider
                             'permissions' => ['project.index'],
                         ]);
                 })
+                ->when(RealEstateHelper::isEnabledProjects(), function (DashboardMenuSupport $dashboardMenu): void {
+                    $dashboardMenu
+                        ->registerItem([
+                            'id' => 'cms-plugins-project-api-sync',
+                            'priority' => 2,
+                            'parent_id' => 'cms-plugins-real-estate',
+                            'name' => 'plugins/real-estate::api-sync.name',
+                            'icon' => 'ti ti-cloud-download',
+                            'url' => fn () => route('real-estate.api-sync.index'),
+                            'permissions' => ['real-estate.api-sync'],
+                        ]);
+                })
                 ->registerItem([
                     'id' => 'cms-plugins-re-feature',
                     'priority' => 2,
@@ -807,7 +819,7 @@ class RealEstateServiceProvider extends ServiceProvider
 
             if (config('plugins.real-estate.buildify.enabled')) {
                 $schedule
-                    ->command(SyncBuildifyProjectsCommand::class)
+                    ->command(SyncBuildifyProjectsCommand::class, ['--trigger=cron'])
                     ->dailyAt('02:00')
                     ->withoutOverlapping();
             }

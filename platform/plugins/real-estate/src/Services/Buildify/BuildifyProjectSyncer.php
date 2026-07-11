@@ -36,7 +36,8 @@ use Symfony\Component\Mime\MimeTypes;
  */
 class BuildifyProjectSyncer
 {
-    public const UNIQUE_ID_PREFIX = 'buildify-';
+    /** Value written to re_projects.source for every project this syncer owns. */
+    public const SOURCE = 'buildify';
 
     protected int $created = 0;
 
@@ -116,17 +117,19 @@ class BuildifyProjectSyncer
             return;
         }
 
-        $uniqueId = self::UNIQUE_ID_PREFIX . $externalId;
-
-        // Match ONLY on our own tag. Excel/manual projects are never matched here.
-        $project = Project::query()->where('unique_id', $uniqueId)->first();
+        // Match ONLY our own Buildify rows (source + raw id). Excel/manual
+        // projects have a different source, so they're never matched or touched.
+        $project = Project::query()
+            ->where('source', self::SOURCE)
+            ->where('unique_id', (string) $externalId)
+            ->first();
         $isNew = ! $project;
 
         if ($isNew) {
             $project = new Project();
         }
 
-        $data = $this->mapListing($listing, $uniqueId, $name, (string) $externalId, $isNew ? null : $project);
+        $data = $this->mapListing($listing, $name, (string) $externalId, $isNew ? null : $project);
 
         $this->resolveLocation($listing, $data);
 
@@ -191,13 +194,14 @@ class BuildifyProjectSyncer
      * @param  array<string, mixed>  $listing
      * @return array<string, mixed>
      */
-    protected function mapListing(array $listing, string $uniqueId, string $name, string $externalId, ?Project $existingProject = null): array
+    protected function mapListing(array $listing, string $name, string $externalId, ?Project $existingProject = null): array
     {
         $summary = (string) Arr::get($listing, 'summary');
 
         $data = [
             'name' => Str::limit($name, 250, ''),
-            'unique_id' => $uniqueId,
+            'unique_id' => $externalId,
+            'source' => self::SOURCE,
             'description' => $summary !== '' ? $this->fitToColumn($summary, 400) : null,
             'content' => $summary ?: null,
             'location' => $this->fitToColumn((string) Arr::get($listing, 'fullAddress'), 255) ?: null,

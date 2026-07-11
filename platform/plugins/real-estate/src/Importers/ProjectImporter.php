@@ -911,7 +911,8 @@ class ProjectImporter extends Importer implements WithMapping
             $allowedKeys = array_merge($fillable, $extraKeys);
             $projectData = Arr::only($projectData, $allowedKeys);
 
-            $projectData['unique_id'] = $uniqueId ?: 'excel-' . Str::slug(Arr::get($row, 'name')) . '-' . Str::random(5);
+            $projectData['unique_id'] = $uniqueId ?: Str::slug(Arr::get($row, 'name')) . '-' . Str::lower(Str::random(5));
+            $projectData['source'] = 'excel';
 
             if (! $project) {
                 $project = new Project();
