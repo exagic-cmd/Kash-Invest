@@ -3997,3 +3997,10 @@ h6, .h6 {
     }
 }
 
+
+/* Advanced-filter amenities: align checkbox to the first line of wrapping labels,
+   and stop the panel from hard-clipping to a fixed height (was truncating). */
+.form-search-amenities .amenities-item{align-items:flex-start}
+.form-search-amenities .amenities-item .tf-checkbox{margin-top:3px;flex-shrink:0}
+.wd-search-form,.wd-search-form.style-2{height:auto!important;max-height:75vh;overflow-y:auto}
+

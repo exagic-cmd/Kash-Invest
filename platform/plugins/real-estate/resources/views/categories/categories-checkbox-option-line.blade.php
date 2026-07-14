@@ -12,8 +12,10 @@
                     value="{{ $category->id ?? '' }}"
                     {{ $category->id == $value ? 'selected' : '' }}
                 >
-                    {!! Form::customCheckbox([[$name, $category->id, $category->name, in_array($category->id, $value)]]) !!}
-
+                    <label class="form-check">
+                        <input type="radio" class="form-check-input" name="{{ $name }}" value="{{ $category->id }}" {{ in_array($category->id, $value) ? 'checked' : '' }}>
+                        <span class="form-check-label">{{ $category->name }}</span>
+                    </label>
                     @include('plugins/real-estate::categories.categories-checkbox-option-line', [
                         'categories' => $category->child_cats,
                         'value' => $value,

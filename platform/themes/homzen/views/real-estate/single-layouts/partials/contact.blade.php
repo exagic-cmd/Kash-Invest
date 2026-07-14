@@ -62,8 +62,12 @@
                 ])
                 ->modify('content', 'textarea', [
                     'label' => false,
-                    'value' => __('I would like more information regarding the property at :name', ['name' => $model->name]),
-                    'attr' => ['class' => 'form-control', 'rows' => 4]
+                    'value' => '',
+                    'attr' => [
+                        'class' => 'form-control',
+                        'rows' => 4,
+                        'placeholder' => __('I would like more information regarding the property at :name', ['name' => $model->name]),
+                    ],
                 ])
                 ->modify('submit', 'submit', ['attr' => ['class' => 'tf-btn primary w-100 btn-send-message']])
                 ->add('type', 'hidden', ['attr' => ['value' => $isProject ? 'project' : 'property']])

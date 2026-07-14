@@ -4,102 +4,99 @@
 @endphp
 
 @if ($isProject)
-    <!-- Grouped Zolo-Style Specs List -->
-    <div class="row mb-4 style-zolo-overview" style="font-size: 0.95rem; line-height: 2.0; font-family: inherit;">
-        <div class="col-md-6 col-12">
-            @if ($model->categories->isNotEmpty())
-                <div class="mb-2"><strong>{{ __('Type') }}:</strong> 
-                    @foreach ($model->categories as $category)
-                        <a href="{{ $category->url }}" class="text-dark">{!! BaseHelper::clean($category->name) !!}</a>@if (!$loop->last),&nbsp;@endif
-                    @endforeach
-                </div>
-            @endif
-            @if ($model->number_floor)
-                <div class="mb-2"><strong>{{ __('Total Floors') }}:</strong> {{ number_format($model->number_floor) }}</div>
-            @endif
-            @if ($model->number_flat)
-                <div class="mb-2"><strong>{{ __('Total Flats') }}:</strong> {{ number_format($model->number_flat) }}</div>
-            @endif
-            @if ($model->suites_starting_floor)
-                <div class="mb-2"><strong>{{ __('Suites Starting Floor') }}:</strong> {{ $model->suites_starting_floor }}</div>
-            @endif
-            @if ($model->number_of_suites_per_floor)
-                <div class="mb-2"><strong>{{ __('Suites per Floor') }}:</strong> {{ $model->number_of_suites_per_floor }}</div>
-            @endif
-            @if ($model->suite_size_from || $model->suite_size_to)
-                <div class="mb-2"><strong>{{ __('Suite Size') }}:</strong> 
-                    @if($model->suite_size_from && $model->suite_size_to)
-                        {{ $model->suite_size_from }} - {{ $model->suite_size_to }} {{ setting('real_estate_square_unit', 'sqft') }}
-                    @elseif($model->suite_size_from)
-                        {{ __('From :size', ['size' => $model->suite_size_from]) }} {{ setting('real_estate_square_unit', 'sqft') }}
-                    @else
-                        {{ __('Up to :size', ['size' => $model->suite_size_to]) }} {{ setting('real_estate_square_unit', 'sqft') }}
-                    @endif
-                </div>
-            @endif
-            @if ($model->price_per_sqft_from)
-                <div class="mb-2"><strong>{{ __('Price per Sqft') }}:</strong> {{ __('From :price', ['price' => format_price($model->price_per_sqft_from)]) }}</div>
-            @endif
-            @if ($model->est_maint)
-                <div class="mb-2"><strong>{{ __('Est. Maintenance') }}:</strong> {{ is_numeric($model->est_maint) ? format_price($model->est_maint) . '/sqft' : $model->est_maint }}</div>
-            @endif
-            @if ($model->est_property_tax)
-                <div class="mb-2"><strong>{{ __('Est. Property Tax') }}:</strong> {{ is_numeric($model->est_property_tax) ? $model->est_property_tax . '%' : $model->est_property_tax }}</div>
-            @endif
-            @if ($model->parking_price)
-                <div class="mb-2"><strong>{{ __('Parking Price') }}:</strong> {{ is_numeric($model->parking_price) ? format_price($model->parking_price) : $model->parking_price }}</div>
-            @endif
-        </div>
-        
-        <div class="col-md-6 col-12">
-            @if (($model->investor->name ?? null))
-                <div class="mb-2"><strong>{{ __('Developer') }}:</strong> {{ $model->investor->name }}</div>
-            @endif
-            @if ($model->architects)
-                <div class="mb-2"><strong>{{ __('Architects') }}:</strong> {{ $model->architects }}</div>
-            @endif
-            @if ($model->intersection)
-                <div class="mb-2"><strong>{{ __('Intersection') }}:</strong> {{ $model->intersection }}</div>
-            @endif
-            @if ($model->neighbour)
-                <div class="mb-2"><strong>{{ __('Neighbourhood') }}:</strong> {{ $model->neighbour }}</div>
-            @endif
-            {{-- Project ID (unique_id) holds our internal source tag and is not shown publicly. --}}
-            @if ($model->assignment_policy)
-                <div class="mb-2"><strong>{{ __('Assignment Policy') }}:</strong> {{ $model->assignment_policy }}</div>
-            @endif
-            @if ($model->total_min_deposit)
-                <div class="mb-2"><strong>{{ __('Total Min. Deposit') }}:</strong> {{ is_numeric($model->total_min_deposit) ? ($model->total_min_deposit <= 1 ? ($model->total_min_deposit * 100) . '%' : $model->total_min_deposit . '%') : $model->total_min_deposit }}</div>
-            @endif
-            @if ($model->development_levies)
-                <div class="mb-2"><strong>{{ __('Development Levies') }}:</strong> {{ $model->development_levies }}</div>
-            @endif
-            @if ($model->date_finish)
-                <div class="mb-2"><strong>{{ __('Finish Date') }}:</strong> {{ $model->date_finish->format('M Y') }}</div>
-            @endif
-        </div>
-    </div>
+    {{-- Zolo-style specs — one continuous flowing 2-column grid. Every detail
+         (built-in fields AND the data-source custom fields) is a single `.col`,
+         so items pack together left-to-right with no empty gaps between them. --}}
+    <div class="row row-cols-1 row-cols-md-2 mb-4 style-zolo-overview" style="font-size: 0.95rem; line-height: 1.6; font-family: inherit;">
+        @if ($model->categories->isNotEmpty())
+            <div class="col mb-2"><strong>{{ __('Type') }}:</strong>
+                @foreach ($model->categories as $category)
+                    <a href="{{ $category->url }}" class="text-dark">{!! BaseHelper::clean($category->name) !!}</a>@if (!$loop->last),&nbsp;@endif
+                @endforeach
+            </div>
+        @endif
+        @if ($model->number_floor)
+            <div class="col mb-2"><strong>{{ __('Total Floors') }}:</strong> {{ number_format($model->number_floor) }}</div>
+        @endif
+        @if ($model->number_flat)
+            <div class="col mb-2"><strong>{{ __('Total Flats') }}:</strong> {{ number_format($model->number_flat) }}</div>
+        @endif
+        @if ($model->suites_starting_floor)
+            <div class="col mb-2"><strong>{{ __('Suites Starting Floor') }}:</strong> {{ $model->suites_starting_floor }}</div>
+        @endif
+        @if ($model->number_of_suites_per_floor)
+            <div class="col mb-2"><strong>{{ __('Suites per Floor') }}:</strong> {{ $model->number_of_suites_per_floor }}</div>
+        @endif
+        @if ($model->suite_size_from || $model->suite_size_to)
+            <div class="col mb-2"><strong>{{ __('Suite Size') }}:</strong>
+                @if($model->suite_size_from && $model->suite_size_to)
+                    {{ $model->suite_size_from }} - {{ $model->suite_size_to }} {{ setting('real_estate_square_unit', 'sqft') }}
+                @elseif($model->suite_size_from)
+                    {{ __('From :size', ['size' => $model->suite_size_from]) }} {{ setting('real_estate_square_unit', 'sqft') }}
+                @else
+                    {{ __('Up to :size', ['size' => $model->suite_size_to]) }} {{ setting('real_estate_square_unit', 'sqft') }}
+                @endif
+            </div>
+        @endif
+        @if ($model->price_per_sqft_from)
+            <div class="col mb-2"><strong>{{ __('Price per Sqft') }}:</strong> {{ __('From :price', ['price' => format_price($model->price_per_sqft_from)]) }}</div>
+        @endif
+        @if ($model->est_maint)
+            <div class="col mb-2"><strong>{{ __('Est. Maintenance') }}:</strong> {{ is_numeric($model->est_maint) ? format_price($model->est_maint) . '/sqft' : $model->est_maint }}</div>
+        @endif
+        @if ($model->est_property_tax)
+            <div class="col mb-2"><strong>{{ __('Est. Property Tax') }}:</strong> {{ is_numeric($model->est_property_tax) ? $model->est_property_tax . '%' : $model->est_property_tax }}</div>
+        @endif
+        @if ($model->parking_price)
+            <div class="col mb-2"><strong>{{ __('Parking Price') }}:</strong> {{ is_numeric($model->parking_price) ? format_price($model->parking_price) : $model->parking_price }}</div>
+        @endif
+        @if ($model->locker_price)
+            <div class="col mb-2"><strong>{{ __('Locker Price') }}:</strong> {{ is_numeric($model->locker_price) ? format_price($model->locker_price) : $model->locker_price }}</div>
+        @endif
+        @if ($model->parking_maint)
+            <div class="col mb-2"><strong>{{ __('Parking Maintenance') }}:</strong> {{ is_numeric($model->parking_maint) ? format_price($model->parking_maint) . '/mo' : $model->parking_maint }}</div>
+        @endif
+        @if ($model->locker_maint)
+            <div class="col mb-2"><strong>{{ __('Locker Maintenance') }}:</strong> {{ is_numeric($model->locker_maint) ? format_price($model->locker_maint) . '/mo' : $model->locker_maint }}</div>
+        @endif
+        @if (($model->investor->name ?? null))
+            <div class="col mb-2"><strong>{{ __('Developer') }}:</strong> {{ $model->investor->name }}</div>
+        @endif
+        @if ($model->architects)
+            <div class="col mb-2"><strong>{{ __('Architects') }}:</strong> {{ $model->architects }}</div>
+        @endif
+        @if ($model->intersection)
+            <div class="col mb-2"><strong>{{ __('Intersection') }}:</strong> {{ $model->intersection }}</div>
+        @endif
+        @if ($model->neighbour)
+            <div class="col mb-2"><strong>{{ __('Neighbourhood') }}:</strong> {{ $model->neighbour }}</div>
+        @endif
+        @if ($model->assignment_policy)
+            <div class="col mb-2"><strong>{{ __('Assignment Policy') }}:</strong> {{ $model->assignment_policy }}</div>
+        @endif
+        @if ($model->total_min_deposit)
+            <div class="col mb-2"><strong>{{ __('Total Min. Deposit') }}:</strong> {{ is_numeric($model->total_min_deposit) ? ($model->total_min_deposit <= 1 ? ($model->total_min_deposit * 100) . '%' : $model->total_min_deposit . '%') : $model->total_min_deposit }}</div>
+        @endif
+        @if ($model->development_levies)
+            <div class="col mb-2"><strong>{{ __('Development Levies') }}:</strong> {{ $model->development_levies }}</div>
+        @endif
+        @if ($model->date_finish)
+            <div class="col mb-2"><strong>{{ __('Finish Date') }}:</strong> {{ $model->date_finish->format('M Y') }}</div>
+        @endif
 
-    {{-- Additional details captured from the data source (e.g. Buildify) that
-         don't have a dedicated column. Rendered in the same Zolo-style grid so
-         they read as more overview rows rather than a separate block. --}}
-    @if ($model->customFields->isNotEmpty())
-        <div class="row mb-4 style-zolo-overview" style="font-size: 0.95rem; line-height: 2.0; font-family: inherit;">
-            @foreach ($model->customFields as $customField)
-                @continue(! $customField->value)
-                <div class="col-md-6 col-12">
-                    <div class="mb-2">
-                        <strong>{{ __($customField->name) }}:</strong>
-                        @if (Str::startsWith($customField->value, ['http://', 'https://']))
-                            <a href="{{ $customField->value }}" target="_blank" rel="noopener noreferrer" class="text-dark text-break">{{ $customField->value }}</a>
-                        @else
-                            {!! BaseHelper::clean($customField->value) !!}
-                        @endif
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @endif
+        {{-- Data-source extras (e.g. Buildify custom fields) flow in the same grid. --}}
+        @foreach ($model->customFields as $customField)
+            @continue(! $customField->value)
+            <div class="col mb-2">
+                <strong>{{ __($customField->name) }}:</strong>
+                @if (Str::startsWith($customField->value, ['http://', 'https://']))
+                    <a href="{{ $customField->value }}" target="_blank" rel="noopener noreferrer" class="text-dark text-break">{{ $customField->value }}</a>
+                @else
+                    {!! BaseHelper::clean($customField->value) !!}
+                @endif
+            </div>
+        @endforeach
+    </div>
 
     @if ($model->deposit_notes || $model->maintenance_notes)
         <div class="row mb-4 style-zolo-notes" style="font-size: 0.95rem; line-height: 1.6; border-top: 1px solid #eaeaea; pt-3;">

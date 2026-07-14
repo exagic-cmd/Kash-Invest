@@ -1,5 +1,13 @@
+@php
+    // Cache-bust with the asset's modification time so browsers always fetch the
+    // latest build (a frozen ?v= left stale JS cached and broke the tabs).
+    $mcCssPath = 'vendor/core/plugins/fob-mortgage-calculator/css/mortgage-calculator.css';
+    $mcJsPath = 'vendor/core/plugins/fob-mortgage-calculator/js/mortgage-calculator.js';
+    $mcCssVersion = @filemtime(public_path($mcCssPath)) ?: '1.1.1';
+    $mcJsVersion = @filemtime(public_path($mcJsPath)) ?: '1.1.1';
+@endphp
 @once
-<link rel="stylesheet" href="{{ asset('vendor/core/plugins/fob-mortgage-calculator/css/mortgage-calculator.css?v=1.1.0') }}">
+<link rel="stylesheet" href="{{ asset($mcCssPath . '?v=' . $mcCssVersion) }}">
 @endonce
 
 @php
@@ -344,6 +352,6 @@
 </script>
 
 @once
-<script src="{{ asset('vendor/core/plugins/fob-mortgage-calculator/js/mortgage-calculator.js?v=1.1.0') }}"></script>
+<script src="{{ asset($mcJsPath . '?v=' . $mcJsVersion) }}"></script>
 @endonce
 
