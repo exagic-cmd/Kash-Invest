@@ -71,21 +71,28 @@
                 @endif
             </div>
 
-            <div class="modern-address mb-2">
+            <div class="modern-address mb-1">
                 <a href="{{ $project->url }}" class="line-clamp-1" title="{{ $project->name }}">
                     {!! BaseHelper::clean($project->name) !!}
                 </a>
             </div>
 
-            <div class="modern-meta mt-auto">
-                {{-- The unique_id carries our internal source tag (buildify-/excel-/manual-)
-                     and is intentionally not shown on the front end. --}}
-                @if($investor && $investor->exists)
+            @php($cardLocation = $project->short_address ?: trim(implode(', ', array_filter([$project->city_name ?? null, $project->state_name ?? null]))))
+            @if ($cardLocation)
+                <div class="modern-location">
+                    <i class="icon icon-mapPin"></i>
+                    <span class="line-clamp-1">{{ $cardLocation }}</span>
+                </div>
+            @endif
+
+            {{-- Developer (investor) as the muted bottom line, Zolo-style. The
+                 unique_id source tag stays hidden; the "System Admin" author is
+                 not shown as it's just noise. --}}
+            @if($investor && $investor->exists)
+                <div class="modern-meta">
                     <span>{{ $investor->name }}</span>
-                @elseif($author && $author->exists)
-                    <span>{{ $author->name }}</span>
-                @endif
-            </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>

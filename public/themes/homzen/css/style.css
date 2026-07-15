@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* ---------------------------------------------------------
     * Name: Homzen
     * Version: 1.0.1
@@ -12858,4 +12859,71 @@ h6, .h6 {
   height: auto !important;
   max-height: 75vh;
   overflow-y: auto;
+}
+
+/* Compact, Zolo-style listing cards — tighten the loose vertical spacing/typography and prevent stretching. */
+.property-item.modern-card, .homeya-box.modern-card, .modern-card {
+  height: max-content !important;
+  align-self: flex-start !important;
+  margin-bottom: 20px !important;
+}
+
+.modern-card .archive-top {
+  height: auto !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.modern-card .modern-content {
+  padding: 10px 12px 10px !important;
+  flex-grow: 0 !important;
+  height: auto !important;
+}
+
+.modern-card .modern-content .price-row {
+  margin-bottom: 2px !important;
+}
+
+.modern-card .modern-content .modern-price {
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  font-weight: 700;
+}
+
+.modern-card .modern-content .modern-specs {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  margin-bottom: 2px !important;
+}
+
+.modern-card .modern-content .modern-specs .spec-item {
+  margin-right: 8px;
+}
+
+.modern-card .modern-content .modern-address {
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  font-weight: 600;
+  margin-bottom: 1px !important;
+}
+
+.modern-card .modern-content .modern-meta {
+  font-size: 12px !important;
+  padding-top: 3px !important;
+}
+
+.modern-card .modern-content .modern-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px !important;
+  color: #6b7280;
+  margin-bottom: 0 !important;
+}
+
+.modern-card .modern-content .modern-location .icon {
+  font-size: 12px !important;
+  flex-shrink: 0;
+  color: #9299a0;
 }

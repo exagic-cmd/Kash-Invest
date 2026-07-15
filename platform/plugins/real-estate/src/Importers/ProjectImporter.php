@@ -71,10 +71,13 @@ class ProjectImporter extends Importer implements WithMapping
         'price_to'                             => 'price_to',
         's.no.'                                => '_skip_',
         'sno'                                  => '_skip_',
-        'type'                                 => '_skip_',
-        'number_bedroom'                       => '_skip_',
-        'number_bathroom'                      => '_skip_',
-        'square'                               => '_skip_',
+        // Previously discarded — now carried so Excel projects match API ones.
+        // "Type" becomes a browsable category; bed/bath become custom fields;
+        // "Square" feeds the suite size column (same shape the API sync writes).
+        'type'                                 => 'categories',
+        'number_bedroom'                       => 'bedrooms',
+        'number_bathroom'                      => 'bathrooms',
+        'square'                               => 'suite_size_from',
         'author'                               => 'author_id',
         'auto_renew'                           => '_skip_',
         'project'                              => '_skip_',
@@ -83,6 +86,23 @@ class ProjectImporter extends Importer implements WithMapping
         'period'                               => '_skip_',
         'moderation_status'                    => '_skip_',
         'price'                                => '_skip_',
+    ];
+
+    /**
+     * Structured extras the Buildify API sync stores as named custom fields.
+     * Excel mirrors them via dedicated columns so both import paths produce
+     * projects of identical shape. Key = spreadsheet column (snake_case),
+     * value = the exact custom-field name (must match BuildifyProjectSyncer).
+     */
+    protected static array $apiCustomFields = [
+        'bedrooms'              => 'Bedrooms',
+        'bathrooms'             => 'Bathrooms',
+        'ceiling_heights'       => 'Ceiling Heights',
+        'website'               => 'Website',
+        'sales_status'          => 'Sales Status',
+        'construction_status'   => 'Construction Status',
+        'number_of_floor_plans' => 'Number of Floor Plans',
+        'estimated_completion'  => 'Estimated Completion',
     ];
 
     /**
@@ -239,6 +259,12 @@ class ProjectImporter extends Importer implements WithMapping
             // Kash-specific columns accepted but handled in map()
             ImportColumn::make('investor')->nullable()->rules(['nullable']),
             ImportColumn::make('floor_plans')->nullable()->rules(['nullable']),
+            // Dedicated custom-field columns — mirror the named custom fields the
+            // Buildify API sync creates, so Excel imports carry the same extras.
+            ...array_map(
+                fn (string $key) => ImportColumn::make($key)->nullable()->rules(['nullable']),
+                array_keys(self::$apiCustomFields)
+            ),
         ];
     }
 
@@ -471,10 +497,19 @@ class ProjectImporter extends Importer implements WithMapping
     public function examples(): array
     {
         $projects = Project::query()
+            // Prefer API-sourced projects for the sample: they populate every
+            // column (incl. the custom-field extras), so the template shows a
+            // fully filled-in example rather than sparse manual rows.
+            ->orderByRaw("CASE WHEN source = 'buildify' THEN 0 ELSE 1 END")
+            ->orderByDesc('id')
             ->take(3)
             ->with(['investor', 'categories', 'features', 'facilities', 'customFields', 'slugable'])
             ->get()
             ->map(function (Project $project) { // @phpstan-ignore-line
+                // Custom fields keyed by name so we can split the API-mirrored
+                // extras into their own sample columns.
+                $cfByName = $project->customFields->keyBy('name');
+
                 $data = [
                     'name' => $project->name,
                     'description' => Str::limit($project->description),
@@ -512,9 +547,16 @@ class ProjectImporter extends Importer implements WithMapping
                     'facilities' => $project->facilities->map(function ($facility) {
                         return $facility->name . ':' . $facility->pivot->distance;
                     })->implode(', '),
-                    'custom_fields' => $project->customFields->map(function ($field) {
-                        return $field->name . ':' . $field->value;
-                    })->implode(', '),
+                    // Split the API-mirrored extras into their own columns...
+                    ...collect(self::$apiCustomFields)
+                        ->mapWithKeys(fn (string $label, string $key) => [
+                            $key => optional($cfByName->get($label))->value,
+                        ])->all(),
+                    // ...and keep only the remaining ad-hoc ones in the catch-all.
+                    'custom_fields' => $project->customFields
+                        ->reject(fn ($field) => in_array($field->name, self::$apiCustomFields, true))
+                        ->map(fn ($field) => $field->name . ':' . $field->value)
+                        ->implode(', '),
                     'unique_id' => $project->unique_id ?: null,
                     'video_url' => $project->getMetaData('video_url', true),
                     'video_thumbnail' => $project->getMetaData('video_thumbnail', true),
@@ -577,6 +619,15 @@ class ProjectImporter extends Importer implements WithMapping
                 'neighbour' => 'Downtown',
                 'intersection' => 'Main & 1st',
                 'architects' => 'ABC Architects',
+                // API-mirrored custom-field columns
+                'bedrooms' => '1 - 3',
+                'bathrooms' => '1 - 2',
+                'ceiling_heights' => '9 ft',
+                'website' => 'https://sunset-heights.example.com',
+                'sales_status' => 'Selling',
+                'construction_status' => 'Under Construction',
+                'number_of_floor_plans' => 12,
+                'estimated_completion' => 'Q4 2025',
             ],
             [
                 'name' => 'Green Valley Commercial Center',
@@ -629,6 +680,15 @@ class ProjectImporter extends Importer implements WithMapping
                 'neighbour' => '',
                 'intersection' => '',
                 'architects' => '',
+                // API-mirrored custom-field columns
+                'bedrooms' => 'Studio - 2',
+                'bathrooms' => '1',
+                'ceiling_heights' => '',
+                'website' => 'https://green-valley.example.com',
+                'sales_status' => 'Registration',
+                'construction_status' => 'Pre-Construction',
+                'number_of_floor_plans' => 6,
+                'estimated_completion' => '2026',
             ],
         ];
 
@@ -695,6 +755,32 @@ class ProjectImporter extends Importer implements WithMapping
             ];
         }
         unset($row['floor_plans']);
+
+        // Dedicated custom-field columns mirror the named custom fields created
+        // by the Buildify API sync (Bedrooms, Bathrooms, Website, ...), so an
+        // Excel import produces the same structured extras. Pull each into a
+        // named custom field and drop it from the row so forceFill ignores it.
+        foreach (self::$apiCustomFields as $key => $label) {
+            $value = Arr::get($row, $key);
+            if ($value !== null && trim((string) $value) !== '') {
+                $customFields[] = [
+                    'name' => $label,
+                    'value' => Str::limit(trim((string) $value), 120, ''),
+                ];
+            }
+            unset($row[$key]);
+        }
+
+        // De-duplicate by name so a value supplied in both a dedicated column
+        // and the generic "custom_fields" catch-all is stored only once
+        // (dedicated columns are appended last, so they win).
+        if ($customFields) {
+            $deduped = [];
+            foreach ($customFields as $field) {
+                $deduped[$field['name']] = $field;
+            }
+            $customFields = array_values($deduped);
+        }
 
         // Resolve investor: accept "investor" key (standard) or "developers" (kash, remapped)
         $investorId = null;
