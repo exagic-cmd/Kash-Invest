@@ -3,6 +3,7 @@
 namespace Botble\RealEstate\Models;
 
 use Botble\Base\Models\BaseModel;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * One row per run of an API sync (cron or manual), so the admin "API Sync"
@@ -18,6 +19,7 @@ class ProjectSyncLog extends BaseModel
         'triggered_by',
         'created',
         'updated',
+        'unchanged',
         'failed',
         'total',
         'message',
@@ -28,11 +30,21 @@ class ProjectSyncLog extends BaseModel
     protected $casts = [
         'created' => 'int',
         'updated' => 'int',
+        'unchanged' => 'int',
         'failed' => 'int',
         'total' => 'int',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
     ];
+
+    /**
+     * The projects this run actually created / updated / failed on. Unchanged
+     * projects are counted (see the "unchanged" column) but not stored here.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(ProjectSyncLogItem::class, 'sync_log_id');
+    }
 
     public function isRunning(): bool
     {

@@ -23,7 +23,7 @@ class ProjectSyncController extends BaseController
 
         $sources = $this->sources();
 
-        $logs = ProjectSyncLog::query()->latest('id')->limit(25)->get();
+        $logs = ProjectSyncLog::query()->withCount('items')->latest('id')->limit(25)->get();
 
         return view('plugins/real-estate::api-sync.index', compact('sources', 'logs'));
     }
@@ -53,6 +53,20 @@ class ProjectSyncController extends BaseController
             'message' => trans('plugins/real-estate::api-sync.run_finished'),
             'data' => $this->presentLog($log),
         ]);
+    }
+
+    /**
+     * Field-level breakdown of a single run, rendered for the "Details" modal.
+     */
+    public function details(int $log): JsonResponse
+    {
+        $syncLog = ProjectSyncLog::query()
+            ->with(['items' => fn ($query) => $query->orderBy('action')->orderBy('id')])
+            ->findOrFail($log);
+
+        $html = view('plugins/real-estate::api-sync.partials.details', ['log' => $syncLog])->render();
+
+        return response()->json(['error' => false, 'data' => ['html' => $html]]);
     }
 
     public function status(): JsonResponse
@@ -108,6 +122,7 @@ class ProjectSyncController extends BaseController
             'status' => $log->status,
             'created' => $log->created,
             'updated' => $log->updated,
+            'unchanged' => $log->unchanged,
             'failed' => $log->failed,
             'triggered_by' => $log->triggered_by,
             'message' => $log->message,

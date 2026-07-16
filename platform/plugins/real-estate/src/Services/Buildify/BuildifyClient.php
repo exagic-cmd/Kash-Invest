@@ -40,9 +40,20 @@ class BuildifyClient
      *
      * @return array<string, mixed> decoded JSON body
      */
-    public function searchListings(int $page = 0, int $perPage = 50): array
+    public function searchListings(int $page = 0, int $perPage = 50, ?int $updatedSince = null): array
     {
         $url = sprintf('%s/%s/%s/search_listings', $this->baseUrl, $this->version, $this->province);
+
+        $query = [
+            'page' => $page,
+            'perPage' => $perPage,
+        ];
+
+        if ($updatedSince) {
+            // SQL-like syntax with Unix timestamp in seconds
+            $query['filterQuery'] = 'sellingStatusUpdateTimestamp > ' . $updatedSince;
+            $query['retrieveAttributes'] = '*';
+        }
 
         // Buildify uses the BLOBR gateway, but it sits behind Google API Gateway
         // which strictly requires the x-api-key header for caller identification.
@@ -53,10 +64,7 @@ class BuildifyClient
             ->acceptJson()
             ->timeout(60)
             ->retry(2, 500, throw: false)
-            ->get($url, [
-                'page' => $page,
-                'perPage' => $perPage,
-            ]);
+            ->get($url, $query);
 
         $response->throw();
 

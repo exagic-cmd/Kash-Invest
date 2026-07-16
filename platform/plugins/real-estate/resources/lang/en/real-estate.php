@@ -134,7 +134,7 @@ return [
         'sender_confirmation_additional_info' => 'If you have any additional information or questions, feel free to reply to this email.',
         'sender_confirmation_appreciate' => 'We appreciate your interest and will be in touch soon!',
     ],
-    'contact_for_price' => 'Contact',
+    'contact_for_price' => 'Contact for Price',
     'yes' => 'Yes',
     'no' => 'No',
     'projects' => 'Projects',

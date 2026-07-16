@@ -54,9 +54,11 @@
                         <th>{{ trans('plugins/real-estate::api-sync.columns.trigger') }}</th>
                         <th class="text-center">{{ trans('plugins/real-estate::api-sync.columns.created') }}</th>
                         <th class="text-center">{{ trans('plugins/real-estate::api-sync.columns.updated') }}</th>
+                        <th class="text-center">{{ trans('plugins/real-estate::api-sync.columns.unchanged') }}</th>
                         <th class="text-center">{{ trans('plugins/real-estate::api-sync.columns.failed') }}</th>
                         <th>{{ trans('plugins/real-estate::api-sync.columns.duration') }}</th>
                         <th>{{ trans('plugins/real-estate::api-sync.columns.when') }}</th>
+                        <th class="text-end"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,19 +72,44 @@
                             <td>{{ ucfirst($log->triggered_by) }}</td>
                             <td class="text-center">{{ $log->created }}</td>
                             <td class="text-center">{{ $log->updated }}</td>
+                            <td class="text-center text-muted">{{ $log->unchanged }}</td>
                             <td class="text-center">{{ $log->failed }}</td>
                             <td>{{ $log->duration_label ?: '—' }}</td>
                             <td title="{{ $log->finished_at ?: $log->started_at }}">
                                 {{ ($log->finished_at ?: $log->started_at)?->diffForHumans() }}
                             </td>
+                            <td class="text-end">
+                                @if (($log->items_count ?? 0) > 0)
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            data-details-url="{{ route('real-estate.api-sync.details', $log->id) }}">
+                                        <i class="ti ti-list-details me-1"></i>{{ trans('plugins/real-estate::api-sync.details') }}
+                                    </button>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-3">{{ trans('plugins/real-estate::api-sync.no_history') }}</td>
+                            <td colspan="10" class="text-center text-muted py-3">{{ trans('plugins/real-estate::api-sync.no_history') }}</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div class="modal modal-blur fade" id="sync-details-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ trans('plugins/real-estate::api-sync.details_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" data-details-body>
+                    <div class="text-center text-muted py-4">
+                        <span class="spinner-border spinner-border-sm me-1"></span>{{ trans('plugins/real-estate::api-sync.loading') }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @stop
@@ -96,6 +123,8 @@
             const L = {
                 never: @json(trans('plugins/real-estate::api-sync.never_run')),
                 running: @json(trans('plugins/real-estate::api-sync.running')),
+                loading: @json(trans('plugins/real-estate::api-sync.loading')),
+                loadError: @json(trans('plugins/real-estate::api-sync.load_error')),
             };
 
             function render(log) {
@@ -110,8 +139,9 @@
                 if (log.finished_at) meta.push(log.finished_at);
                 if (log.duration) meta.push(log.duration);
                 if (log.triggered_by) meta.push(log.triggered_by);
+                const unchanged = (typeof log.unchanged === 'number') ? (', ' + log.unchanged + ' unchanged') : '';
                 let html = '<span class="text-' + color + ' fw-semibold">' +
-                    log.created + ' created, ' + log.updated + ' updated, ' + log.failed + ' failed</span>';
+                    log.created + ' created, ' + log.updated + ' updated' + unchanged + ', ' + log.failed + ' failed</span>';
                 if (meta.length) html += ' <small class="text-muted">· ' + meta.join(' · ') + '</small>';
                 if (log.message) html += '<div class="text-danger small mt-1">' + log.message + '</div>';
                 return html;
@@ -160,6 +190,36 @@
                                 else btn.disabled = false;
                             });
                     })();
+                });
+            });
+
+            // "Details" modal — load a run's field-level breakdown on demand.
+            const modalEl = document.getElementById('sync-details-modal');
+            const modalBody = modalEl ? modalEl.querySelector('[data-details-body]') : null;
+            const modal = (modalEl && window.bootstrap && window.bootstrap.Modal)
+                ? new window.bootstrap.Modal(modalEl)
+                : null;
+            const spinnerHtml = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-1"></span>' + L.loading + '</div>';
+
+            document.querySelectorAll('[data-details-url]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const url = btn.getAttribute('data-details-url');
+                    if (!modal || !modalBody) {
+                        window.open(url, '_blank');
+                        return;
+                    }
+                    modalBody.innerHTML = spinnerHtml;
+                    modal.show();
+                    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(function (r) { return r.json(); })
+                        .then(function (res) {
+                            modalBody.innerHTML = (res && res.data && res.data.html)
+                                ? res.data.html
+                                : '<p class="text-danger mb-0">' + L.loadError + '</p>';
+                        })
+                        .catch(function () {
+                            modalBody.innerHTML = '<p class="text-danger mb-0">' + L.loadError + '</p>';
+                        });
                 });
             });
         })();

@@ -35,6 +35,12 @@ Route::group(['namespace' => 'Botble\RealEstate\Http\Controllers', 'middleware' 
                 'uses' => 'ProjectSyncController@status',
                 'permission' => 'real-estate.api-sync',
             ]);
+
+            Route::get('logs/{log}/details', [
+                'as' => 'details',
+                'uses' => 'ProjectSyncController@details',
+                'permission' => 'real-estate.api-sync',
+            ]);
         });
 
         Route::group(['prefix' => 'settings', 'as' => 'real-estate.settings.'], function (): void {

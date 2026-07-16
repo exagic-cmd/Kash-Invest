@@ -14,6 +14,7 @@ use Botble\Media\Facades\RvMedia;
 use Botble\Media\Models\MediaFile;
 use Botble\RealEstate\Models\Feature;
 use Botble\RealEstate\Models\Project;
+use Botble\RealEstate\Models\ProjectSyncLog;
 use Botble\Slug\Facades\SlugHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -39,14 +40,26 @@ class BuildifyProjectSyncer
     /** Value written to re_projects.source for every project this syncer owns. */
     public const SOURCE = 'buildify';
 
+    /** Columns whose changes are noise/too bulky to surface in the detail modal. */
+    protected const DIFF_IGNORE_COLUMNS = ['updated_at', 'created_at', 'content', 'images'];
+
     protected int $created = 0;
 
     protected int $updated = 0;
+
+    protected int $unchanged = 0;
 
     protected int $failed = 0;
 
     /** @var array<int, array{id: mixed, error: string}> */
     protected array $errors = [];
+
+    /**
+     * Per-project outcome for the sync-log detail modal (created/updated/failed).
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    protected array $items = [];
 
     protected ?int $defaultAuthorId = null;
 
@@ -67,8 +80,17 @@ class BuildifyProjectSyncer
         $perPage = (int) config('plugins.real-estate.buildify.per_page', 50);
         $page = 0;
 
+        $lastSyncDate = ProjectSyncLog::query()
+            ->where('source', self::SOURCE)
+            ->where('status', 'success')
+            ->latest('finished_at')
+            ->value('finished_at');
+
+        // Buildify expects a Unix timestamp in seconds
+        $updatedSince = $lastSyncDate ? (int) $lastSyncDate->timestamp : null;
+
         do {
-            $response = $this->client->searchListings($page, $perPage);
+            $response = $this->client->searchListings($page, $perPage, $updatedSince);
 
             $results = Arr::get($response, 'results', []);
             $pages = max((int) Arr::get($response, 'pages', 1), 1);
@@ -81,9 +103,17 @@ class BuildifyProjectSyncer
                     $this->importListing($listing);
                 } catch (\Throwable $e) {
                     $this->failed++;
+                    $extId = Arr::get($listing, 'objectID') ?: Arr::get($listing, 'listingId');
                     $this->errors[] = [
-                        'id' => Arr::get($listing, 'objectID') ?: Arr::get($listing, 'listingId'),
+                        'id' => $extId,
                         'error' => $e->getMessage(),
+                    ];
+                    $this->items[] = [
+                        'project_id' => null,
+                        'external_id' => $extId ? (string) $extId : null,
+                        'name' => trim((string) Arr::get($listing, 'name')) ?: null,
+                        'action' => 'failed',
+                        'change_set' => ['error' => Str::limit($e->getMessage(), 500)],
                     ];
                     report($e);
                 }
@@ -99,8 +129,10 @@ class BuildifyProjectSyncer
         return [
             'created' => $this->created,
             'updated' => $this->updated,
+            'unchanged' => $this->unchanged,
             'failed' => $this->failed,
             'errors' => $this->errors,
+            'items' => $this->items,
         ];
     }
 
@@ -133,7 +165,15 @@ class BuildifyProjectSyncer
 
         $this->resolveLocation($listing, $data);
 
+        // Snapshot the current custom fields before we recreate them, so we can
+        // diff them (Sales Status, Bedrooms, ...). One query; empty for new rows.
+        $oldCustomFields = $isNew ? [] : $project->customFields()->pluck('value', 'name')->all();
+
         $project->forceFill($data);
+
+        // Column diff must be read BEFORE save() clears the dirty state.
+        $columnChanges = $isNew ? [] : $this->diffColumns($project);
+
         $project->save();
 
         // Amenities -> features
@@ -141,10 +181,13 @@ class BuildifyProjectSyncer
 
         // Preserve the rich extras that have no dedicated column as custom fields
         // so nothing Buildify sends is silently dropped.
+        $newCustomFields = $this->buildCustomFields($listing);
         $project->customFields()->delete();
-        foreach ($this->buildCustomFields($listing) as $field) {
+        foreach ($newCustomFields as $field) {
             $project->customFields()->create($field);
         }
+
+        $customFieldChanges = $isNew ? [] : $this->diffCustomFields($oldCustomFields, $newCustomFields);
 
         // Video (Buildify "videos" is an array of URLs)
         $project->metadata()->where('meta_key', 'video_url')->delete();
@@ -185,7 +228,169 @@ class BuildifyProjectSyncer
             }
         }
 
-        $isNew ? $this->created++ : $this->updated++;
+        $this->recordOutcome(
+            $isNew,
+            $project,
+            (string) $externalId,
+            $name,
+            array_merge($columnChanges, $customFieldChanges)
+        );
+    }
+
+    /**
+     * Tally a processed listing and, when something actually changed, record a
+     * per-project item for the sync-log detail modal. Unchanged existing
+     * projects are only counted — they don't produce a stored item.
+     *
+     * @param  array<int, array{field: string, from: ?string, to: ?string}>  $changes
+     */
+    protected function recordOutcome(bool $isNew, Project $project, string $externalId, string $name, array $changes): void
+    {
+        if ($isNew) {
+            $this->created++;
+            $this->items[] = [
+                'project_id' => $project->getKey(),
+                'external_id' => $externalId,
+                'name' => $name,
+                'action' => 'created',
+                'change_set' => null,
+            ];
+
+            return;
+        }
+
+        if ($changes === []) {
+            $this->unchanged++;
+
+            return;
+        }
+
+        $this->updated++;
+        $this->items[] = [
+            'project_id' => $project->getKey(),
+            'external_id' => $externalId,
+            'name' => $name,
+            'action' => 'updated',
+            'change_set' => ['fields' => $changes],
+        ];
+    }
+
+    /**
+     * Column-level changes on an existing project, from Eloquent's dirty state.
+     * Call after forceFill() and before save().
+     *
+     * @return array<int, array{field: string, from: ?string, to: ?string}>
+     */
+    protected function diffColumns(Project $project): array
+    {
+        $changes = [];
+
+        foreach ($project->getDirty() as $key => $new) {
+            if (in_array($key, self::DIFF_IGNORE_COLUMNS, true)) {
+                continue;
+            }
+
+            $old = $project->getOriginal($key);
+
+            // Uncast decimal columns (price_from, ...) load as "500000.00" but are
+            // re-set as the float 500000.0, which Eloquent flags dirty every run.
+            // Compare by value so those non-changes don't pollute the log.
+            if ($this->valuesEquivalent($old, $new)) {
+                continue;
+            }
+
+            $changes[] = [
+                'field' => Str::headline($key),
+                'from' => $this->formatDiffValue($old),
+                'to' => $this->formatDiffValue($new),
+            ];
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Whether two raw attribute values are effectively the same (empty-safe,
+     * numeric-aware, date-aware) — so formatting-only differences aren't logged.
+     */
+    protected function valuesEquivalent(mixed $a, mixed $b): bool
+    {
+        $aEmpty = $a === null || $a === '';
+        $bEmpty = $b === null || $b === '';
+
+        if ($aEmpty || $bEmpty) {
+            return $aEmpty && $bEmpty;
+        }
+
+        if (is_numeric($a) && is_numeric($b)) {
+            return (float) $a === (float) $b;
+        }
+
+        if ($a instanceof \DateTimeInterface || $b instanceof \DateTimeInterface) {
+            return $this->formatDiffValue($a) === $this->formatDiffValue($b);
+        }
+
+        return (string) $a === (string) $b;
+    }
+
+    /**
+     * Custom-field changes between the pre-run snapshot and the freshly built set.
+     *
+     * @param  array<string, string>  $old  name => value
+     * @param  array<int, array{name: string, value: string}>  $new
+     * @return array<int, array{field: string, from: ?string, to: ?string}>
+     */
+    protected function diffCustomFields(array $old, array $new): array
+    {
+        $newMap = [];
+        foreach ($new as $field) {
+            $newMap[$field['name']] = $field['value'];
+        }
+
+        $changes = [];
+
+        // Union of names present before and/or after this run.
+        foreach (array_keys($newMap + $old) as $name) {
+            $before = $old[$name] ?? null;
+            $after = $newMap[$name] ?? null;
+
+            if ((string) $before === (string) $after) {
+                continue;
+            }
+
+            $changes[] = [
+                'field' => (string) $name,
+                'from' => $this->formatDiffValue($before),
+                'to' => $this->formatDiffValue($after),
+            ];
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Render any raw attribute value as a short, human-readable string for the
+     * detail modal (null when empty so the UI can show a dash).
+     */
+    protected function formatDiffValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_array($value)) {
+            return count($value) . ' item(s)';
+        }
+
+        return Str::limit(trim((string) $value), 80);
     }
 
     /**

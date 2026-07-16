@@ -12863,6 +12863,7 @@ h6, .h6 {
 
 /* Compact, Zolo-style listing cards — tighten the loose vertical spacing/typography and prevent stretching. */
 .property-item.modern-card, .homeya-box.modern-card, .modern-card {
+  height: -moz-max-content !important;
   height: max-content !important;
   align-self: flex-start !important;
   margin-bottom: 20px !important;

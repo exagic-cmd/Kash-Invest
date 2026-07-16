@@ -63,11 +63,14 @@ class SyncBuildifyProjectsCommand extends Command
             return self::FAILURE;
         }
 
+        $unchanged = $result['unchanged'] ?? 0;
+
         $this->newLine();
         $this->components->success(sprintf(
-            'Buildify sync complete — %d created, %d updated, %d failed.',
+            'Buildify sync complete — %d created, %d updated, %d unchanged, %d failed.',
             $result['created'],
             $result['updated'],
+            $unchanged,
             $result['failed'],
         ));
 
@@ -75,13 +78,20 @@ class SyncBuildifyProjectsCommand extends Command
             'status' => 'success',
             'created' => $result['created'],
             'updated' => $result['updated'],
+            'unchanged' => $unchanged,
             'failed' => $result['failed'],
-            'total' => $result['created'] + $result['updated'] + $result['failed'],
+            'total' => $result['created'] + $result['updated'] + $unchanged + $result['failed'],
             'message' => $result['failed'] > 0
                 ? ($result['failed'] . ' listing(s) failed to import — see the application log.')
                 : null,
             'finished_at' => Carbon::now(),
         ]);
+
+        // Store the per-project breakdown (created/updated/failed) for the
+        // admin "Details" modal. Unchanged projects are counted, not stored.
+        foreach ($result['items'] ?? [] as $item) {
+            $log->items()->create($item);
+        }
 
         if ($result['failed'] > 0) {
             $this->components->warn('Some listings failed to import; see the log for details.');
@@ -90,6 +100,7 @@ class SyncBuildifyProjectsCommand extends Command
         Log::info('[Buildify Sync] Completed', [
             'created' => $result['created'],
             'updated' => $result['updated'],
+            'unchanged' => $unchanged,
             'failed' => $result['failed'],
             'errors' => $result['errors'],
             'completed_at' => Carbon::now()->toDateTimeString(),
