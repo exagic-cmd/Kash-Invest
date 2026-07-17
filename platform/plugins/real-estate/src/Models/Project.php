@@ -59,6 +59,7 @@ class Project extends BaseModel
         'zip_code',
         'unique_id',
         'source',
+        'landing_template',
         'private_notes',
         'floor_plans',
         'suites_starting_floor',

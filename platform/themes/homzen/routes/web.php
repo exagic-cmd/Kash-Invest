@@ -4,6 +4,7 @@ use Botble\Base\Http\Middleware\RequiresJsonRequestMiddleware;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 use Theme\Homzen\Http\Controllers\HomzenController;
+use Theme\Homzen\Http\Controllers\LandingPreviewController;
 
 
 Route::middleware(['web', 'core'])
@@ -24,5 +25,20 @@ Route::middleware(['web', 'core'])
             });
         });
     });
+
+/*
+ | Preconstruction landing template previews.
+ |
+ | /landing-preview/dark          -> most complete project, dark template
+ | /landing-preview/light/57      -> project 57, light template
+ |
+ | Temporary: exists so both templates are viewable before the admin
+ | "assign template to project" feature ships. Remove once that lands.
+ */
+Route::middleware(['web', 'core'])->group(function (): void {
+    Route::get('landing-preview/{theme}/{project?}', [LandingPreviewController::class, 'show'])
+        ->where('theme', 'dark|light')
+        ->name('landing.preview');
+});
 
 Theme::routes();

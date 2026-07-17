@@ -305,6 +305,30 @@ class ProjectForm extends FormAbstract
             ->add('rowClose2', 'html', [
                 'html' => '</div>',
             ])
+            // Landing page — assign one of the preconstruction landing templates
+            // to this project. When set, the project's own URL serves that
+            // landing page instead of the standard detail layout.
+            ->add('landing_page_header', 'html', [
+                'html' => '<h4 class="mt-4 mb-3">Landing Page</h4><hr>',
+            ])
+            ->add('landing_template', 'customSelect', [
+                'label' => 'Landing page template',
+                'help_block' => [
+                    'text' => 'Choose a template to turn this project into a standalone preconstruction landing page. '
+                        . 'The page is built entirely from this project\'s own data. Leave as "None" to use the normal project page.',
+                ],
+                'wrapper' => [
+                    'class' => 'form-group mb-3 col-md-6',
+                ],
+                'attr' => [
+                    'class' => 'form-control select-full',
+                ],
+                'choices' => [
+                    '' => 'None — use the standard project page',
+                    'dark' => 'Dark — cinematic sales gallery',
+                    'light' => 'Light — airy editorial',
+                ],
+            ])
             // Unit & Suite Details
             ->add('unit_suite_details_header', 'html', [
                 'html' => '<h4 class="mt-4 mb-3">Unit & Suite Details</h4><hr>',
