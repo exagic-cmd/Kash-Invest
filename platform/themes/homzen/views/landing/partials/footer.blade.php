@@ -20,16 +20,6 @@
                 @if ($landing['location']['address'])
                     <p class="kl-lede" style="font-size:.86rem;margin-top:.5rem;">{{ $landing['location']['address'] }}</p>
                 @endif
-                @if ($socials)
-                    <ul class="kl-socials">
-                        @foreach ($socials as $label => $url)
-                            <li>
-                                <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
-                                   aria-label="{{ $label }}">{{ $label }}</a>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
             </div>
 
             <div>

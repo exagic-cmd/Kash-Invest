@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
@@ -132,6 +133,7 @@ class Project extends BaseModel
             $project->facilities()->detach();
             $project->properties()->update(['project_id' => 0]);
             $project->metadata()->delete();
+            $project->landingPage()->delete();
         });
     }
 
@@ -156,6 +158,11 @@ class Project extends BaseModel
     public function investor(): BelongsTo
     {
         return $this->belongsTo(Investor::class)->withDefault();
+    }
+
+    public function landingPage(): HasOne
+    {
+        return $this->hasOne(ProjectLandingPage::class, 'project_id');
     }
 
     public function features(): BelongsToMany

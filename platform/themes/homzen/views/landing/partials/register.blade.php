@@ -5,10 +5,9 @@
         <div class="kl-2col kl-reveal">
             <div>
                 <div class="kl-eyebrow">Register</div>
-                <h2 class="kl-h2">Platinum Access to {{ $landing['name'] }}</h2>
+                <h2 class="kl-h2">{{ ($landing['register']['heading'] ?? null) ?: 'Platinum Access to ' . $landing['name'] }}</h2>
                 <p class="kl-lede" style="margin-top:1.25rem;">
-                    Registrants receive floor plans, the full price list and the deposit structure before
-                    public release. Preconstruction allocations are first-come, first-served.
+                    {{ ($landing['register']['lede'] ?? null) ?: 'Registrants receive floor plans, the full price list and the deposit structure before public release. Preconstruction allocations are first-come, first-served.' }}
                 </p>
 
                 <ul class="kl-nearby" style="margin-top:1.5rem;">

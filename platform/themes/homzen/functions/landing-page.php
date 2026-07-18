@@ -26,13 +26,20 @@ add_action(BASE_ACTION_PUBLIC_RENDER_SINGLE, function ($screen, $model): void {
 
     $template = $model->landing_template;
 
-    if (! in_array($template, ['dark', 'light'], true)) {
+    // Only the Light template is supported. Anything else (incl. the retired
+    // "dark") falls through to the standard project page.
+    if ($template !== 'light') {
+        return;
+    }
+
+    // A landing page can be unpublished from the editor without unassigning it.
+    if (($landingPage = $model->landingPage) && $landingPage->is_published === false) {
         return;
     }
 
     throw new HttpResponseException(
         response(
-            view(Theme::getThemeNamespace('views.landing.' . $template), [
+            view(Theme::getThemeNamespace('views.landing.light'), [
                 'landing' => LandingData::fromProject($model),
             ])->render()
         )

@@ -51,23 +51,42 @@
 <main>
     {{-- Section order follows the reference microsite:
          hero -> overview -> quick facts -> cheat sheet -> location benefits. --}}
+    {{-- $landing['show'] toggles come from the Landing Pages editor; each
+         defaults to true, so an unedited page renders every section. --}}
+    @php($show = $landing['show'] ?? [])
     @include(Theme::getThemeNamespace('views.landing.partials.hero'))
-    @include(Theme::getThemeNamespace('views.landing.partials.overview'))
-    @include(Theme::getThemeNamespace('views.landing.partials.quick-facts'))
-    @include(Theme::getThemeNamespace('views.landing.partials.cheat-sheet'))
-
-    {{-- The one place the two themes genuinely diverge. --}}
-    @if ($theme === 'dark')
-        @include(Theme::getThemeNamespace('views.landing.partials.signature-dark'))
-    @else
-        @include(Theme::getThemeNamespace('views.landing.partials.signature-light'))
+    @if ($show['overview'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.overview'))
+    @endif
+    @if ($show['quickFacts'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.quick-facts'))
+    @endif
+    @if ($show['cheatSheet'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.cheat-sheet'))
+    @endif
+    @if ($show['location'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.location'))
+    @endif
+    @if ($show['whyUs'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.why-us'))
+    @endif
+    @if ($show['innerCircle'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.inner-circle'))
+    @endif
+    @if ($show['disclaimer'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.footer-disclaimer'))
     @endif
 
-    @include(Theme::getThemeNamespace('views.landing.partials.amenities'))
-    @include(Theme::getThemeNamespace('views.landing.partials.floor-plans'))
-    @include(Theme::getThemeNamespace('views.landing.partials.gallery'))
-    @include(Theme::getThemeNamespace('views.landing.partials.location'))
-    @include(Theme::getThemeNamespace('views.landing.partials.register'))
+
+    @if ($show['floorPlans'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.floor-plans'))
+    @endif
+    @if ($show['gallery'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.gallery'))
+    @endif
+    @if ($show['register'] ?? true)
+        @include(Theme::getThemeNamespace('views.landing.partials.register'))
+    @endif
 </main>
 
 @include(Theme::getThemeNamespace('views.landing.partials.nav'))
@@ -114,21 +133,6 @@
             }, { threshold: 0.5 });
             rungs.forEach(function (r) { ladderObserver.observe(r); });
         }
-    }
-
-    /* ---- SIGNATURE (light): today -> occupancy compare slider ---- */
-    var compare = document.querySelector('[data-compare]');
-    if (compare) {
-        var range = compare.querySelector('[data-compare-range]');
-        var after = compare.querySelector('[data-compare-after]');
-        var handle = compare.querySelector('[data-compare-handle]');
-        var paint = function () {
-            var v = range.value + '%';
-            after.style.width = v;
-            handle.style.left = v;
-        };
-        range.addEventListener('input', paint);
-        paint();
     }
 
     /* ---- gallery lightbox (native <dialog>, Esc closes for free) ---- */

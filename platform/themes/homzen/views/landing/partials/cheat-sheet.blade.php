@@ -27,6 +27,14 @@
     if ($landing['quickFacts'] && collect($landing['quickFacts'])->firstWhere('label', 'Storeys')) {
         $hints[] = 'Be open to the floor options as demand is very high for this project';
     }
+
+    // Editor overrides (Real Estate → Landing Pages) win when provided.
+    if (! empty($landing['cheatSheet']['steps'])) {
+        $steps = $landing['cheatSheet']['steps'];
+    }
+    if (! empty($landing['cheatSheet']['hints'])) {
+        $hints = $landing['cheatSheet']['hints'];
+    }
 @endphp
 
 <section class="kl-section" id="cheat-sheet">

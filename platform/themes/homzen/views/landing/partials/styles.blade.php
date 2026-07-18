@@ -292,6 +292,19 @@
     @media (min-width: 992px) { .kl-2col { grid-template-columns: 1.3fr .7fr; } }
     .kl-card { background: var(--kl-surface); border: 1px solid var(--kl-line); border-radius: var(--kl-radius); padding: 1.5rem; }
 
+    /* ---------- why us ---------- */
+    .kl-why-us { display: grid; gap: clamp(2rem, 5vw, 3rem); align-items: center; }
+    @media (min-width: 860px) { .kl-why-us { grid-template-columns: 1fr 1fr; } }
+    .kl-why-us__copy { padding: clamp(1.5rem, 3vw, 2.5rem); }
+    .kl-why-us__image { border-radius: 10px; overflow: hidden; }
+    .kl-why-us__image img { width: 100%; height: 100%; object-fit: cover; min-height: 320px; }
+
+    /* ---------- inner circle ---------- */
+    .kl-inner-circle-grid { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); text-align: center; }
+    .kl-inner-circle-item { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .kl-inner-circle-item__icon img { width: auto; height: 60px; object-fit: contain; }
+    .kl-inner-circle-item__label { font-weight: 600; font-size: 1.1rem; }
+
     .kl-amenities { display: grid; gap: 1px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); background: var(--kl-line); border: 1px solid var(--kl-line); margin-top: 2rem; }
     .kl-amenity { background: var(--kl-bg); padding: 1.1rem 1.25rem; display: flex; align-items: center; gap: .75rem; font-size: .92rem; }
     .kl-amenity::before { content: ""; width: 6px; height: 6px; background: var(--kl-accent); flex: none; }

@@ -26,12 +26,12 @@ class LandingData
      */
     public static function fromProject(Project $project): array
     {
-        $project->loadMissing(['investor', 'features', 'facilities', 'customFields', 'city', 'state', 'country', 'categories']);
+        $project->loadMissing(['investor', 'features', 'facilities', 'customFields', 'city', 'state', 'country', 'categories', 'landingPage']);
 
         $custom = $project->customFields->pluck('value', 'name');
         $images = static::images($project);
 
-        return [
+        $data = [
             'id' => $project->getKey(),
             'name' => $project->name,
             // TODO(phase 2): give projects a real tagline field / custom field.
@@ -85,6 +85,232 @@ class LandingData
                 'secondary' => 'Download Brochure',
             ],
         ];
+
+        return static::applyOverrides($data, $project);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected static function applyOverrides(array $data, Project $project): array
+    {
+        $landingPage = $project->relationLoaded('landingPage')
+            ? $project->landingPage
+            : $project->landingPage()->first();
+
+        $content = $landingPage && is_array($landingPage->content) ? $landingPage->content : [];
+
+        // Per-section visibility (honoured by views/landing/base.blade.php).
+        $data['show'] = [
+            'overview' => (bool) Arr::get($content, 'overview.show', true),
+            'quickFacts' => (bool) Arr::get($content, 'quick_facts.show', true),
+            'cheatSheet' => (bool) Arr::get($content, 'cheat_sheet.show', true),
+            'location' => (bool) Arr::get($content, 'location.show', true),
+            'whyUs' => (bool) Arr::get($content, 'why_us.show', true),
+            'innerCircle' => (bool) Arr::get($content, 'inner_circle.show', true),
+            'floorPlans' => (bool) Arr::get($content, 'floor_plans.show', true),
+            'gallery' => (bool) Arr::get($content, 'gallery.show', true),
+            'register' => (bool) Arr::get($content, 'register.show', true),
+            'disclaimer' => (bool) Arr::get($content, 'disclaimer.show', true),
+        ];
+
+        // New keys the templates read — seed sane defaults so partials never
+        // reference a missing index, whether or not overrides exist.
+        $data['hero']['logos'] = $data['developer']['logo'] ? [$data['developer']['logo']] : [];
+        $data['hero']['heading'] = null;
+        $data['hero']['slides'] = null;
+        $data['hero']['priceText'] = null;
+        $data['overview']['image'] = null;
+        $data['overview']['customHeading'] = null;
+        $data['cheatSheet'] = ['steps' => [], 'hints' => []];
+        $data['register'] = ['heading' => null, 'lede' => null];
+        $data['whyUs'] = ['heading' => null, 'points' => [], 'image' => null];
+        $data['innerCircle'] = ['heading' => null, 'items' => [], 'buttonText' => null, 'buttonLink' => null];
+        $data['disclaimer'] = ['logo' => null, 'text' => null, 'copyright' => null];
+        $data['floorPlans'] = array_map(fn ($plan) => $plan + ['image' => null], $data['floorPlans']);
+
+        if ($content === []) {
+            return $data;
+        }
+
+        // ---- Hero -----------------------------------------------------------
+        $logos = static::imageUrls(Arr::get($content, 'hero.logos', []));
+        if ($logos) {
+            $data['hero']['logos'] = $logos;
+        }
+        $data['hero']['heading'] = static::getText($content, 'hero.heading') ?: null;
+        $data['tagline'] = static::getText($content, 'hero.tagline') ?: $data['tagline'];
+        $data['status'] = static::getText($content, 'hero.badge') ?: $data['status'];
+        $data['developer']['name'] = static::getText($content, 'hero.developer') ?: $data['developer']['name'];
+        $data['hero']['priceText'] = static::getText($content, 'hero.price') ?: null;
+        $data['cta']['secondary'] = static::getText($content, 'hero.cta') ?: $data['cta']['secondary'];
+        $banner = static::imageUrls(Arr::get($content, 'hero.banner', []));
+        $data['hero']['slides'] = $banner ?: null;
+        $data['hero']['video'] = static::getText($content, 'hero.video') ?: $data['hero']['video'];
+
+        // ---- Overview -------------------------------------------------------
+        // Keep the derived `heading` as the fallback; a custom heading only wins
+        // when the editor sets one (the partial preserves the original order).
+        $data['overview']['customHeading'] = static::getText($content, 'overview.heading') ?: null;
+        if ($body = static::getText($content, 'overview.body')) {
+            $data['overview']['description'] = $body;
+            $data['overview']['content'] = null; // avoid the duplicate-paragraph guard
+        }
+        if ($overviewImage = Arr::get($content, 'overview.image')) {
+            $data['overview']['image'] = static::imageUrl($overviewImage);
+        }
+
+        // ---- Quick facts ----------------------------------------------------
+        if ($facts = static::repeaterRows(Arr::get($content, 'quick_facts.items', []), ['label', 'text'])) {
+            $data['quickFacts'] = array_map(fn ($row) => ['label' => $row['label'], 'value' => $row['text']], $facts);
+        }
+
+        // ---- Cheat sheet ----------------------------------------------------
+        $steps = static::repeaterRows(Arr::get($content, 'cheat_sheet.steps', []), ['step']);
+        $hints = static::repeaterRows(Arr::get($content, 'cheat_sheet.hints', []), ['hint']);
+        $data['cheatSheet'] = [
+            'steps' => array_values(array_filter(array_column($steps, 'step'))),
+            'hints' => array_values(array_filter(array_column($hints, 'hint'))),
+        ];
+
+
+
+        // ---- Floor plans ----------------------------------------------------
+        if ($plans = static::repeaterRows(Arr::get($content, 'floor_plans.items', []), ['type', 'size', 'baths', 'price', 'image'])) {
+            $data['floorPlans'] = array_map(fn ($row) => [
+                'type' => $row['type'],
+                'size' => $row['size'] ?: null,
+                'baths' => $row['baths'] ?: null,
+                'price' => $row['price'] ?: null,
+                'image' => $row['image'] ? static::imageUrl($row['image']) : null,
+            ], $plans);
+        }
+
+        // ---- Gallery --------------------------------------------------------
+        if ($gallery = static::imageUrls(Arr::get($content, 'gallery.images', []))) {
+            $data['gallery'] = $gallery;
+            $data['hero']['image'] = $gallery[0] ?? $data['hero']['image'];
+        }
+
+        // ---- Location -------------------------------------------------------
+        $data['location']['address'] = static::getText($content, 'location.address') ?: $data['location']['address'];
+        $data['location']['intersection'] = static::getText($content, 'location.intersection') ?: $data['location']['intersection'];
+        $data['location']['neighbourhood'] = static::getText($content, 'location.neighbourhood') ?: $data['location']['neighbourhood'];
+        $data['location']['lat'] = static::getText($content, 'location.lat') ?: $data['location']['lat'];
+        $data['location']['lng'] = static::getText($content, 'location.lng') ?: $data['location']['lng'];
+        if ($nearby = static::repeaterRows(Arr::get($content, 'location.nearby', []), ['name', 'distance'])) {
+            $data['location']['nearby'] = array_map(fn ($row) => ['name' => $row['name'], 'distance' => $row['distance'] ?: null], $nearby);
+        }
+        if ($benefits = static::repeaterRows(Arr::get($content, 'location.benefits', []), ['point'])) {
+            $data['location']['benefits'] = array_map(fn ($row) => ['point' => $row['point']], $benefits);
+        }
+
+        // ---- Why Us ---------------------------------------------------------
+        $data['whyUs']['heading'] = static::getText($content, 'why_us.heading') ?: $data['whyUs']['heading'];
+        $data['whyUs']['image'] = static::imageUrl(Arr::get($content, 'why_us.image')) ?: $data['whyUs']['image'];
+        if ($points = static::repeaterRows(Arr::get($content, 'why_us.points', []), ['point'])) {
+            $data['whyUs']['points'] = array_values(array_filter(array_column($points, 'point')));
+        }
+
+        // ---- Inner Circle ---------------------------------------------------
+        $data['innerCircle']['heading'] = static::getText($content, 'inner_circle.heading') ?: $data['innerCircle']['heading'];
+        $data['innerCircle']['buttonText'] = static::getText($content, 'inner_circle.button_text') ?: $data['innerCircle']['buttonText'];
+        $data['innerCircle']['buttonLink'] = static::getText($content, 'inner_circle.button_link') ?: $data['innerCircle']['buttonLink'];
+        if ($items = static::repeaterRows(Arr::get($content, 'inner_circle.items', []), ['icon', 'label'])) {
+            $data['innerCircle']['items'] = array_map(function ($row) {
+                return ['icon' => static::imageUrl($row['icon']), 'label' => $row['label']];
+            }, $items);
+        }
+
+        // ---- Register -------------------------------------------------------
+        $data['register'] = [
+            'heading' => static::getText($content, 'register.heading') ?: null,
+            'lede' => static::getText($content, 'register.lede') ?: null,
+        ];
+
+        // ---- Legal ----------------------------------------------------------
+        $data['legal']['renderings'] = static::getText($content, 'legal.renderings') ?: $data['legal']['renderings'];
+        $data['legal']['brokerage'] = static::getText($content, 'legal.brokerage') ?: $data['legal']['brokerage'];
+        $data['legal']['pricing'] = static::getText($content, 'legal.pricing') ?: $data['legal']['pricing'];
+
+        // ---- Disclaimer Card ------------------------------------------------
+        $data['disclaimer']['logo'] = static::imageUrl(Arr::get($content, 'disclaimer.logo')) ?: null;
+        $data['disclaimer']['text'] = static::getText($content, 'disclaimer.text') ?: null;
+        $data['disclaimer']['copyright'] = static::getText($content, 'disclaimer.copyright') ?: null;
+
+        return $data;
+    }
+
+    protected static function imageUrl(string|array|null $path): ?string
+    {
+        if (is_array($path)) {
+            $path = \Illuminate\Support\Arr::first($path);
+        }
+
+        return $path && is_string($path) ? RvMedia::getImageUrl($path, null, false, RvMedia::getDefaultImage()) : null;
+    }
+
+    /**
+     * @param  mixed  $paths
+     * @return array<int, string>
+     */
+    protected static function imageUrls($paths): array
+    {
+        return collect((array) $paths)
+            ->filter()
+            ->map(fn ($path) => static::imageUrl($path))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Unwrap Botble repeater rows ([i => [key => ['value' => x]]]) into a plain
+     * list of [key => value] rows, dropping rows that are entirely empty.
+     *
+     * @param  mixed  $rows
+     * @param  array<int, string>  $keys
+     * @return array<int, array<string, mixed>>
+     */
+    protected static function repeaterRows($rows, array $keys): array
+    {
+        if (! is_array($rows)) {
+            return [];
+        }
+
+        return collect($rows)
+            ->map(function ($row) use ($keys) {
+                $out = [];
+                foreach ($keys as $key) {
+                    $val = is_array($row) ? (Arr::get($row, "$key.value") ?? Arr::get($row, $key)) : null;
+                    
+                    while (is_array($val)) {
+                        $val = \Illuminate\Support\Arr::first($val);
+                    }
+                    
+                    $out[$key] = $val;
+                }
+
+                return $out;
+            })
+            ->filter(fn ($row) => collect($row)->filter(fn ($v) => filled($v))->isNotEmpty())
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Get a text value from the given array, safely extracting it if it's erroneously wrapped in an array.
+     */
+    protected static function getText(array $content, string $key, mixed $default = null): mixed
+    {
+        $val = \Illuminate\Support\Arr::get($content, $key, $default);
+        
+        while (is_array($val)) {
+            $val = \Illuminate\Support\Arr::first($val);
+        }
+        
+        return $val;
     }
 
     /**

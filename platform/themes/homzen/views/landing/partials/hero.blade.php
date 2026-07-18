@@ -7,17 +7,21 @@
     (and preloaded in <head>); the remaining slides lazy-load.
 --}}
 @php
-    $slides = $landing['gallery'] ?: array_filter([$landing['hero']['image']]);
+    // Editor-supplied banner wins; otherwise fall back to the gallery / hero image.
+    $slides = $landing['hero']['slides'] ?: ($landing['gallery'] ?: array_filter([$landing['hero']['image']]));
     $slides = array_slice($slides, 0, 5);
     $brand = theme_option('site_title') ?: 'Kash Invest';
+    $logos = $landing['hero']['logos'] ?? [];
 @endphp
 
 <div class="kl-topbar">
     <div class="kl-wrap kl-topbar__in">
         <a href="#top" class="kl-topbar__project">
-            @if ($landing['developer']['logo'])
-                <img src="{{ $landing['developer']['logo'] }}" alt="{{ $landing['developer']['name'] }}">
-            @endif
+            @forelse ($logos as $logo)
+                <img src="{{ $logo }}" alt="{{ $landing['name'] }}" style="max-height:38px;width:auto;">
+            @empty
+                {{-- No logo uploaded — fall back to the project name. --}}
+            @endforelse
             <span class="kl-topbar__name">
                 {{ $landing['name'] }}
                 @if ($landing['location']['shortAddress'] || $landing['location']['neighbourhood'])
@@ -67,9 +71,11 @@
                     <div class="kl-hero__dev">By {{ $landing['developer']['name'] }}</div>
                 @endif
 
-                <h1>{{ $landing['name'] }}</h1>
+                <h1>{{ $landing['hero']['heading'] ?: $landing['name'] }}</h1>
 
-                @if ($landing['price']['fromFormatted'])
+                @if ($landing['hero']['priceText'] ?? null)
+                    <div class="kl-hero__price kl-num">{{ $landing['hero']['priceText'] }}</div>
+                @elseif ($landing['price']['fromFormatted'])
                     <div class="kl-hero__price kl-num">
                         Prices Start from <strong>{{ $landing['price']['fromFormatted'] }}</strong>
                     </div>

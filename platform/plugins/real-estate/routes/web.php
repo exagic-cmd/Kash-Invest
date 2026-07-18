@@ -43,6 +43,44 @@ Route::group(['namespace' => 'Botble\RealEstate\Http\Controllers', 'middleware' 
             ]);
         });
 
+        Route::group(['prefix' => 'landing-pages', 'as' => 'real-estate.landing-pages.'], function (): void {
+            Route::get('/', [
+                'as' => 'index',
+                'uses' => 'ProjectLandingPageController@index',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::get('search', [
+                'as' => 'search',
+                'uses' => 'ProjectLandingPageController@search',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::post('assign', [
+                'as' => 'assign',
+                'uses' => 'ProjectLandingPageController@assign',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::get('{project}/edit', [
+                'as' => 'edit',
+                'uses' => 'ProjectLandingPageController@edit',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::put('{project}', [
+                'as' => 'update',
+                'uses' => 'ProjectLandingPageController@update',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::delete('{project}', [
+                'as' => 'destroy',
+                'uses' => 'ProjectLandingPageController@destroy',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+        });
+
         Route::group(['prefix' => 'settings', 'as' => 'real-estate.settings.'], function (): void {
             Route::get('general', [
                 'as' => 'general',

@@ -16,6 +16,11 @@ return [
         'parent_flag' => 'plugins.real-estate',
     ],
     [
+        'name' => 'Landing Pages',
+        'flag' => 'real-estate.landing-pages',
+        'parent_flag' => 'plugins.real-estate',
+    ],
+    [
         'name' => 'Properties',
         'flag' => 'property.index',
         'parent_flag' => 'plugins.real-estate',

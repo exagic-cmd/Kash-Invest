@@ -274,8 +274,20 @@ class RealEstateServiceProvider extends ServiceProvider
                 ->when(RealEstateHelper::isEnabledProjects(), function (DashboardMenuSupport $dashboardMenu): void {
                     $dashboardMenu
                         ->registerItem([
-                            'id' => 'cms-plugins-project-api-sync',
+                            'id' => 'cms-plugins-project-landing-pages',
                             'priority' => 2,
+                            'parent_id' => 'cms-plugins-real-estate',
+                            'name' => 'Featured Projects',
+                            'icon' => 'ti ti-layout-board',
+                            'url' => fn () => route('real-estate.landing-pages.index'),
+                            'permissions' => ['real-estate.landing-pages'],
+                        ]);
+                })
+                ->when(RealEstateHelper::isEnabledProjects(), function (DashboardMenuSupport $dashboardMenu): void {
+                    $dashboardMenu
+                        ->registerItem([
+                            'id' => 'cms-plugins-project-api-sync',
+                            'priority' => 3,
                             'parent_id' => 'cms-plugins-real-estate',
                             'name' => 'plugins/real-estate::api-sync.name',
                             'icon' => 'ti ti-cloud-download',

@@ -18,6 +18,11 @@
             <div class="kl-plans">
                 @foreach ($landing['floorPlans'] as $plan)
                     <article class="kl-plan">
+                        @if ($plan['image'] ?? null)
+                            <img src="{{ $plan['image'] }}" alt="{{ $plan['type'] }} floor plan"
+                                 loading="lazy" decoding="async"
+                                 style="width:100%;height:auto;border-radius:8px;margin-bottom:1rem;">
+                        @endif
                         <div class="kl-plan__type">{{ $plan['type'] }}</div>
 
                         <dl style="margin:1rem 0 0;">
