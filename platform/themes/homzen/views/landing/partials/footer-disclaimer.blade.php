@@ -13,7 +13,9 @@
             <div style="background: #ffffff; border-radius: 12px; padding: 2.5rem 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.04); text-align: center;">
                 <div style="margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; min-height: 50px;">
                     @if (!empty($disclaimer['logo']))
-                        <img src="{{ $disclaimer['logo'] }}" alt="Partner Logo" style="max-height: 50px; width: auto; object-fit: contain;">
+                        {{-- flex:none so the centring flex row can't squeeze it out of ratio --}}
+                        <img src="{{ $disclaimer['logo'] }}" alt="Partner Logo"
+                             style="flex:none; height:auto; width:auto; max-height:50px; max-width:240px; object-fit:contain;">
                     @else
                         {!! Theme::getLogoImage(maxHeight: 50) !!}
                     @endif

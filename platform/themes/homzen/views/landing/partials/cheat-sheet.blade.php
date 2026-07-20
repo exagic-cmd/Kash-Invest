@@ -53,18 +53,19 @@
             </div>
 
             <div>
+                {{-- The hints used to sit in a nested <ul> inside one checkmark,
+                     which rendered them as plain disc bullets and looked out of
+                     place next to the steps. The intro is now a lead-in line and
+                     each hint is a normal check item, so both cards match. --}}
+                <p class="kl-cheat__lead">
+                    *This is a high-demand project. To have the best chance at getting a suite,
+                    follow these hints below:
+                </p>
+
                 <ul class="kl-checks kl-checks--one">
-                    <li>
-                        <div>
-                            *This is a high-demand project. To have the best chance at getting a suite,
-                            follow these hints below:
-                            <ul class="kl-sublist">
-                                @foreach ($hints as $hint)
-                                    <li>{{ $hint }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </li>
+                    @foreach ($hints as $hint)
+                        <li>{{ $hint }}</li>
+                    @endforeach
                 </ul>
             </div>
         </div>

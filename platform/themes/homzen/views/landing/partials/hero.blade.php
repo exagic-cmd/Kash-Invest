@@ -18,7 +18,9 @@
     <div class="kl-wrap kl-topbar__in">
         <a href="#top" class="kl-topbar__project">
             @forelse ($logos as $logo)
-                <img src="{{ $logo }}" alt="{{ $landing['name'] }}" style="max-height:38px;width:auto;">
+                {{-- sizing lives in styles.blade.php (.kl-topbar__project img) so
+                     the aspect ratio is protected in one place --}}
+                <img src="{{ $logo }}" alt="{{ $landing['name'] }}" loading="eager" decoding="async">
             @empty
                 {{-- No logo uploaded — fall back to the project name. --}}
             @endforelse

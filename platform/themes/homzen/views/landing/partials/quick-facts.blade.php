@@ -30,14 +30,14 @@
                 <h2 class="kl-h2">Quick Facts</h2>
             </div>
 
-            <ul class="kl-checks kl-prose">
+            <ul class="kl-checks kl-checks--facts">
                 @foreach ($lines as $line)
                     <li class="kl-num">{{ $line }}</li>
                 @endforeach
             </ul>
 
             <div class="kl-center-cta">
-                <a href="#register" class="kl-btn">{{ $landing['cta']['secondary'] }}</a>
+                <a href="#register" class="kl-btn kl-btn--cta">{{ $landing['cta']['secondary'] }}</a>
             </div>
         </div>
     </section>

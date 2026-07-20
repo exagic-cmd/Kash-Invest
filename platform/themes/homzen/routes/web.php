@@ -4,6 +4,7 @@ use Botble\Base\Http\Middleware\RequiresJsonRequestMiddleware;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 use Theme\Homzen\Http\Controllers\HomzenController;
+use Theme\Homzen\Http\Controllers\LandingPageController;
 use Theme\Homzen\Http\Controllers\LandingPreviewController;
 
 
@@ -25,6 +26,20 @@ Route::middleware(['web', 'core'])
             });
         });
     });
+
+/*
+ | Project landing pages.
+ |
+ | /landing/{project}            -> the assigned landing page for that project.
+ |
+ | These URLs are intentionally NOT linked from anywhere on the site. They exist
+ | solely for Google Ads traffic; the only entry point is the Featured Projects
+ | admin table (Preview / Copy Link). Honors is_published and the assignment.
+ */
+Route::middleware(['web', 'core'])->group(function (): void {
+    Route::get('landing/{project}', [LandingPageController::class, 'show'])
+        ->name('landing.page');
+});
 
 /*
  | Preconstruction landing template previews.

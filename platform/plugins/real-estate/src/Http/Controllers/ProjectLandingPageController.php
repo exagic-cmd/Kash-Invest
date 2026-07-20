@@ -72,7 +72,7 @@ class ProjectLandingPageController extends BaseController
         return $this
             ->httpResponse()
             ->setNextUrl(route('real-estate.landing-pages.edit', $project->getKey()))
-            ->setMessage('Landing page assigned. Now edit its content below.');
+            ->setMessage('Featured project assigned. Now edit its content below.');
     }
 
     public function edit(int|string $id)
@@ -84,9 +84,11 @@ class ProjectLandingPageController extends BaseController
 
         $this->pageTitle('Landing page — ' . $project->name);
 
-        $form = ProjectLandingPageForm::createFromModel($landingPage);
-
-        return view('plugins/real-estate::landing-pages.edit', compact('form', 'project', 'landingPage'));
+        // renderForm() produces the whole admin page (its template extends the
+        // layout), so return it directly — wrapping it in another blade view
+        // silently discards that view's own content. The toolbar/notice live
+        // inside the form (see ProjectLandingPageForm::toolbar()).
+        return ProjectLandingPageForm::createFromModel($landingPage)->renderForm();
     }
 
     public function update(int|string $id, Request $request)
@@ -149,11 +151,11 @@ class ProjectLandingPageController extends BaseController
                 'banner' => $this->images($request->input('hero_banner', [])),
                 'video' => $request->input('hero_video'),
             ],
+            // Overview is text-only — no image field.
             'overview' => [
                 'show' => $request->boolean('overview_show'),
                 'heading' => $request->input('overview_heading'),
                 'body' => $request->input('overview_body'),
-                'image' => $request->input('overview_image'),
             ],
             'quick_facts' => [
                 'show' => $request->boolean('quick_facts_show'),
@@ -187,12 +189,9 @@ class ProjectLandingPageController extends BaseController
                 'button_link' => $request->input('inner_circle_button_link'),
                 'items' => $this->rows($request->input('inner_circle_items', [])),
             ],
-            'floor_plans' => [
-                'show' => $request->boolean('floor_plans_show'),
-                'items' => $this->rows($request->input('landing_floor_plans', [])),
-            ],
+            // No standalone gallery/floor-plan sections on the page any more; these
+            // images remain because the hero slider falls back to them.
             'gallery' => [
-                'show' => $request->boolean('gallery_show'),
                 'images' => $this->images($request->input('gallery_images', [])),
             ],
             'register' => [
@@ -200,11 +199,8 @@ class ProjectLandingPageController extends BaseController
                 'heading' => $request->input('register_heading'),
                 'lede' => $request->input('register_lede'),
             ],
-            'legal' => [
-                'renderings' => $request->input('legal_renderings'),
-                'brokerage' => $request->input('legal_brokerage'),
-                'pricing' => $request->input('legal_pricing'),
-            ],
+            // 'legal' intentionally dropped — the site footer it fed is no longer
+            // rendered; the Disclaimer card below carries that copy instead.
             'disclaimer' => [
                 'show' => $request->boolean('disclaimer_show'),
                 'logo' => $request->input('disclaimer_logo'),

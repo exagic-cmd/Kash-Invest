@@ -178,7 +178,22 @@
     .kl-topbar { background: #fff; border-bottom: 1px solid rgba(33, 37, 41, .08); }
     .kl-topbar__in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 92px; padding-block: .75rem; }
     .kl-topbar__project { display: flex; align-items: center; gap: .85rem; text-decoration: none; color: #212529; min-width: 0; }
-    .kl-topbar__project img { max-height: 56px; width: auto; }
+    /* Logos sit in a flex row next to the project name. Without flex:none the
+       image is a shrinkable flex item — it gets squeezed horizontally while
+       max-height pins the height, which distorts the logo. flex:none keeps its
+       intrinsic ratio; object-fit:contain is a belt-and-braces guard in case a
+       height ever gets forced on it. */
+    .kl-topbar__project img {
+        flex: none;
+        width: auto;
+        height: auto;
+        max-height: 46px;
+        max-width: 190px;
+        object-fit: contain;
+    }
+    @media (max-width: 600px) {
+        .kl-topbar__project img { max-height: 34px; max-width: 120px; }
+    }
     .kl-topbar__name {
         font-family: 'Jost', sans-serif; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
         font-size: clamp(1.1rem, 2.4vw, 1.6rem); line-height: 1.1; color: #0F3B4C;
@@ -267,10 +282,46 @@
         background: var(--kl-bg);
     }
     .kl-cards2 ul { margin: 0; }
-    .kl-cards2 .kl-sublist { list-style: disc; padding-left: 1.35rem; margin: .6rem 0 0; }
-    .kl-cards2 .kl-sublist li { display: list-item; font-size: .95rem; margin-bottom: .5rem; color: var(--kl-ink); }
+    /* lead-in line above the hint checks in the cheat sheet's second card */
+    .kl-cheat__lead { margin: 0 0 1.15rem; font-size: .98rem; line-height: 1.6; color: var(--kl-ink); }
 
     .kl-center-cta { text-align: center; margin-top: clamp(2rem, 4vw, 3rem); }
+
+    /* ---------- quick facts: enhanced check list + CTA ----------
+       Scoped with --facts so the plainer check style stays intact in the
+       overview, location and cheat-sheet lists that share .kl-checks. */
+    .kl-checks--facts {
+        gap: clamp(1.5rem, 3vw, 2.15rem) clamp(2rem, 6vw, 5rem);
+        max-width: 1080px;
+        margin-inline: auto;
+    }
+    .kl-checks--facts li {
+        gap: 1.1rem;
+        font-size: 1.02rem;
+        line-height: 1.55;
+        align-items: center;
+    }
+    /* circled check with the tail running past the ring, as per the reference */
+    .kl-checks--facts li::before {
+        width: 27px; height: 27px; margin-top: 0;
+        border: 0; border-radius: 0;
+        background: no-repeat center/27px 27px;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none'%3e%3ccircle cx='11.5' cy='13.5' r='9.4' stroke='%230392A6' stroke-width='1.4'/%3e%3cpath d='M5.8 13.8 L9.9 17.9 L23 3.6' stroke='%230392A6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    }
+    .kl[data-landing-theme="dark"] .kl-checks--facts li::before {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none'%3e%3ccircle cx='11.5' cy='13.5' r='9.4' stroke='%23B08D57' stroke-width='1.4'/%3e%3cpath d='M5.8 13.8 L9.9 17.9 L23 3.6' stroke='%23B08D57' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    }
+
+    /* softer, title-case CTA button used under the facts list */
+    .kl-btn--cta {
+        padding: 1.05rem 2.5rem;
+        font-family: var(--kl-display);
+        font-size: 1.02rem;
+        font-weight: 500;
+        letter-spacing: .01em;
+        text-transform: none;
+        border-radius: 8px;
+    }
 
     /* ---------- quick facts ---------- */
     .kl-facts { background: var(--kl-surface); border-block: 1px solid var(--kl-line); }
@@ -294,7 +345,18 @@
 
     /* ---------- why us ---------- */
     .kl-why-us { display: grid; gap: clamp(2rem, 5vw, 3rem); align-items: center; }
-    @media (min-width: 860px) { .kl-why-us { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 860px) {
+        .kl-why-us { grid-template-columns: 1fr 1fr; }
+        /* no image uploaded -> don't leave an empty half */
+        .kl-why-us--no-image { grid-template-columns: 1fr; }
+    }
+    /* width:100% stops the auto margins from shrink-wrapping the grid item to
+       its longest line; the block centres while the text stays left-aligned. */
+    .kl-why-us--no-image .kl-why-us__copy { width: 100%; max-width: 900px; margin-inline: auto; }
+    /* spread the bullets across the freed-up width instead of one narrow column */
+    @media (min-width: 860px) {
+        .kl-why-us--no-image .kl-checks--one { grid-template-columns: 1fr 1fr; }
+    }
     .kl-why-us__copy { padding: clamp(1.5rem, 3vw, 2.5rem); }
     .kl-why-us__image { border-radius: 10px; overflow: hidden; }
     .kl-why-us__image img { width: 100%; height: 100%; object-fit: cover; min-height: 320px; }
@@ -302,7 +364,8 @@
     /* ---------- inner circle ---------- */
     .kl-inner-circle-grid { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); text-align: center; }
     .kl-inner-circle-item { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-    .kl-inner-circle-item__icon img { width: auto; height: 60px; object-fit: contain; }
+    .kl-inner-circle-item__icon { flex: none; }
+    .kl-inner-circle-item__icon img { flex: none; width: auto; height: auto; max-height: 60px; max-width: 120px; object-fit: contain; }
     .kl-inner-circle-item__label { font-weight: 600; font-size: 1.1rem; }
 
     .kl-amenities { display: grid; gap: 1px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); background: var(--kl-line); border: 1px solid var(--kl-line); margin-top: 2rem; }

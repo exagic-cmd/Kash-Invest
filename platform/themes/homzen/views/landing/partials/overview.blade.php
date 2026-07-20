@@ -27,12 +27,7 @@
             <h2 class="kl-h2">{{ ($landing['overview']['customHeading'] ?? null) ?: ($landing['tagline'] ?: ($landing['overview']['heading'] ?: 'About this project')) }}</h2>
         </div>
 
-        @if ($landing['overview']['image'] ?? null)
-            <img src="{{ $landing['overview']['image'] }}" alt="{{ $landing['name'] }}"
-                 loading="lazy" decoding="async"
-                 style="width:100%;height:auto;border-radius:12px;margin:1.5rem 0;">
-        @endif
-
+        {{-- Overview is text-only by design; there is no image here. --}}
         @if ($paras)
             <div class="kl-prose">
                 @foreach ($paras as $para)

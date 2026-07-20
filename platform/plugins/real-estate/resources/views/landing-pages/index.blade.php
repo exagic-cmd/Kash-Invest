@@ -47,10 +47,13 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    @if ($project->url)
-                                        <a href="{{ $project->url }}" target="_blank" rel="noopener"
-                                           class="btn btn-sm btn-outline-secondary">Preview</a>
-                                    @endif
+                                    @php($landingUrl = route('landing.page', $project->getKey()))
+                                    <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
+                                       class="btn btn-sm btn-outline-secondary">Preview</a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary lp-copy-link"
+                                            data-url="{{ $landingUrl }}" title="Copy landing page URL">
+                                        <i class="ti ti-link"></i> Copy Link
+                                    </button>
                                     <a href="{{ route('real-estate.landing-pages.edit', $project->getKey()) }}"
                                        class="btn btn-sm btn-primary">Edit</a>
                                     <button type="button" class="btn btn-sm btn-outline-danger lp-unassign"
@@ -154,6 +157,24 @@
                     const form = document.getElementById('lp-unassign-form');
                     form.action = unassignBase + '/' + btn.getAttribute('data-id');
                     form.submit();
+                });
+            });
+
+            document.querySelectorAll('.lp-copy-link').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const url = btn.getAttribute('data-url');
+                    const original = btn.innerHTML;
+                    const done = function () {
+                        btn.innerHTML = '<i class="ti ti-check"></i> Copied';
+                        setTimeout(function () { btn.innerHTML = original; }, 1500);
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(url).then(done).catch(function () {
+                            window.prompt('Copy this URL:', url);
+                        });
+                    } else {
+                        window.prompt('Copy this URL:', url);
+                    }
                 });
             });
         })();

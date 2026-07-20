@@ -73,16 +73,12 @@
     @if ($show['innerCircle'] ?? true)
         @include(Theme::getThemeNamespace('views.landing.partials.inner-circle'))
     @endif
+    {{-- The page ends on the disclaimer card followed by the enquiry form.
+         Floor plans, gallery and the old site footer are intentionally not
+         rendered — this is an ads landing page, so the only thing after the
+         disclaimer is the form. The gallery images still feed the hero slider. --}}
     @if ($show['disclaimer'] ?? true)
         @include(Theme::getThemeNamespace('views.landing.partials.footer-disclaimer'))
-    @endif
-
-
-    @if ($show['floorPlans'] ?? true)
-        @include(Theme::getThemeNamespace('views.landing.partials.floor-plans'))
-    @endif
-    @if ($show['gallery'] ?? true)
-        @include(Theme::getThemeNamespace('views.landing.partials.gallery'))
     @endif
     @if ($show['register'] ?? true)
         @include(Theme::getThemeNamespace('views.landing.partials.register'))
@@ -90,8 +86,6 @@
 </main>
 
 @include(Theme::getThemeNamespace('views.landing.partials.nav'))
-
-@include(Theme::getThemeNamespace('views.landing.partials.footer'))
 
 <script>
 (function () {

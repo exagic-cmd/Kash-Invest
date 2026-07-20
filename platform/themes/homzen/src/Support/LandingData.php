@@ -22,6 +22,30 @@ use Illuminate\Support\Str;
 class LandingData
 {
     /**
+     * Brokerage copy shown when the editor hasn't overridden it. Kept here (not
+     * only in the admin form) so the sections render on a project that has just
+     * been assigned and never edited. ProjectLandingPageForm seeds the same
+     * values, so the editor and the live page always agree.
+     */
+    public const DEFAULT_WHY_US_HEADING = 'Why Kash Invest';
+
+    public const DEFAULT_WHY_US_POINTS = [
+        'High Return on Investment (ROI)',
+        'Premium Locations',
+        'Secure & Transparent',
+        'Expert Guidance',
+        'End-to-End Management',
+    ];
+
+    public const DEFAULT_INNER_CIRCLE_HEADING = 'JOIN OUR INNER CIRCLE TO GET FIRST ACCESS';
+
+    public const DEFAULT_INNER_CIRCLE_LABELS = ['Prices', 'Floor Plans', 'Incentives', 'Worksheet'];
+
+    public const DEFAULT_INNER_CIRCLE_BUTTON_TEXT = 'Join Now';
+
+    public const DEFAULT_INNER_CIRCLE_BUTTON_LINK = '#register';
+
+    /**
      * @return array<string, mixed>
      */
     public static function fromProject(Project $project): array
@@ -121,12 +145,24 @@ class LandingData
         $data['hero']['heading'] = null;
         $data['hero']['slides'] = null;
         $data['hero']['priceText'] = null;
-        $data['overview']['image'] = null;
         $data['overview']['customHeading'] = null;
         $data['cheatSheet'] = ['steps' => [], 'hints' => []];
         $data['register'] = ['heading' => null, 'lede' => null];
-        $data['whyUs'] = ['heading' => null, 'points' => [], 'image' => null];
-        $data['innerCircle'] = ['heading' => null, 'items' => [], 'buttonText' => null, 'buttonLink' => null];
+        // "Why Us" and "Inner Circle" are brokerage copy, not project data, so
+        // they carry render-time defaults. Without these a freshly-assigned
+        // project dropped Inner Circle entirely and showed an empty Why Us band.
+        // The editor seeds the same values, so editor and live page agree.
+        $data['whyUs'] = [
+            'heading' => static::DEFAULT_WHY_US_HEADING,
+            'points' => static::DEFAULT_WHY_US_POINTS,
+            'image' => null,
+        ];
+        $data['innerCircle'] = [
+            'heading' => static::DEFAULT_INNER_CIRCLE_HEADING,
+            'items' => array_map(fn ($label) => ['icon' => null, 'label' => $label], static::DEFAULT_INNER_CIRCLE_LABELS),
+            'buttonText' => static::DEFAULT_INNER_CIRCLE_BUTTON_TEXT,
+            'buttonLink' => static::DEFAULT_INNER_CIRCLE_BUTTON_LINK,
+        ];
         $data['disclaimer'] = ['logo' => null, 'text' => null, 'copyright' => null];
         $data['floorPlans'] = array_map(fn ($plan) => $plan + ['image' => null], $data['floorPlans']);
 
@@ -157,9 +193,7 @@ class LandingData
             $data['overview']['description'] = $body;
             $data['overview']['content'] = null; // avoid the duplicate-paragraph guard
         }
-        if ($overviewImage = Arr::get($content, 'overview.image')) {
-            $data['overview']['image'] = static::imageUrl($overviewImage);
-        }
+        // (No overview image — the section is text-only.)
 
         // ---- Quick facts ----------------------------------------------------
         if ($facts = static::repeaterRows(Arr::get($content, 'quick_facts.items', []), ['label', 'text'])) {

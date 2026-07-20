@@ -44,6 +44,11 @@ class ProjectLandingPageForm extends FormAbstract
             ->setUrl(route('real-estate.landing-pages.update', $project?->getKey()))
             ->setFormOption('method', 'PUT')
 
+            // Top toolbar + info note. Lives inside the form because renderForm()
+            // renders the whole admin page itself — content written around it in a
+            // wrapper blade view never shows (its section gets clobbered).
+            ->add('lp_toolbar', 'html', ['html' => $this->toolbar($project)])
+
             // ---- Hero -------------------------------------------------------
             ->add('hero_divider', 'html', ['html' => $this->heading('Hero', 'Logos, headline and background. Leave blank to use the project name / images.')])
             ->add('hero_logos[]', MediaImagesField::class, MediaImagesFieldOption::make()
@@ -69,10 +74,6 @@ class ProjectLandingPageForm extends FormAbstract
             ->add('overview_body', EditorField::class, EditorFieldOption::make()
                 ->label('Body text')
                 ->value($this->content('overview.body'))
-                ->toArray())
-            ->add('overview_image', MediaImageField::class, MediaImageFieldOption::make()
-                ->label('Overview image (optional)')
-                ->value($this->content('overview.image'))
                 ->toArray())
 
             // ---- Quick facts ------------------------------------------------
@@ -218,25 +219,13 @@ class ProjectLandingPageForm extends FormAbstract
 
 
             $this
-            ->add('floor_plans_divider', 'html', ['html' => $this->heading('Floor plans')])
-            ->add('floor_plans_show', OnOffField::class, $this->toggle('Show the floor-plans section', $this->content('floor_plans.show', true)))
-            ->add('landing_floor_plans', RepeaterField::class, RepeaterFieldOption::make()
-                ->label('Suite collection')
-                ->fields([
-                    'type' => $this->repeaterText('Type'),
-                    'size' => $this->repeaterText('Size'),
-                    'baths' => $this->repeaterText('Baths'),
-                    'price' => $this->repeaterText('Price'),
-                    'image' => ['type' => 'mediaImage', 'label' => 'Plan image', 'attributes' => ['name' => 'image', 'value' => null]],
-                ])
-                ->value($this->content('floor_plans.items', []))
-                ->toArray())
-
-            // ---- Gallery ----------------------------------------------------
-            ->add('gallery_divider', 'html', ['html' => $this->heading('Gallery')])
-            ->add('gallery_show', OnOffField::class, $this->toggle('Show the gallery section', $this->content('gallery.show', true)))
+            // ---- Hero background images -------------------------------------
+            // The standalone gallery and floor-plan sections are no longer shown
+            // on the landing page; these images still drive the hero slider when
+            // no dedicated banner is set above.
+            ->add('gallery_divider', 'html', ['html' => $this->heading('Hero background images', 'Used by the hero slider when no banner is set above. There is no separate gallery section on the page.')])
             ->add('gallery_images[]', MediaImagesField::class, MediaImagesFieldOption::make()
-                ->label('Gallery images')
+                ->label('Images')
                 ->values($this->content('gallery.images', []))
                 ->toArray())
 
@@ -246,11 +235,9 @@ class ProjectLandingPageForm extends FormAbstract
             ->add('register_heading', TextField::class, $this->text('Heading', $this->content('register.heading')))
             ->add('register_lede', TextareaField::class, $this->textarea('Lede', $this->content('register.lede')))
 
-            // ---- Legal ------------------------------------------------------
-            ->add('legal_divider', 'html', ['html' => $this->heading('Legal / footer')])
-            ->add('legal_renderings', TextareaField::class, $this->textarea('Renderings disclaimer', $this->content('legal.renderings')))
-            ->add('legal_brokerage', TextareaField::class, $this->textarea('Brokerage disclaimer', $this->content('legal.brokerage')))
-            ->add('legal_pricing', TextareaField::class, $this->textarea('Pricing disclaimer', $this->content('legal.pricing')))
+            // The old "Legal / footer" fields (renderings / brokerage / pricing
+            // disclaimers) fed the site footer, which the landing page no longer
+            // renders. Their job is now done by the Disclaimer card below.
 
             // ---- Footer Disclaimer Card -------------------------------------
             ->add('disclaimer_divider', 'html', ['html' => $this->heading('Footer Disclaimer Card', 'White box with partner/developer logo, disclaimer, and copyright at the bottom.')])
@@ -333,7 +320,6 @@ class ProjectLandingPageForm extends FormAbstract
                 'show' => true,
                 'heading' => Arr::get($landing, 'overview.heading'),
                 'body' => Arr::get($landing, 'overview.description'),
-                'image' => null,
             ],
             'quick_facts' => [
                 'show' => true,
@@ -414,6 +400,65 @@ class ProjectLandingPageForm extends FormAbstract
 
             return $out;
         }, $rows));
+    }
+
+    /**
+     * The bar above the fields: back link, Copy Link (ad-ready URL) and Preview
+     * (draft-safe ?preview=1), plus the fallback explainer. Inline script because
+     * html fields render inside the form — there's no blade stack to push to.
+     */
+    protected function toolbar(?Project $project): string
+    {
+        if (! $project) {
+            return '';
+        }
+
+        $backUrl = e(route('real-estate.landing-pages.index'));
+        $landingUrl = e(route('landing.page', $project->getKey()));
+        $name = e($project->name);
+
+        return <<<HTML
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <a href="{$backUrl}" class="text-muted">
+                        <i class="ti ti-arrow-left"></i> Back to Featured Projects
+                    </a>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary lp-copy-link" data-url="{$landingUrl}">
+                        <i class="ti ti-link"></i> Copy Link
+                    </button>
+                    <a href="{$landingUrl}?preview=1" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+                        <i class="ti ti-external-link"></i> Preview landing page
+                    </a>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                Every field is optional. Leave a field blank to fall back to <strong>{$name}</strong>'s
+                own data (for example, no logo &rarr; the project name is shown).
+            </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.querySelectorAll('.lp-copy-link').forEach(function (btn) {
+                        btn.addEventListener('click', function () {
+                            var url = btn.getAttribute('data-url');
+                            var original = btn.innerHTML;
+                            var done = function () {
+                                btn.innerHTML = '<i class="ti ti-check"></i> Copied';
+                                setTimeout(function () { btn.innerHTML = original; }, 1500);
+                            };
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(url).then(done).catch(function () {
+                                    window.prompt('Copy this URL:', url);
+                                });
+                            } else {
+                                window.prompt('Copy this URL:', url);
+                            }
+                        });
+                    });
+                });
+            </script>
+        HTML;
     }
 
     protected function heading(string $title, ?string $help = null): string

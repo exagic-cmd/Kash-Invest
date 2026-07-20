@@ -15,7 +15,9 @@
 @if ($heading || $points || $image)
 <section class="kl-section kl-section--tint" id="why-us">
     <div class="kl-wrap kl-reveal">
-        <div class="kl-why-us">
+        {{-- With no image uploaded the grid would keep its empty second column,
+             leaving half the section blank — collapse to one column instead. --}}
+        <div class="kl-why-us @unless ($image) kl-why-us--no-image @endunless">
             <div class="kl-why-us__copy">
                 @if ($heading)
                     <h2 class="kl-h2" style="text-transform:uppercase;margin-bottom:1.5rem;">{{ $heading }}</h2>
