@@ -18,6 +18,9 @@ return [
             $theme->asset()->container('footer')->usePath()->add('animate', 'css/animate.min.css');
             $theme->asset()->usePath()->add('swiper', 'plugins/swiper/swiper-bundle.min.css');
             $theme->asset()->usePath()->add('style', 'css/style.css', version: $version);
+            // Hand-written overrides, loaded last so they win over the compiled
+            // SASS output. See public/css/custom.css for what and why.
+            $theme->asset()->usePath()->add('custom', 'css/custom.css', ['style'], version: $version);
 
             $theme->asset()->container('footer')->usePath()->add('popper', 'js/popper.min.js');
             $theme->asset()->container('footer')->usePath()->add('bootstrap', 'plugins/bootstrap/js/bootstrap.min.js');

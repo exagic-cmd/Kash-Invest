@@ -32,6 +32,7 @@ return [
         'details' => '',
     ],
     'details' => 'Details',
+    'no_changes_recorded' => 'This run made no changes, so there is nothing to show.',
     'details_title' => 'Sync details',
     'details_empty' => 'No project-level changes were recorded for this run.',
     'details_project' => 'Project',

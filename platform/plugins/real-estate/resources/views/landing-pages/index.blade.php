@@ -1,6 +1,7 @@
 @extends(BaseHelper::getAdminMasterLayoutTemplate())
 
 @section('content')
+    @php($chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;')
     <div class="max-width-1200 mx-auto">
         <p class="text-muted">
             Assign a preconstruction landing page to a project, then edit every section like a CMS.
@@ -40,26 +41,39 @@
                             @php($published = $project->landingPage?->is_published ?? true)
                             <tr>
                                 <td>{{ $project->name }}</td>
-                                <td><span class="badge bg-secondary">Light</span></td>
+                                {{-- Explicit colours: bg-secondary renders as a pale
+                                     grey pill on the dark theme and swallowed its label. --}}
                                 <td>
-                                    <span class="badge bg-{{ $published ? 'success' : 'secondary' }}">
+                                    <span style="{{ $chip }}background-color:#64748b;">Light</span>
+                                </td>
+                                <td>
+                                    <span style="{{ $chip }}background-color:{{ $published ? '#2fb344' : '#64748b' }};">
                                         {{ $published ? 'Published' : 'Hidden' }}
                                     </span>
                                 </td>
+                                {{-- One consistent set: neutral outlines for the
+                                     read-only actions, solid primary for Edit (the
+                                     main action), outlined red for the destructive one. --}}
                                 <td class="text-end">
                                     @php($landingUrl = route('landing.page', $project->getKey()))
-                                    <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
-                                       class="btn btn-sm btn-outline-secondary">Preview</a>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary lp-copy-link"
-                                            data-url="{{ $landingUrl }}" title="Copy landing page URL">
-                                        <i class="ti ti-link"></i> Copy Link
-                                    </button>
-                                    <a href="{{ route('real-estate.landing-pages.edit', $project->getKey()) }}"
-                                       class="btn btn-sm btn-primary">Edit</a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger lp-unassign"
-                                            data-id="{{ $project->getKey() }}" data-name="{{ $project->name }}">
-                                        Unassign
-                                    </button>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
+                                           class="btn btn-outline-secondary" title="Open the landing page in a new tab">
+                                            <i class="ti ti-external-link"></i> Preview
+                                        </a>
+                                        <button type="button" class="btn btn-outline-secondary lp-copy-link"
+                                                data-url="{{ $landingUrl }}" title="Copy the public landing page URL">
+                                            <i class="ti ti-link"></i> Copy Link
+                                        </button>
+                                        <a href="{{ route('real-estate.landing-pages.edit', $project->getKey()) }}"
+                                           class="btn btn-primary">
+                                            <i class="ti ti-pencil"></i> Edit
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger lp-unassign"
+                                                data-id="{{ $project->getKey() }}" data-name="{{ $project->name }}">
+                                            <i class="ti ti-trash"></i> Unassign
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

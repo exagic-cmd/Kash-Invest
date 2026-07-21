@@ -1,7 +1,11 @@
 @extends(BaseHelper::getAdminMasterLayoutTemplate())
 
 @section('content')
-    <p class="text-muted">{{ trans('plugins/real-estate::api-sync.description') }}</p>
+    {{-- Same chip style as the Featured Projects table: Bootstrap's `badge bg-*`
+         utilities render washed-out/low-contrast on the dark admin theme, so the
+         status pills use explicit colours with white text instead. --}}
+    @php($chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;line-height:1;')
+    <p>{{ trans('plugins/real-estate::api-sync.description') }}</p>
 
     <div class="row">
         @foreach ($sources as $source)
@@ -11,7 +15,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <h5 class="mb-1">{{ $source['label'] }}</h5>
-                                <span class="badge bg-{{ $source['enabled'] ? 'success' : 'secondary' }}">
+                                <span style="{{ $chip }}background-color:{{ $source['enabled'] ? '#2fb344' : '#64748b' }};">
                                     {{ $source['enabled'] ? trans('plugins/real-estate::api-sync.enabled') : trans('plugins/real-estate::api-sync.disabled') }}
                                 </span>
                             </div>
@@ -20,7 +24,10 @@
                             </a>
                         </div>
 
-                        <ul class="list-unstyled text-muted small mb-3">
+                        {{-- `text-muted` is far too low-contrast on the dark admin
+                             theme, so these inherit the normal body colour instead.
+                             `small` still marks them as secondary. --}}
+                        <ul class="list-unstyled small mb-3">
                             <li><strong>{{ trans('plugins/real-estate::api-sync.schedule') }}:</strong> {{ $source['schedule'] }}</li>
                             @foreach ($source['meta'] as $label => $value)
                                 <li><strong>{{ $label }}:</strong> {{ $value }}</li>
@@ -28,7 +35,7 @@
                         </ul>
 
                         <div class="border rounded p-2 mb-3 bg-body-tertiary">
-                            <div class="text-muted small mb-1">{{ trans('plugins/real-estate::api-sync.last_run') }}</div>
+                            <div class="small mb-1 fw-semibold">{{ trans('plugins/real-estate::api-sync.last_run') }}</div>
                             <div data-last-run>@include('plugins/real-estate::api-sync.partials.last-run', ['log' => $source['last_log']])</div>
                         </div>
 
@@ -66,22 +73,32 @@
                         <tr>
                             <td>{{ \Illuminate\Support\Str::headline($log->source) }}</td>
                             <td>
-                                @php($color = $log->status === 'success' ? 'success' : ($log->status === 'failed' ? 'danger' : 'warning'))
-                                <span class="badge bg-{{ $color }}">{{ ucfirst($log->status) }}</span>
+                                @php($color = $log->status === 'success' ? '#2fb344' : ($log->status === 'failed' ? '#d63939' : '#f76707'))
+                                <span style="{{ $chip }}background-color:{{ $color }};">{{ ucfirst($log->status) }}</span>
                             </td>
                             <td>{{ ucfirst($log->triggered_by) }}</td>
                             <td class="text-center">{{ $log->created }}</td>
                             <td class="text-center">{{ $log->updated }}</td>
-                            <td class="text-center text-muted">{{ $log->unchanged }}</td>
+                            {{-- was text-muted: rendered noticeably dimmer than the
+                                 neighbouring counts and was hard to read on dark --}}
+                            <td class="text-center">{{ $log->unchanged }}</td>
                             <td class="text-center">{{ $log->failed }}</td>
                             <td>{{ $log->duration_label ?: '—' }}</td>
                             <td title="{{ $log->finished_at ?: $log->started_at }}">
                                 {{ ($log->finished_at ?: $log->started_at)?->diffForHumans() }}
                             </td>
+                            {{-- Every row carries the same control so the column
+                                 doesn't look half-empty; runs with nothing to show
+                                 render it disabled rather than omitting it. --}}
                             <td class="text-end">
                                 @if (($log->items_count ?? 0) > 0)
                                     <button type="button" class="btn btn-sm btn-outline-primary"
                                             data-details-url="{{ route('real-estate.api-sync.details', $log->id) }}">
+                                        <i class="ti ti-list-details me-1"></i>{{ trans('plugins/real-estate::api-sync.details') }}
+                                    </button>
+                                @else
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                            title="{{ trans('plugins/real-estate::api-sync.no_changes_recorded') }}">
                                         <i class="ti ti-list-details me-1"></i>{{ trans('plugins/real-estate::api-sync.details') }}
                                     </button>
                                 @endif
@@ -134,7 +151,9 @@
                 if (log.status === 'running') {
                     return '<span class="text-warning"><span class="spinner-border spinner-border-sm me-1"></span>' + L.running + '</span>';
                 }
-                const color = log.status === 'failed' ? 'danger' : 'success';
+                // keep in sync with partials/last-run.blade.php — white reads on the
+                // dark card where the success green did not
+                const color = log.status === 'failed' ? 'danger' : 'white';
                 let meta = [];
                 if (log.finished_at) meta.push(log.finished_at);
                 if (log.duration) meta.push(log.duration);
@@ -142,7 +161,7 @@
                 const unchanged = (typeof log.unchanged === 'number') ? (', ' + log.unchanged + ' unchanged') : '';
                 let html = '<span class="text-' + color + ' fw-semibold">' +
                     log.created + ' created, ' + log.updated + ' updated' + unchanged + ', ' + log.failed + ' failed</span>';
-                if (meta.length) html += ' <small class="text-muted">· ' + meta.join(' · ') + '</small>';
+                if (meta.length) html += ' <small>· ' + meta.join(' · ') + '</small>';
                 if (log.message) html += '<div class="text-danger small mt-1">' + log.message + '</div>';
                 return html;
             }

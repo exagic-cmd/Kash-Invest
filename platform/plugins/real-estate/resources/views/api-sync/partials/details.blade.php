@@ -2,14 +2,20 @@
     /** @var \Botble\RealEstate\Models\ProjectSyncLog $log */
     $groups = $log->items->groupBy('action');
     // Show the most actionable groups first.
-    $sections = ['failed' => 'danger', 'created' => 'success', 'updated' => 'primary'];
+    $sections = ['failed' => '#d63939', 'created' => '#2fb344', 'updated' => '#4299e1'];
 @endphp
 
+{{-- Explicit colours rather than bg-* utilities: on the dark admin theme
+     `bg-secondary` resolves to a pale grey and the white label inside it became
+     invisible. These four tones read on both the light and dark themes. --}}
+@php
+    $chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;';
+@endphp
 <div class="d-flex flex-wrap gap-2 mb-3">
-    <span class="badge bg-success">{{ trans('plugins/real-estate::api-sync.columns.created') }}: {{ $log->created }}</span>
-    <span class="badge bg-primary">{{ trans('plugins/real-estate::api-sync.columns.updated') }}: {{ $log->updated }}</span>
-    <span class="badge bg-secondary">{{ trans('plugins/real-estate::api-sync.columns.unchanged') }}: {{ $log->unchanged }}</span>
-    <span class="badge bg-danger">{{ trans('plugins/real-estate::api-sync.columns.failed') }}: {{ $log->failed }}</span>
+    <span style="{{ $chip }}background-color:#2fb344;">{{ trans('plugins/real-estate::api-sync.columns.created') }}: {{ $log->created }}</span>
+    <span style="{{ $chip }}background-color:#4299e1;">{{ trans('plugins/real-estate::api-sync.columns.updated') }}: {{ $log->updated }}</span>
+    <span style="{{ $chip }}background-color:#64748b;">{{ trans('plugins/real-estate::api-sync.columns.unchanged') }}: {{ $log->unchanged }}</span>
+    <span style="{{ $chip }}background-color:#d63939;">{{ trans('plugins/real-estate::api-sync.columns.failed') }}: {{ $log->failed }}</span>
 </div>
 
 @if ($log->items->isEmpty())
@@ -19,8 +25,8 @@
         @php($group = $groups->get($action))
         @if ($group && $group->count())
             <h5 class="mt-3 mb-2">
-                <span class="badge bg-{{ $color }}">{{ \Illuminate\Support\Str::headline($action) }}</span>
-                <span class="text-muted small">({{ $group->count() }})</span>
+                <span style="{{ $chip }}background-color:{{ $color }};">{{ \Illuminate\Support\Str::headline($action) }}</span>
+                <span class="small">({{ $group->count() }})</span>
             </h5>
             <div class="table-responsive mb-2">
                 <table class="table table-sm table-vcenter">
@@ -42,7 +48,7 @@
                                         {{ $item->name ?: '—' }}
                                     @endif
                                     @if ($item->external_id)
-                                        <div class="text-muted small">{{ $item->external_id }}</div>
+                                        <div class="small">{{ $item->external_id }}</div>
                                     @endif
                                 </td>
                                 <td>

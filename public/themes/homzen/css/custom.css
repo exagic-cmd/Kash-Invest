@@ -1,0 +1,159 @@
+/*
+ * Homzen theme overrides.
+ *
+ * Loaded AFTER css/style.css (see platform/themes/homzen/config.php), so rules
+ * here win. Kept as a hand-written file rather than editing assets/sass/*.scss
+ * so these fixes survive an `npm run prod` rebuild of the compiled stylesheet.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Project / property detail — heading alignment
+ *
+ * `.header-property-detail` is styled as a white, 16px-radius card with 30px
+ * padding. The page background is also white, so the card is invisible and that
+ * padding just read as a stray 30px indent: the title sat at 45px while every
+ * block below it ("About this home", the specs grid, features) sat at 15px.
+ * Dropping the horizontal padding lines the title up with the rest of the page.
+ * Vertical padding is kept so the block keeps its spacing.
+ * ------------------------------------------------------------------------- */
+/*
+ * The block shipped with 30px padding AND, at wider breakpoints only, a
+ * -30px horizontal margin that cancelled it. Below that breakpoint the margin
+ * was dropped but the padding stayed, so the title sat 30px right of every
+ * other block; killing only the padding then pulled it 30px LEFT at wide
+ * widths, because the negative margin was left uncompensated.
+ *
+ * Zeroing both makes the block sit exactly in its column at every width. The
+ * second selector matches the theme's own `.flat-property-detail .header-…`
+ * responsive rule so we win on specificity rather than relying on order.
+ */
+.header-property-detail,
+.flat-property-detail .header-property-detail {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Children that compensated for the old 30px inset would now hang off the left
+   edge, so neutralise their negative margins too. */
+.header-property-detail > .content-top {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Project / property detail — specs list label weight
+ *
+ * The labels are already wrapped in <strong> in the markup, but the theme
+ * resets <strong> to font-weight 400, so "Total Floors" and "13" rendered at
+ * identical weight and the list read as one flat run of text. Giving the label
+ * real weight (and leaving the value at 400) restores the label/value pairing.
+ * Covers the built-in fields and the API custom fields alike — both use the
+ * same `.col > strong` markup.
+ * ------------------------------------------------------------------------- */
+.style-zolo-overview .col strong {
+    font-weight: 600;
+}
+
+.style-zolo-overview .col {
+    font-weight: 400;
+}
+
+/* ---------------------------------------------------------------------------
+ * Listing grids (projects / properties) — card spacing
+ *
+ * The grid carried Bootstrap's `g-3` gutter, but the cards' own margins made the
+ * result uneven: 30px between columns yet only 16px between rows, so the grid
+ * read as horizontally airy and vertically cramped. Matching the vertical gutter
+ * to the horizontal one gives an even 30px in both directions.
+ *
+ * The section wrapper is `flat-section-v5` on the listing pages (plain
+ * `flat-section` elsewhere), hence the attribute match on the ancestor.
+ * ------------------------------------------------------------------------- */
+[class*="flat-section"] .row.g-3[class*="row-cols-"] {
+    --bs-gutter-x: 1.875rem; /* 30px */
+    --bs-gutter-y: 1.875rem; /* 30px */
+}
+
+/* ---------------------------------------------------------------------------
+ * Listing cards — FIXED HEIGHT
+ *
+ * >>> TWEAK THESE TWO NUMBERS <<<
+ *
+ * The theme shipped these cards as `height: max-content`, so each card was as
+ * tall as its own text — a project with a "120 flats" line came out taller than
+ * one without, giving the ragged bottoms. Pinning a height makes every card
+ * identical; the image takes a fixed slice and the text area takes the rest.
+ *
+ * Card structure this relies on:
+ *   .modern-card  ->  .archive-top (flex column)
+ *                        ├─ a.images-group   (the photo)
+ *                        └─ .modern-content  (price / name / location)
+ *
+ * Starting values are the current rendered sizes, so this is a no-op until you
+ * change them. Text area = card height - image height (374 - 219 = 155px here).
+ *
+ * After editing run:  php artisan cms:theme:assets:publish
+ * ------------------------------------------------------------------------- */
+:root {
+    --kash-card-height: 342px;       /* total card height  */
+    --kash-card-image-height: 219px; /* photo area height  */
+}
+
+.property-item.modern-card,
+.homeya-box.modern-card,
+.modern-card {
+    height: var(--kash-card-height) !important;
+    align-self: stretch !important;
+    /* The card shipped with its own 30px bottom margin, which stacked on top of
+       the grid's 30px vertical gutter and made rows sit 60px apart while columns
+       sat 30px apart. The gutter owns vertical spacing now. */
+    margin-bottom: 0 !important;
+}
+
+/* let the inner column fill the pinned height */
+.modern-card .archive-top {
+    height: 100% !important;
+}
+
+/* Photo takes a fixed slice.
+ *
+ * `min-height: 0` is load-bearing: .images-group is a flex item in a column
+ * flex container, so its default `min-height: auto` floors it at its content
+ * size. The <img> carries `aspect-ratio: 16/9`, which made that floor 219px and
+ * silently ignored any smaller height. Clearing the floor AND the image's
+ * aspect-ratio lets the height below actually win. */
+.modern-card .images-group {
+    /* .images-group is a flex item inside a COLUMN flex container, so its size
+       is driven by flex-basis — a plain `height` (even inline !important) is
+       ignored here. Setting the basis via the `flex` shorthand is what actually
+       works; height/max-height back it up if the flex context ever changes. */
+    flex: 0 0 var(--kash-card-image-height) !important;
+    height: var(--kash-card-image-height) !important;
+    max-height: var(--kash-card-image-height) !important;
+    min-height: 0 !important;
+    overflow: hidden;
+}
+
+.homeya-box.modern-card .images-style {
+    aspect-ratio: auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+}
+
+.modern-card .images-group img {
+    aspect-ratio: auto !important;
+    width: 100%;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* text area absorbs whatever is left. overflow:hidden stops an unusually long
+   project name from bursting out of the pinned height — if you see text being
+   clipped, raise --kash-card-height rather than removing this. */
+.modern-card .modern-content {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    overflow: hidden;
+}
