@@ -7,6 +7,36 @@
  */
 
 /* ---------------------------------------------------------------------------
+ * Publish-proofing: section heading alignment
+ *
+ * These two rules previously existed ONLY in the published
+ * public/themes/homzen/css/style.css, never in the theme source it is generated
+ * from. Every `php artisan cms:theme:assets:publish` regenerated that file from
+ * source and silently deleted them, so headings jumped back to centre until the
+ * file was restored from git.
+ *
+ * Re-declaring them here (custom.css IS the source, and is copied verbatim on
+ * publish) makes them survive. They are duplicated in the current style.css,
+ * which is harmless — identical declarations, and custom.css loads last.
+ *
+ * Audited at the same time: everything else in that file's custom block
+ * (.form-search-amenities, .wd-search-form, .modern-card, .project-card-style8)
+ * DOES exist in the theme source, and js/script.js is a superset of the
+ * committed copy, so nothing else is lost on publish.
+ * ------------------------------------------------------------------------- */
+.box-title {
+    text-align: left !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+}
+
+.box-title .text-subtitle,
+.box-title .section-title,
+.box-title p {
+    text-align: left !important;
+}
+
+/* ---------------------------------------------------------------------------
  * Project / property detail — heading alignment
  *
  * `.header-property-detail` is styled as a white, 16px-radius card with 30px
