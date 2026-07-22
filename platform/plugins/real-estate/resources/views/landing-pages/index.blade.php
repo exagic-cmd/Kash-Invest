@@ -2,6 +2,28 @@
 
 @section('content')
     @php($chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;')
+
+    {{-- Mobile only (<=767px). Desktop is untouched: the table already scrolls
+         inside .table-responsive, but the per-row action buttons are the widest
+         thing, so on phones we let them wrap and go full-width instead of forcing
+         a long sideways scroll. --}}
+    <style>
+        @media (max-width: 767.98px) {
+            .lp-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: .35rem;
+                justify-content: flex-end;
+            }
+            /* break the joined btn-group look so wrapped buttons read cleanly */
+            .lp-actions > .btn {
+                flex: 1 1 auto;
+                border-radius: var(--tblr-btn-border-radius, 4px) !important;
+            }
+            #lp-results { max-height: 240px; }
+        }
+    </style>
+
     <div class="max-width-1200 mx-auto">
         <p class="text-muted">
             Assign a preconstruction landing page to a project, then edit every section like a CMS.
@@ -56,7 +78,7 @@
                                      main action), outlined red for the destructive one. --}}
                                 <td class="text-end">
                                     @php($landingUrl = route('landing.page', $project->getKey()))
-                                    <div class="btn-group btn-group-sm" role="group">
+                                    <div class="btn-group btn-group-sm lp-actions" role="group">
                                         <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
                                            class="btn btn-outline-secondary" title="Open the landing page in a new tab">
                                             <i class="ti ti-external-link"></i> Preview

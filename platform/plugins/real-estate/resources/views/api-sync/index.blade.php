@@ -5,6 +5,23 @@
          utilities render washed-out/low-contrast on the dark admin theme, so the
          status pills use explicit colours with white text instead. --}}
     @php($chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;line-height:1;')
+
+    {{-- Mobile only (<=767px). Desktop untouched. The source cards are already
+         full-width below lg and the history table scrolls inside
+         .table-responsive; these tweaks just stop the card header crowding and
+         make the primary buttons comfortable tap targets on a phone. --}}
+    <style>
+        @media (max-width: 767.98px) {
+            .sync-card-head {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: .5rem;
+            }
+            .sync-card-head > a.btn { align-self: stretch; text-align: center; }
+            [data-run-sync] { width: 100%; }
+        }
+    </style>
+
     <p>{{ trans('plugins/real-estate::api-sync.description') }}</p>
 
     <div class="row">
@@ -12,7 +29,7 @@
             <div class="col-lg-6 mb-3">
                 <div class="card h-100" data-source-card="{{ $source['key'] }}" data-last-log-id="{{ $source['last_log']['id'] ?? 0 }}">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex justify-content-between align-items-start mb-2 sync-card-head">
                             <div>
                                 <h5 class="mb-1">{{ $source['label'] }}</h5>
                                 <span style="{{ $chip }}background-color:{{ $source['enabled'] ? '#2fb344' : '#64748b' }};">

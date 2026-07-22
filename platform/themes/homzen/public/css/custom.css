@@ -157,3 +157,56 @@
     height: auto !important;
     overflow: hidden;
 }
+
+
+/* ===========================================================================
+ * MOBILE / TABLET RESPONSIVE
+ *
+ * Everything below is inside max-width media queries, so screens >= 992px
+ * (desktop / large) render EXACTLY as before — no desktop rule is touched.
+ *   - <= 991.98px : tablet and below (md/sm)
+ *   - <= 575.98px : phones (xs)
+ * Scope is the main-site surfaces in the brief: the project listing and the
+ * project/property detail page. (The preconstruction landing templates are
+ * standalone documents that load only their own inline stylesheet, not this
+ * file, and are already mobile-first — so nothing here targets them, and the
+ * shared site header/footer chrome is left alone.)
+ * ======================================================================== */
+
+@media (max-width: 991.98px) {
+
+    /* The theme's mobile header hamburger (.mobile-nav-toggler) is positioned a
+       few px past its container, which gave every mobile page a ~13px sideways
+       scroll that read as "not responsive". `clip` stops the stray horizontal
+       scroll without creating a scroll container (so position:sticky/fixed keep
+       working) and without restyling the header itself. Vertical scroll is
+       untouched. `.table-responsive` keeps its own internal x-scroll. */
+    html,
+    body {
+        overflow-x: clip;
+    }
+
+    /* Long website URLs in the specs list must wrap, never widen the page. */
+    .style-zolo-overview .col a {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 575.98px) {
+
+    /* --- Project listing cards ---------------------------------------------
+       One card per row already (Bootstrap row-cols-1). The fixed height is fine
+       here, but on the narrowest phones a project with more spec lines can run
+       tight, so let the card grow to its content instead of clipping. The photo
+       keeps its fixed slice; only the card total is released. */
+    .property-item.modern-card,
+    .homeya-box.modern-card,
+    .modern-card {
+        height: auto !important;
+        min-height: var(--kash-card-height);
+    }
+    .modern-card .modern-content {
+        overflow: visible;
+    }
+}
