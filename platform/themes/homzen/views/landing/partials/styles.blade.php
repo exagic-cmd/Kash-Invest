@@ -20,7 +20,7 @@
         /* shared scale */
         --kl-maxw: 1200px;
         --kl-gutter: clamp(1rem, 4vw, 2.5rem);
-        --kl-section-y: clamp(3.5rem, 8vw, 6.5rem);
+        --kl-section-y: clamp(2rem, 4vw, 3.5rem);
         --kl-radius: 0px; /* square, per the reference microsite */
         --kl-ease: cubic-bezier(.22, .61, .36, 1);
     }
@@ -117,12 +117,12 @@
         font-family: var(--kl-body); font-size: .82rem; font-weight: 600;
         letter-spacing: .1em; text-transform: uppercase; text-decoration: none;
         border: 1px solid var(--kl-accent); border-radius: var(--kl-radius);
-        background: var(--kl-accent); color: var(--kl-accent-ink);
+        background: var(--kl-accent); color: #FFFFFF !important;
         cursor: pointer; transition: transform .18s var(--kl-ease), opacity .18s var(--kl-ease);
     }
-    .kl-btn:hover { opacity: .88; transform: translateY(-1px); }
-    .kl-btn--ghost { background: transparent; color: var(--kl-ink); border-color: var(--kl-line); }
-    .kl-btn--ghost:hover { border-color: var(--kl-accent); }
+    .kl-btn:hover, .kl-btn:focus, .kl-btn:active { opacity: .88; transform: translateY(-1px); color: #FFFFFF !important; }
+    .kl-btn--ghost { background: transparent; color: var(--kl-ink) !important; border-color: var(--kl-line); }
+    .kl-btn--ghost:hover { border-color: var(--kl-accent); color: var(--kl-accent) !important; }
     .kl-btn--block { width: 100%; }
 
     /* Keyboard focus must always be visible (quality floor). */
@@ -163,16 +163,28 @@
     /* The register CTA follows you at every width, like the reference's fixed bar. */
     .kl-cta-bar {
         position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
-        display: flex; gap: .75rem; align-items: center;
-        padding: .75rem var(--kl-gutter);
+        display: flex; gap: .6rem; align-items: center; justify-content: space-between;
+        padding: .5rem var(--kl-gutter);
         background: var(--kl-bg); border-top: 1px solid var(--kl-line);
         box-shadow: 0 -6px 24px rgba(0, 0, 0, .08);
         transform: translateY(110%); transition: transform .28s var(--kl-ease);
     }
     .kl-cta-bar[data-visible="true"] { transform: translateY(0); }
-    .kl-cta-bar__price { font-size: .8rem; color: var(--kl-muted); margin-right: auto; min-width: 0; }
+    .kl-cta-bar__price { font-size: .78rem; color: var(--kl-muted); min-width: 0; flex: 1; }
     .kl-cta-bar__price span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kl-cta-bar__price strong { display: block; color: var(--kl-ink); font-size: 1.05rem; }
+    .kl-cta-bar__price strong { display: block; color: var(--kl-ink); font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kl-cta-bar .kl-btn {
+        white-space: nowrap;
+        padding: .55rem 1.1rem;
+        font-size: .76rem;
+        letter-spacing: .04em;
+        flex-shrink: 0;
+    }
+    @media (max-width: 576px) {
+        .kl-cta-bar { padding: .45rem .75rem; }
+        .kl-cta-bar__price strong { font-size: .88rem; }
+        .kl-cta-bar .kl-btn { padding: .5rem .8rem; font-size: .7rem; letter-spacing: .02em; }
+    }
 
     /* ---------- top bar: project mark left, brokerage right ---------- */
     .kl-topbar { background: #fff; border-bottom: 1px solid rgba(33, 37, 41, .08); }
@@ -236,19 +248,26 @@
     }
     /* slider arrows, as on the reference */
     .kl-hero__arrow {
-        position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
-        width: 46px; height: 46px; display: grid; place-items: center;
-        background: none; border: 0; cursor: pointer; color: #fff; font-size: 2rem; line-height: 1;
-        opacity: .75; transition: opacity .2s var(--kl-ease); text-shadow: 0 2px 10px rgba(0,0,0,.4);
+        position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
+        width: 44px; height: 44px; display: grid; place-items: center;
+        background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 50%;
+        cursor: pointer; color: #ffffff; line-height: 1;
+        opacity: .85; transition: all .2s var(--kl-ease);
     }
-    .kl-hero__arrow:hover { opacity: 1; }
-    .kl-hero__arrow--prev { left: .25rem; }
-    .kl-hero__arrow--next { right: .25rem; }
-    @media (min-width: 768px) { .kl-hero__arrow--prev { left: 1rem; } .kl-hero__arrow--next { right: 1rem; } }
+    .kl-hero__arrow:hover { opacity: 1; background: rgba(0, 0, 0, 0.75); transform: translateY(-50%) scale(1.06); }
+    .kl-hero__arrow--prev { left: .5rem; }
+    .kl-hero__arrow--next { right: .5rem; }
+    @media (max-width: 767px) {
+        .kl-hero__arrow {
+            display: none !important;
+        }
+    }
+    @media (min-width: 768px) { .kl-hero__arrow--prev { left: 1.25rem; } .kl-hero__arrow--next { right: 1.25rem; } }
 
     /* ---------- centred section head (reference style) ---------- */
     .kl-section--tint { background: var(--kl-surface); border-top: 0; }
-    .kl-head-center { text-align: center; margin-bottom: clamp(2rem, 4vw, 3rem); }
+    .kl-head-center { text-align: center; margin-bottom: clamp(1.25rem, 2.5vw, 1.75rem); }
     .kl-head-center .kl-h2 { text-transform: uppercase; }
     .kl-head-center .kl-lede { margin-inline: auto; }
     /* the overview head on the reference is title-case, not uppercase */
@@ -285,13 +304,13 @@
     /* lead-in line above the hint checks in the cheat sheet's second card */
     .kl-cheat__lead { margin: 0 0 1.15rem; font-size: .98rem; line-height: 1.6; color: var(--kl-ink); }
 
-    .kl-center-cta { text-align: center; margin-top: clamp(2rem, 4vw, 3rem); }
+    .kl-center-cta { text-align: center; margin-top: clamp(1.25rem, 2.5vw, 1.75rem); }
 
     /* ---------- quick facts: enhanced check list + CTA ----------
        Scoped with --facts so the plainer check style stays intact in the
        overview, location and cheat-sheet lists that share .kl-checks. */
     .kl-checks--facts {
-        gap: clamp(1.5rem, 3vw, 2.15rem) clamp(2rem, 6vw, 5rem);
+        gap: clamp(0.65rem, 1.2vw, 1rem) clamp(2rem, 6vw, 5rem);
         max-width: 1080px;
         margin-inline: auto;
     }
@@ -364,6 +383,23 @@
     /* ---------- inner circle ---------- */
     .kl-inner-circle-grid { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); text-align: center; }
     .kl-inner-circle-item { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    /* ---------- disclaimer card logo ----------
+       Covers both the uploaded partner logo and the Theme::getLogoImage()
+       fallback. The fallback ships only an inline `max-height`, so on its own it
+       renders at the logo's full natural width — a wide banner-style logo then
+       spans most of the card and reads as stretched/oversized next to the
+       uploaded logo, which was already capped. Constraining width AND height
+       (with object-fit as a guard) keeps either source at a sane size and in
+       proportion. `flex: none` stops the centring flex row shrinking it. */
+    .kl-disclaimer-logo img {
+        flex: none !important;
+        width: auto !important;
+        height: auto !important;
+        max-height: 50px !important;
+        max-width: 240px !important;
+        object-fit: contain;
+    }
+
     .kl-inner-circle-item__icon { flex: none; }
     .kl-inner-circle-item__icon img { flex: none; width: auto; height: auto; max-height: 60px; max-width: 120px; object-fit: contain; }
     .kl-inner-circle-item__label { font-weight: 600; font-size: 1.1rem; }

@@ -200,6 +200,24 @@ class Project extends BaseModel
         return $this->belongsTo(Country::class, 'country_id')->withDefault();
     }
 
+    public function generateSlugKey(?string $name = null): string
+    {
+        $name = $name ?: $this->name;
+        $parts = [];
+
+        if ($this->state_id && $this->state && $this->state->name) {
+            $parts[] = Str::slug($this->state->name);
+        }
+
+        if ($this->city_id && $this->city && $this->city->name) {
+            $parts[] = Str::slug($this->city->name);
+        }
+
+        $parts[] = Str::slug($name);
+
+        return implode('/', array_filter($parts));
+    }
+
     protected function image(): Attribute
     {
         return Attribute::make(

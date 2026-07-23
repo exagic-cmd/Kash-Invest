@@ -155,6 +155,8 @@ class MediaManagement {
                 event.preventDefault()
                 let $current = $(event.currentTarget)
 
+                let isMultiple = typeof window.rvMedia !== 'undefined' && window.rvMedia.options && window.rvMedia.options.multiple !== false
+
                 if (shift_key) {
                     let firstItem = Helpers.arrayFirst(Helpers.getSelectedItems())
                     if (firstItem) {
@@ -166,12 +168,16 @@ class MediaManagement {
                             }
                         })
                     }
-                } else if (!ctrl_key && !meta_key) {
-                    $current.closest('.rv-media-items').find('input[type=checkbox]').prop('checked', false)
+                } else if (isMultiple) {
+                    let $lineCheckBox = $current.find('input[type=checkbox]')
+                    let wasChecked = $lineCheckBox.prop('checked')
+                    $lineCheckBox.prop('checked', !wasChecked)
+                } else {
+                    if (!ctrl_key && !meta_key) {
+                        $current.closest('.rv-media-items').find('input[type=checkbox]').prop('checked', false)
+                    }
+                    $current.find('input[type=checkbox]').prop('checked', true)
                 }
-
-                let $lineCheckBox = $current.find('input[type=checkbox]')
-                $lineCheckBox.prop('checked', true)
                 ActionsService.handleDropdown()
 
                 _self.MediaService.getFileDetails($current.data())

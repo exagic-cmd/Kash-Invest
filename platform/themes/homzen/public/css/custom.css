@@ -223,6 +223,18 @@
     }
 }
 
+/* --- Header Logo Mobile Responsive Size --- */
+@media (max-width: 767.98px) {
+    .main-header .logo img,
+    .header-lower .logo img,
+    .logo-box .logo img,
+    .nav-logo img {
+        max-height: 32px !important;
+        width: auto !important;
+        object-fit: contain;
+    }
+}
+
 @media (max-width: 575.98px) {
 
     /* --- Project listing cards ---------------------------------------------
@@ -239,4 +251,91 @@
     .modern-card .modern-content {
         overflow: visible;
     }
+}
+
+/* --- Page Preloader Spinner ----------------------------------------------- */
+.preload-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.simple-spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid var(--primary-color, #db1d23);
+    border-radius: 50%;
+    animation: simple-spin 0.75s linear infinite;
+}
+
+@keyframes simple-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------------------
+ * Contact / Consult Form Input Field Fix (Active & High-Contrast Style)
+ * ------------------------------------------------------------------------- */
+.single-property-contact .ip-group input,
+.single-property-contact .ip-group textarea,
+.contact-form .ip-group input,
+.contact-form .ip-group textarea,
+#contact-form input,
+#contact-form textarea {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    padding: 12px 16px !important;
+    opacity: 1 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.single-property-contact .ip-group input:focus,
+.single-property-contact .ip-group textarea:focus,
+.contact-form .ip-group input:focus,
+.contact-form .ip-group textarea:focus,
+#contact-form input:focus,
+#contact-form textarea:focus {
+    background-color: #ffffff !important;
+    border-color: #0392a6 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(3, 146, 166, 0.15) !important;
+}
+
+/* Placeholder Contrast Fix */
+.single-property-contact .ip-group input::placeholder,
+.single-property-contact .ip-group textarea::placeholder,
+.contact-form .ip-group input::placeholder,
+.contact-form .ip-group textarea::placeholder,
+#contact-form input::placeholder,
+#contact-form textarea::placeholder {
+    color: #4b5563 !important;
+    opacity: 1 !important;
+    font-weight: 400 !important;
+}
+
+.single-property-contact .ip-group,
+.contact-form .ip-group {
+    margin-bottom: 1rem !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Listing Pagination Spacing Fix
+ * ------------------------------------------------------------------------- */
+.wd-navigation,
+.flat-pagination {
+    margin-top: 1.5rem !important;
+    margin-bottom: 1.25rem !important;
 }

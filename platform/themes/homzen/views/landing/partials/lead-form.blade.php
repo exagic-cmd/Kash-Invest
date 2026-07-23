@@ -50,7 +50,7 @@
     <div class="kl-field">
         <label for="{{ $formId }}-content">Message</label>
         <textarea id="{{ $formId }}-content" name="content" required
-                  placeholder="Which suite types are you interested in?">{{ old('content', 'Please send me floor plans, pricing and the deposit structure for ' . $landing['name'] . '.') }}</textarea>
+                  placeholder="Which suite types are you interested in?">{{ old('content') }}</textarea>
     </div>
 
     @if (is_plugin_active('captcha'))

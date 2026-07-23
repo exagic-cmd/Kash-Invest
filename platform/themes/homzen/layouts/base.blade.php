@@ -97,5 +97,80 @@
         </div>
 
         {!! Theme::footer() !!}
+
+        <script>
+            (function () {
+                function showSpinnerImmediately() {
+                    var existing = document.querySelector('.preload-container');
+                    if (existing) {
+                        existing.style.display = 'flex';
+                        existing.style.opacity = '1';
+                        return;
+                    }
+                    var container = document.createElement('div');
+                    container.className = 'preload preload-container';
+                    container.setAttribute('data-auto-injected', 'true');
+                    container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background-color:#ffffff;z-index:999999;display:flex;align-items:center;justify-content:center;opacity:1;';
+                    container.innerHTML = '<div class="simple-spinner"></div>';
+                    document.body.appendChild(container);
+                }
+
+                function hideSpinner() {
+                    var spinner = document.querySelector('.preload-container');
+                    if (spinner) {
+                        spinner.style.display = 'none';
+                    }
+                }
+
+                document.addEventListener('click', function (e) {
+                    var link = e.target.closest('a');
+                    if (!link) return;
+
+                    // Skip links handled via AJAX (such as filter form pagination, tabs, modal triggers)
+                    if (
+                        link.closest('.filter-form') ||
+                        link.closest('.flat-pagination') ||
+                        link.hasAttribute('data-bs-toggle') ||
+                        link.hasAttribute('data-bb-toggle') ||
+                        link.hasAttribute('data-ajax')
+                    ) {
+                        return;
+                    }
+
+                    var href = link.getAttribute('href');
+                    if (!href || href === '#' || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('tel:') || href.startsWith('mailto:')) {
+                        return;
+                    }
+
+                    if (link.getAttribute('target') === '_blank' || link.hasAttribute('download') || e.ctrlKey || e.metaKey || e.shiftKey) {
+                        return;
+                    }
+
+                    try {
+                        var destination = new URL(href, window.location.href);
+                        if (destination.origin !== window.location.origin) return;
+                        if (destination.pathname === window.location.pathname && destination.search === window.location.search && destination.hash !== window.location.hash) {
+                            return;
+                        }
+
+                        showSpinnerImmediately();
+                    } catch (err) {}
+                }, true);
+
+                window.addEventListener('pageshow', function (e) {
+                    if (e.persisted) {
+                        hideSpinner();
+                    }
+                });
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (typeof jQuery !== 'undefined') {
+                        jQuery(document).on('ajaxComplete ajaxError', function () {
+                            hideSpinner();
+                        });
+                    }
+                });
+            })();
+        </script>
     </body>
 </html>

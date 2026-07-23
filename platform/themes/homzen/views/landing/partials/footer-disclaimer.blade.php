@@ -11,11 +11,14 @@
     <section class="kl-section" id="disclaimer-card" style="padding-top: 1rem; padding-bottom: 2rem; background-color: #f7f9fc;">
         <div class="kl-wrap" style="max-width: 900px; margin: 0 auto;">
             <div style="background: #ffffff; border-radius: 12px; padding: 2.5rem 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.04); text-align: center;">
-                <div style="margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; min-height: 50px;">
+                {{-- Sizing for BOTH branches lives in the stylesheet
+                     (.kl-disclaimer-logo img) rather than inline here: the
+                     fallback below is rendered by Theme::getLogoImage(), whose
+                     markup we don't control, so an inline style could only ever
+                     constrain the uploaded logo. --}}
+                <div class="kl-disclaimer-logo" style="margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; min-height: 50px;">
                     @if (!empty($disclaimer['logo']))
-                        {{-- flex:none so the centring flex row can't squeeze it out of ratio --}}
-                        <img src="{{ $disclaimer['logo'] }}" alt="Partner Logo"
-                             style="flex:none; height:auto; width:auto; max-height:50px; max-width:240px; object-fit:contain;">
+                        <img src="{{ $disclaimer['logo'] }}" alt="Partner Logo">
                     @else
                         {!! Theme::getLogoImage(maxHeight: 50) !!}
                     @endif

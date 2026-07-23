@@ -85,14 +85,6 @@
                 </div>
             @endif
 
-            {{-- Developer (investor) as the muted bottom line, Zolo-style. The
-                 unique_id source tag stays hidden; the "System Admin" author is
-                 not shown as it's just noise. --}}
-            @if($investor && $investor->exists)
-                <div class="modern-meta">
-                    <span>{{ $investor->name }}</span>
-                </div>
-            @endif
         </div>
     </div>
 </div>

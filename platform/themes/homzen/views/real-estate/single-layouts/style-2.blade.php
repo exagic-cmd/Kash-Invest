@@ -15,11 +15,6 @@
                 </a>
             </li>
             <li>
-                <a  class="cate-single-item" href="#video">
-                    {{ __('Video') }}
-                </a>
-            </li>
-            <li>
                 <a  class="cate-single-item" href="#amentities">
                     {{ __('Amenities') }}
                 </a>
@@ -75,9 +70,6 @@
 
                 {!! dynamic_sidebar('top_property_detail_sidebar') !!}
 
-                <div class="wrapper-onepage" id="video">
-                    @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.video'), ['class' => 'widget-box-single', 'model' => $model])
-                </div>
                 <div class="wrapper-onepage" id="amentities">
                     @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.features'), ['class' => 'widget-box-single', 'model' => $model])
                 </div>

@@ -25,7 +25,8 @@ Theme::registerRoutes(function (): void {
         Route::get('{slug?}', 'getView')->name('public.single');
 
         Route::get('{prefix}/{slug?}', 'getViewWithPrefix')
-            ->whereIn('prefix', SlugHelper::getAllPrefixes() ?: ['1437bcd2-d94e-4a5fd-9a39-b5d60225e9af']);
+            ->whereIn('prefix', SlugHelper::getAllPrefixes() ?: ['1437bcd2-d94e-4a5fd-9a39-b5d60225e9af'])
+            ->where('slug', '.*');
 
         event(new ThemeRoutingAfterEvent(app()->make('router')));
     });

@@ -58,8 +58,12 @@
     </div>
 
     @if (count($slides) > 1 && ! $landing['hero']['video'])
-        <button type="button" class="kl-hero__arrow kl-hero__arrow--prev" data-hero-prev aria-label="Previous image">&lsaquo;</button>
-        <button type="button" class="kl-hero__arrow kl-hero__arrow--next" data-hero-next aria-label="Next image">&rsaquo;</button>
+        <button type="button" class="kl-hero__arrow kl-hero__arrow--prev" data-hero-prev aria-label="Previous image">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="kl-hero__arrow kl-hero__arrow--next" data-hero-next aria-label="Next image">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
     @endif
 
     <div class="kl-hero__in">

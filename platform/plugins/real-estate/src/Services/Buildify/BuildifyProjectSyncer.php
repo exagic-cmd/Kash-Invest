@@ -199,10 +199,13 @@ class BuildifyProjectSyncer
         // projects — re-firing for existing ones would pile up duplicate slugs
         // (Botble's CreatedContentListener inserts with no dedup) and 404 the
         // detail page.
+        $project->loadMissing(['state', 'city']);
+        $slugKey = $project->generateSlugKey($name);
+
         $request = new Request();
         $request->merge([
             ...$data,
-            'slug' => Str::slug($name),
+            'slug' => $slugKey,
             'is_slug_editable' => $isNew,
         ]);
 
