@@ -17,6 +17,8 @@ use Botble\RealEstate\Enums\PropertyPeriodEnum;
 use Botble\RealEstate\Enums\PropertyStatusEnum;
 use Botble\RealEstate\Enums\PropertyTypeEnum;
 use Botble\RealEstate\Facades\RealEstateHelper;
+use Botble\Media\Facades\RvMedia;
+use Botble\Media\Models\MediaFile;
 use Botble\RealEstate\Models\Account;
 use Botble\RealEstate\Models\Category;
 use Botble\RealEstate\Models\Currency;
@@ -28,10 +30,13 @@ use Botble\Slug\Facades\SlugHelper;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\Mime\MimeTypes;
 
 class PropertyImporter extends Importer implements WithMapping
 {
@@ -400,8 +405,15 @@ class PropertyImporter extends Importer implements WithMapping
         }
 
         $images = [];
-        if ($imagesStr = Arr::get($row, 'images')) {
-            $images = array_filter(explode(',', $imagesStr));
+        if ($imagesRaw = Arr::get($row, 'images')) {
+            $rawUrls = is_array($imagesRaw) ? $imagesRaw : explode(',', (string) $imagesRaw);
+            $propertyName = Arr::get($row, 'name', 'property');
+
+            foreach (array_values(array_map('trim', $rawUrls)) as $index => $url) {
+                if ($url !== '') {
+                    $images[] = $this->syncImageFromUrl($url, (string) $propertyName, $index, 'properties');
+                }
+            }
         }
 
         $authorType = Arr::get($row, 'author_type');
@@ -574,4 +586,80 @@ class PropertyImporter extends Importer implements WithMapping
         return in_array(strtolower($value), ['yes', '1', 'true', 'on']);
     }
 
+    /**
+     * Download a remote image URL and store it in Botble's media library.
+     * If the URL is invalid or download fails, returns the default placeholder
+     * image so the exact slot count specified in Excel is preserved.
+     */
+    protected function syncImageFromUrl(string $imageUrl, string $uniquePrefix, int $index, string $folderName = 'properties'): ?string
+    {
+        $imageUrl = trim($imageUrl);
+        $placeholder = RvMedia::getDefaultImage(true);
+
+        if (empty($imageUrl)) {
+            return $placeholder;
+        }
+
+        // Return local relative paths as-is
+        if (! Str::startsWith($imageUrl, ['http://', 'https://'])) {
+            return $imageUrl;
+        }
+
+        try {
+            $folderId = RvMedia::createFolder($folderName);
+
+            $extension = strtolower(pathinfo(parse_url($imageUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+            if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+                $extension = 'jpg';
+            }
+
+            $imageFileName = sprintf('excel-%s-%d.%s', md5($uniquePrefix ?: $imageUrl), $index, $extension);
+            $imageBaseName = pathinfo($imageFileName, PATHINFO_FILENAME);
+
+            $existingMedia = MediaFile::query()
+                ->where('name', $imageBaseName)
+                ->where('folder_id', $folderId)
+                ->first();
+
+            if ($existingMedia) {
+                return $existingMedia->url;
+            }
+
+            $response = Http::connectTimeout(10)->timeout(20)->get($imageUrl);
+
+            if (! $response->successful() || $response->body() === '') {
+                return $placeholder;
+            }
+
+            $tempPath = tempnam(sys_get_temp_dir(), 'excel_img_');
+            if ($tempPath === false) {
+                return $placeholder;
+            }
+
+            file_put_contents($tempPath, $response->body());
+
+            $mimeTypes = (new MimeTypes())->getMimeTypes($extension);
+            $mimeType = Arr::first($mimeTypes) ?: 'image/jpeg';
+
+            $uploadedFile = new UploadedFile(
+                $tempPath,
+                $imageFileName,
+                $mimeType,
+                null,
+                true
+            );
+
+            $uploadResult = RvMedia::handleUpload($uploadedFile, $folderId);
+
+            @unlink($tempPath);
+
+            if (! $uploadResult['error']) {
+                return $uploadResult['data']->url;
+            }
+        } catch (\Throwable $e) {
+            logger()->error('Excel Importer Image Download Error: ' . $e->getMessage(), ['url' => $imageUrl]);
+        }
+
+        return $placeholder;
+    }
 }

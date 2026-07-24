@@ -19,7 +19,7 @@ class ProjectLandingPageController extends BaseController
 {
     public function index()
     {
-        $this->pageTitle('Featured Projects');
+        $this->pageTitle('Landing Pages');
 
         $assigned = Project::query()
             ->where('landing_template', 'light')
@@ -141,7 +141,7 @@ class ProjectLandingPageController extends BaseController
     {
         return [
             'hero' => [
-                'logos' => $this->images($request->input('hero_logos', [])),
+                'logos' => array_values(array_filter([$request->input('hero_logo') ?: \Illuminate\Support\Arr::first((array) $request->input('hero_logos', []))])),
                 'heading' => $request->input('hero_heading'),
                 'tagline' => $request->input('hero_tagline'),
                 'badge' => $request->input('hero_badge'),
@@ -182,12 +182,10 @@ class ProjectLandingPageController extends BaseController
                 'image' => $request->input('why_us_image'),
                 'points' => $this->rows($request->input('why_us_points', [])),
             ],
+            // Inner Circle is non-editable: only its on/off state is stored;
+            // its content is fixed in LandingData.
             'inner_circle' => [
                 'show' => $request->boolean('inner_circle_show'),
-                'heading' => $request->input('inner_circle_heading'),
-                'button_text' => $request->input('inner_circle_button_text'),
-                'button_link' => $request->input('inner_circle_button_link'),
-                'items' => $this->rows($request->input('inner_circle_items', [])),
             ],
             // No standalone gallery/floor-plan sections on the page any more; these
             // images remain because the hero slider falls back to them.

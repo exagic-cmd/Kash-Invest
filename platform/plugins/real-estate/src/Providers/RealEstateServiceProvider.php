@@ -286,7 +286,7 @@ class RealEstateServiceProvider extends ServiceProvider
                             'id' => 'cms-plugins-project-landing-pages',
                             'priority' => 2,
                             'parent_id' => 'cms-plugins-real-estate',
-                            'name' => 'Featured Projects',
+                            'name' => 'Landing Pages',
                             'icon' => 'ti ti-layout-board',
                             'url' => fn () => route('real-estate.landing-pages.index'),
                             'permissions' => ['real-estate.landing-pages'],

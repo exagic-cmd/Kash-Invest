@@ -132,7 +132,8 @@ class LandingData
             'cheatSheet' => (bool) Arr::get($content, 'cheat_sheet.show', true),
             'location' => (bool) Arr::get($content, 'location.show', true),
             'whyUs' => (bool) Arr::get($content, 'why_us.show', true),
-            'innerCircle' => (bool) Arr::get($content, 'inner_circle.show', true),
+            // Inner Circle is off unless explicitly turned on in the editor.
+            'innerCircle' => (bool) Arr::get($content, 'inner_circle.show', false),
             'floorPlans' => (bool) Arr::get($content, 'floor_plans.show', true),
             'gallery' => (bool) Arr::get($content, 'gallery.show', true),
             'register' => (bool) Arr::get($content, 'register.show', true),
@@ -248,14 +249,8 @@ class LandingData
         }
 
         // ---- Inner Circle ---------------------------------------------------
-        $data['innerCircle']['heading'] = static::getText($content, 'inner_circle.heading') ?: $data['innerCircle']['heading'];
-        $data['innerCircle']['buttonText'] = static::getText($content, 'inner_circle.button_text') ?: $data['innerCircle']['buttonText'];
-        $data['innerCircle']['buttonLink'] = static::getText($content, 'inner_circle.button_link') ?: $data['innerCircle']['buttonLink'];
-        if ($items = static::repeaterRows(Arr::get($content, 'inner_circle.items', []), ['icon', 'label'])) {
-            $data['innerCircle']['items'] = array_map(function ($row) {
-                return ['icon' => static::imageUrl($row['icon']), 'label' => $row['label']];
-            }, $items);
-        }
+        // Non-editable: content is always the fixed defaults set above; only the
+        // section's show/hide toggle (handled in $data['show']) is honoured.
 
         // ---- Register -------------------------------------------------------
         $data['register'] = [

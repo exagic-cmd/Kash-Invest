@@ -8,17 +8,34 @@
          thing, so on phones we let them wrap and go full-width instead of forcing
          a long sideways scroll. --}}
     <style>
+        .lp-actions .btn {
+            border-radius: var(--tblr-btn-border-radius, 4px) !important;
+        }
+        #lp-results {
+            z-index: 1050 !important;
+            max-height: 320px;
+            overflow-y: auto;
+            display: none;
+            background-color: var(--tblr-bg-surface, #1e293b) !important;
+            border: 1px solid var(--tblr-border-color, #334155) !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+            border-radius: 6px;
+        }
+        #lp-results .list-group-item {
+            background-color: var(--tblr-bg-surface, #1e293b) !important;
+            color: var(--tblr-body-color, #f8fafc) !important;
+            border-color: var(--tblr-border-color, #334155) !important;
+        }
+        #lp-results .list-group-item:hover,
+        #lp-results .list-group-item:focus {
+            background-color: var(--tblr-bg-surface-secondary, #334155) !important;
+        }
         @media (max-width: 767.98px) {
             .lp-actions {
-                display: flex;
                 flex-wrap: wrap;
-                gap: .35rem;
-                justify-content: flex-end;
             }
-            /* break the joined btn-group look so wrapped buttons read cleanly */
             .lp-actions > .btn {
                 flex: 1 1 auto;
-                border-radius: var(--tblr-btn-border-radius, 4px) !important;
             }
             #lp-results { max-height: 240px; }
         }
@@ -27,18 +44,17 @@
     <div class="max-width-1200 mx-auto">
         <p class="text-muted">
             Assign a preconstruction landing page to a project, then edit every section like a CMS.
-            Search a project below to assign it; assigned projects appear in the list.
+            Search a project below to create or edit its landing page.
         </p>
 
         {{-- Search + assign --}}
         <div class="card mb-4">
             <div class="card-body">
-                <label class="form-label fw-bold">Search a project to assign</label>
+                <label class="form-label fw-bold">Search a project to configure</label>
                 <div class="position-relative">
                     <input type="text" id="lp-search" class="form-control" autocomplete="off"
                            placeholder="Start typing a project name…">
-                    <div id="lp-results" class="list-group position-absolute w-100 shadow-sm"
-                         style="z-index:20; max-height:320px; overflow:auto; display:none;"></div>
+                    <div id="lp-results" class="list-group position-absolute w-100 shadow-sm"></div>
                 </div>
             </div>
         </div>
@@ -73,25 +89,22 @@
                                         {{ $published ? 'Published' : 'Hidden' }}
                                     </span>
                                 </td>
-                                {{-- One consistent set: neutral outlines for the
-                                     read-only actions, solid primary for Edit (the
-                                     main action), outlined red for the destructive one. --}}
                                 <td class="text-end">
                                     @php($landingUrl = route('landing.page', $project->getKey()))
-                                    <div class="btn-group btn-group-sm lp-actions" role="group">
+                                    <div class="d-flex align-items-center justify-content-end gap-1 lp-actions">
                                         <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
-                                           class="btn btn-outline-secondary" title="Open the landing page in a new tab">
+                                           class="btn btn-sm btn-outline-secondary" title="Open the landing page in a new tab">
                                             <i class="ti ti-external-link"></i> Preview
                                         </a>
-                                        <button type="button" class="btn btn-outline-secondary lp-copy-link"
+                                        <button type="button" class="btn btn-sm btn-outline-secondary lp-copy-link"
                                                 data-url="{{ $landingUrl }}" title="Copy the public landing page URL">
                                             <i class="ti ti-link"></i> Copy Link
                                         </button>
                                         <a href="{{ route('real-estate.landing-pages.edit', $project->getKey()) }}"
-                                           class="btn btn-primary">
+                                           class="btn btn-sm btn-primary">
                                             <i class="ti ti-pencil"></i> Edit
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger lp-unassign"
+                                        <button type="button" class="btn btn-sm btn-outline-danger lp-unassign"
                                                 data-id="{{ $project->getKey() }}" data-name="{{ $project->name }}">
                                             <i class="ti ti-trash"></i> Unassign
                                         </button>
@@ -101,7 +114,7 @@
                         @empty
                             <tr>
                                 <td colspan="4" class="text-center text-muted py-4">
-                                    No landing pages assigned yet. Use the search above to assign one.
+                                    No landing pages assigned yet. Use the search above to select a project.
                                 </td>
                             </tr>
                         @endforelse
@@ -112,10 +125,6 @@
     </div>
 
     {{-- Hidden forms for POST/DELETE actions --}}
-    <form id="lp-assign-form" action="{{ route('real-estate.landing-pages.assign') }}" method="POST" class="d-none">
-        @csrf
-        <input type="hidden" name="project_id" id="lp-assign-id">
-    </form>
     <form id="lp-unassign-form" method="POST" class="d-none">
         @csrf
         @method('DELETE')
@@ -127,8 +136,6 @@
             const unassignBase = @json(url(BaseHelper::getAdminPrefix() . '/real-estate/landing-pages'));
             const input = document.getElementById('lp-search');
             const results = document.getElementById('lp-results');
-            const assignForm = document.getElementById('lp-assign-form');
-            const assignId = document.getElementById('lp-assign-id');
             let timer = null;
 
             function hideResults() {
@@ -148,7 +155,7 @@
                         : '';
                     return '<button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-id="' + it.id + '">'
                         + '<span>' + it.name + badge + '</span>'
-                        + '<span class="text-primary">' + (it.assigned ? 'Edit →' : 'Assign →') + '</span>'
+                        + '<span class="text-primary">' + (it.assigned ? 'Edit →' : 'Configure →') + '</span>'
                         + '</button>';
                 }).join('');
                 results.style.display = 'block';
@@ -172,13 +179,7 @@
                 const btn = e.target.closest('[data-id]');
                 if (!btn) return;
                 const id = btn.getAttribute('data-id');
-                const item = (btn.textContent || '').indexOf('Edit') !== -1;
-                if (item) {
-                    window.location = unassignBase + '/' + id + '/edit';
-                } else {
-                    assignId.value = id;
-                    assignForm.submit();
-                }
+                window.location = unassignBase + '/' + id + '/edit';
             });
 
             document.addEventListener('click', function (e) {

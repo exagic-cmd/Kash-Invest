@@ -653,10 +653,24 @@ class RealEstateHelper
 
     public function getPublishedFeatures(): Collection
     {
-        return Cache::remember('real_estate_published_features', 3600, function () {
+        // Capped to the most-used amenities. The Buildify sync creates a Feature
+        // row for every amenity string it sees (~2,000 rows, ~1,800 of them
+        // project-specific one-offs), and this list is rendered as checkboxes by
+        // the search filter on every listing page — twice per page (desktop +
+        // mobile). Uncapped that was ~4,000 fieldsets / ~2MB of HTML and seconds
+        // of Blade time per request. A filter only makes sense for amenities
+        // shared by many listings anyway, so: order by how many projects and
+        // properties actually carry the feature, keep the top slice, and show
+        // them alphabetically.
+        return Cache::remember('real_estate_published_features_v2', 3600, function () {
             return Feature::query()
                 ->wherePublished()
-                ->get();
+                ->withCount(['projects', 'properties'])
+                ->get()
+                ->sortByDesc(fn (Feature $feature) => $feature->projects_count + $feature->properties_count)
+                ->take(30)
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values();
         });
     }
 }

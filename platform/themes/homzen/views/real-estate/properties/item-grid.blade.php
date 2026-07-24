@@ -4,12 +4,9 @@
     $author = $property->author;
 
     // Realistic Built-in years mapped to property ID
+    // TODO: placeholder data — properties have no real "year built" field yet.
     $builtInYears = [2019, 1976, 1981, 2015, 1998, 2005, 2021, 1990, 1988, 2002, 2018];
     $yearBuilt = $builtInYears[$property->id % count($builtInYears)];
-
-    // Realistic relative listing ages matching target screenshot
-    $timeDiffs = ['5 hours', '5 hours', '11 hours', '2 days', '1 week', '2 weeks', '1 month'];
-    $timeLabel = $timeDiffs[$property->id % count($timeDiffs)];
 @endphp
 
 <div @class(['property-item homeya-box modern-card', $class]) @if ($property->latitude && $property->longitude) data-lat="{{ $property->latitude }}" data-lng="{{ $property->longitude }}" @endif>
@@ -32,9 +29,12 @@
                         {{ __('For Sale') }}
                     @endif
                 </span>
-                <span class="overlay-tag tag-time">
-                    {{ $timeLabel }}
-                </span>
+                {{-- Real last-updated time, matching the projects card. --}}
+                @if($property->updated_at)
+                    <span class="overlay-tag tag-time">
+                        {{ __('Updated :time', ['time' => $property->updated_at->diffForHumans()]) }}
+                    </span>
+                @endif
             </div>
         </a>
         

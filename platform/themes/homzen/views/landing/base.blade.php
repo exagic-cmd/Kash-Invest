@@ -70,7 +70,7 @@
     @if ($show['whyUs'] ?? true)
         @include(Theme::getThemeNamespace('views.landing.partials.why-us'))
     @endif
-    @if ($show['innerCircle'] ?? true)
+    @if ($show['innerCircle'] ?? false)
         @include(Theme::getThemeNamespace('views.landing.partials.inner-circle'))
     @endif
     {{-- The page ends on the disclaimer card followed by the enquiry form.

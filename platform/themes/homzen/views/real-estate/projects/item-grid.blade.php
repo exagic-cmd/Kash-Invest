@@ -25,9 +25,12 @@
                         {{ __('Selling') }}
                     @endif
                 </span>
-                @if($project->date_finish)
+                {{-- "Last updated" from the data feed: the Buildify sync only saves a
+                     project when something actually changed, so updated_at reflects the
+                     last real data change from the API (or a manual admin edit). --}}
+                @if($project->updated_at)
                     <span class="overlay-tag tag-time">
-                        {{ $project->date_finish->format('Y') }}
+                        {{ __('Updated :time', ['time' => $project->updated_at->diffForHumans()]) }}
                     </span>
                 @endif
             </div>

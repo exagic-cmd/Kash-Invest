@@ -47,37 +47,35 @@ class ProjectLandingPageForm extends FormAbstract
             // Top toolbar + info note. Lives inside the form because renderForm()
             // renders the whole admin page itself — content written around it in a
             // wrapper blade view never shows (its section gets clobbered).
-            ->add('lp_toolbar', 'html', ['html' => $this->toolbar($project)])
-
-            // ---- Hero -------------------------------------------------------
-            ->add('hero_divider', 'html', ['html' => $this->heading('Hero', 'Logos, headline and background. Leave blank to use the project name / images.')])
-            ->add('hero_logos[]', MediaImagesField::class, MediaImagesFieldOption::make()
-                ->label('Logos (shown top-left; falls back to the project name if empty)')
-                ->values($this->content('hero.logos', []))
+            ->add('lp_toolbar', 'html', ['html' => $this->toolbar($project)])            // ---- Hero -------------------------------------------------------
+            ->add('hero_divider', 'html', ['html' => $this->heading('Hero')])
+            ->add('hero_logo', MediaImageField::class, MediaImageFieldOption::make()
+                ->label('Logo')
+                ->value(Arr::first((array) $this->content('hero.logos', [])) ?: $this->content('hero.logo'))
                 ->toArray())
             ->add('hero_heading', TextField::class, $this->text('Headline', $this->content('hero.heading')))
-            ->add('hero_tagline', TextField::class, $this->text('Tagline / sub-headline', $this->content('hero.tagline')))
-            ->add('hero_badge', TextField::class, $this->text('Status badge', $this->content('hero.badge')))
-            ->add('hero_developer', TextField::class, $this->text('Developer line ("By ...")', $this->content('hero.developer')))
-            ->add('hero_price', TextField::class, $this->text('Price text ("Prices Start from ...")', $this->content('hero.price')))
-            ->add('hero_cta', TextField::class, $this->text('Hero button label', $this->content('hero.cta')))
+            ->add('hero_tagline', TextField::class, $this->text('Subheading', $this->content('hero.tagline')))
+            ->add('hero_badge', TextField::class, $this->text('Status Badge', $this->content('hero.badge')))
+            ->add('hero_developer', TextField::class, $this->text('Developer Name', $this->content('hero.developer')))
+            ->add('hero_price', TextField::class, $this->text('Starting Price', $this->content('hero.price')))
+            ->add('hero_cta', TextField::class, $this->text('Button Text', $this->content('hero.cta')))
             ->add('hero_banner[]', MediaImagesField::class, MediaImagesFieldOption::make()
-                ->label('Background banner / slider (falls back to the gallery)')
+                ->label('Background Slider Images')
                 ->values($this->content('hero.banner', []))
                 ->toArray())
-            ->add('hero_video', TextField::class, $this->text('Background video URL (optional)', $this->content('hero.video')))
+            ->add('hero_video', TextField::class, $this->text('Background Video URL', $this->content('hero.video')))
 
             // ---- Overview ---------------------------------------------------
             ->add('overview_divider', 'html', ['html' => $this->heading('Overview')])
             ->add('overview_show', OnOffField::class, $this->toggle('Show the overview section', $this->content('overview.show', true)))
             ->add('overview_heading', TextField::class, $this->text('Heading', $this->content('overview.heading')))
             ->add('overview_body', EditorField::class, EditorFieldOption::make()
-                ->label('Body text')
+                ->label('Body Text')
                 ->value($this->content('overview.body'))
                 ->toArray())
 
             // ---- Quick facts ------------------------------------------------
-            ->add('quick_facts_divider', 'html', ['html' => $this->heading('Quick facts')])
+            ->add('quick_facts_divider', 'html', ['html' => $this->heading('Quick Facts')])
             ->add('quick_facts_show', OnOffField::class, $this->toggle('Show the quick-facts section', $this->content('quick_facts.show', true)))
             ->add('quick_facts', RepeaterField::class, RepeaterFieldOption::make()
                 ->label('Facts')
@@ -89,10 +87,10 @@ class ProjectLandingPageForm extends FormAbstract
                 ->toArray())
 
             // ---- Cheat sheet ------------------------------------------------
-            ->add('cheat_sheet_divider', 'html', ['html' => $this->heading('Cheat sheet')])
+            ->add('cheat_sheet_divider', 'html', ['html' => $this->heading('Cheat Sheet')])
             ->add('cheat_sheet_show', OnOffField::class, $this->toggle('Show the cheat-sheet section', $this->content('cheat_sheet.show', true)))
             ->add('cheat_sheet_steps', RepeaterField::class, RepeaterFieldOption::make()
-                ->label('Steps (leave empty to use the default copy)')
+                ->label('Steps')
                 ->fields(['step' => $this->repeaterTextarea('Step')])
                 ->value($this->content('cheat_sheet.steps', []))
                 ->toArray())
@@ -108,8 +106,8 @@ class ProjectLandingPageForm extends FormAbstract
             ->add('location_address', TextField::class, $this->text('Address', $this->content('location.address')))
             ->add('location_intersection', TextField::class, $this->text('Intersection', $this->content('location.intersection')))
             ->add('location_neighbourhood', TextField::class, $this->text('Neighbourhood', $this->content('location.neighbourhood')))
-            ->add('location_lat', TextField::class, $this->text('Latitude (for the map)', $this->content('location.lat')))
-            ->add('location_lng', TextField::class, $this->text('Longitude (for the map)', $this->content('location.lng')));
+            ->add('location_lat', TextField::class, $this->text('Latitude (Map)', $this->content('location.lat')))
+            ->add('location_lng', TextField::class, $this->text('Longitude (Map)', $this->content('location.lng')));
 
             $locationBenefits = $this->content('location.benefits', []);
             if (empty($locationBenefits)) {
@@ -143,12 +141,12 @@ class ProjectLandingPageForm extends FormAbstract
 
             $this
             ->add('location_benefits', RepeaterField::class, RepeaterFieldOption::make()
-                ->label('Location Benefits (Bullet points)')
+                ->label('Location Benefits')
                 ->fields(['point' => $this->repeaterText('Benefit')])
                 ->value($locationBenefits)
                 ->toArray())
             ->add('location_nearby', RepeaterField::class, RepeaterFieldOption::make()
-                ->label('Nearby points')
+                ->label('Nearby Places')
                 ->fields([
                     'name' => $this->repeaterText('Place'),
                     'distance' => $this->repeaterText('Distance'),
@@ -170,7 +168,7 @@ class ProjectLandingPageForm extends FormAbstract
             }
 
             $this
-            ->add('why_us_divider', 'html', ['html' => $this->heading('Why Us', 'Two-column section with bullet points on the left and image on the right.')])
+            ->add('why_us_divider', 'html', ['html' => $this->heading('Why Us')])
             ->add('why_us_show', OnOffField::class, $this->toggle('Show the "Why Us" section', $this->content('why_us.show', true)))
             ->add('why_us_heading', TextField::class, $this->text('Heading', $whyUsHeading))
             ->add('why_us_image', MediaImageField::class, MediaImageFieldOption::make()
@@ -178,77 +176,42 @@ class ProjectLandingPageForm extends FormAbstract
                 ->value($this->content('why_us.image'))
                 ->toArray())
             ->add('why_us_points', RepeaterField::class, RepeaterFieldOption::make()
-                ->label('Bullet points')
+                ->label('Bullet Points')
                 ->fields(['point' => $this->repeaterText('Point')])
                 ->value($whyUsPoints)
                 ->toArray());
 
             // ---- Inner Circle -----------------------------------------------
-            $innerCircleHeading = $this->content('inner_circle.heading', 'JOIN OUR INNER CIRCLE TO GET FIRST ACCESS');
-            $innerCircleButtonText = $this->content('inner_circle.button_text', 'Join Now');
-            $innerCircleButtonLink = $this->content('inner_circle.button_link', '#register');
-            $innerCircleItems = $this->content('inner_circle.items', []);
-            if (empty($innerCircleItems)) {
-                $innerCircleItems = static::repeaterize([
-                    ['icon' => null, 'label' => 'Prices'],
-                    ['icon' => null, 'label' => 'Floor Plans'],
-                    ['icon' => null, 'label' => 'Incentives'],
-                    ['icon' => null, 'label' => 'Worksheet'],
-                ]);
-            }
-
+            // Fixed, non-editable "Join our inner circle" block. It is OFF by
+            // default; the only control is the toggle to turn the standard block
+            // on. Its heading, items and button are hard-coded in LandingData.
             $this
-            ->add('inner_circle_divider', 'html', ['html' => $this->heading('Inner Circle', 'Icon grid with call to action.')])
-            ->add('inner_circle_show', OnOffField::class, $this->toggle('Show the "Inner Circle" section', $this->content('inner_circle.show', true)))
-            ->add('inner_circle_heading', TextField::class, $this->text('Heading', $innerCircleHeading))
-            ->add('inner_circle_button_text', TextField::class, $this->text('Button Text', $innerCircleButtonText))
-            ->add('inner_circle_button_link', TextField::class, $this->text('Button Link', $innerCircleButtonLink))
-            ->add('inner_circle_items', RepeaterField::class, RepeaterFieldOption::make()
-                ->label('Items')
-                ->fields([
-                    'icon' => [
-                        'type' => 'mediaImage',
-                        'label' => 'Icon',
-                        'attributes' => ['name' => 'icon', 'value' => null],
-                    ],
-                    'label' => $this->repeaterText('Label'),
-                ])
-                ->value($innerCircleItems)
-                ->toArray());
-
-
+            ->add('inner_circle_divider', 'html', ['html' => $this->heading('Inner Circle', 'A fixed call-to-action block. Turn it on to show the standard "Join our inner circle" section — there is nothing to edit.')])
+            ->add('inner_circle_show', OnOffField::class, $this->toggle('Show the "Inner Circle" section', $this->content('inner_circle.show', false)));
 
             $this
             // ---- Hero background images -------------------------------------
-            // The standalone gallery and floor-plan sections are no longer shown
-            // on the landing page; these images still drive the hero slider when
-            // no dedicated banner is set above.
-            ->add('gallery_divider', 'html', ['html' => $this->heading('Hero background images', 'Used by the hero slider when no banner is set above. There is no separate gallery section on the page.')])
+            ->add('gallery_divider', 'html', ['html' => $this->heading('Hero Background Images')])
             ->add('gallery_images[]', MediaImagesField::class, MediaImagesFieldOption::make()
                 ->label('Images')
                 ->values($this->content('gallery.images', []))
                 ->toArray())
 
             // ---- Register ---------------------------------------------------
-            ->add('register_divider', 'html', ['html' => $this->heading('Register (lead form)')])
+            ->add('register_divider', 'html', ['html' => $this->heading('Register Section')])
             ->add('register_show', OnOffField::class, $this->toggle('Show the register section', $this->content('register.show', true)))
             ->add('register_heading', TextField::class, $this->text('Heading', $this->content('register.heading')))
-            ->add('register_lede', TextareaField::class, $this->textarea('Lede', $this->content('register.lede')))
-
-            // The old "Legal / footer" fields (renderings / brokerage / pricing
-            // disclaimers) fed the site footer, which the landing page no longer
-            // renders. Their job is now done by the Disclaimer card below.
+            ->add('register_lede', TextareaField::class, $this->textarea('Subheading / Description', $this->content('register.lede')))
 
             // ---- Footer Disclaimer Card -------------------------------------
-            ->add('disclaimer_divider', 'html', ['html' => $this->heading('Footer Disclaimer Card', 'White box with partner/developer logo, disclaimer, and copyright at the bottom.')])
+            ->add('disclaimer_divider', 'html', ['html' => $this->heading('Footer Disclaimer Card')])
             ->add('disclaimer_show', OnOffField::class, $this->toggle('Show the disclaimer card', $this->content('disclaimer.show', true)))
             ->add('disclaimer_logo', MediaImageField::class, MediaImageFieldOption::make()
-                ->label('Partner / Developer Logo (Falls back to default website logo if empty)')
+                ->label('Partner / Developer Logo')
                 ->value($this->content('disclaimer.logo'))
                 ->toArray())
-            ->add('disclaimer_text', TextareaField::class, $this->textarea('Disclaimer Text (Falls back to default auto-generated disclaimer if empty)', $this->content('disclaimer.text')))
-            ->add('disclaimer_copyright', TextField::class, $this->text('Copyright Line (Falls back to default if empty)', $this->content('disclaimer.copyright')))
-
+            ->add('disclaimer_text', TextareaField::class, $this->textarea('Disclaimer Text', $this->content('disclaimer.text')))
+            ->add('disclaimer_copyright', TextField::class, $this->text('Copyright Line', $this->content('disclaimer.copyright')))
 
             // Sidebar: the Publish toggle sits beside the Save box. Everything
             // above renders in the wide main column (fields before the break).
@@ -346,12 +309,9 @@ class ProjectLandingPageForm extends FormAbstract
                 'image' => null,
                 'points' => [],
             ],
+            // Inner Circle is off by default and non-editable (fixed content).
             'inner_circle' => [
-                'show' => true,
-                'heading' => null,
-                'button_text' => null,
-                'button_link' => null,
-                'items' => [],
+                'show' => false,
             ],
             'floor_plans' => [
                 'show' => true,
@@ -417,13 +377,13 @@ class ProjectLandingPageForm extends FormAbstract
         $landingUrl = e(route('landing.page', $project->getKey()));
         $name = e($project->name);
 
-        return <<<HTML
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <a href="{$backUrl}" class="text-muted">
-                        <i class="ti ti-arrow-left"></i> Back to Featured Projects
-                    </a>
-                </div>
+        /** @var ProjectLandingPage|null $model */
+        $model = $this->getModel();
+        $isSaved = ($project->landing_template === 'light') && ($model && $model->exists);
+
+        $actionButtons = '';
+        if ($isSaved) {
+            $actionButtons = <<<HTML
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-secondary lp-copy-link" data-url="{$landingUrl}">
                         <i class="ti ti-link"></i> Copy Link
@@ -432,10 +392,26 @@ class ProjectLandingPageForm extends FormAbstract
                         <i class="ti ti-external-link"></i> Preview landing page
                     </a>
                 </div>
+HTML;
+        }
+
+        return <<<HTML
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <a href="{$backUrl}" class="text-muted">
+                        <i class="ti ti-arrow-left"></i> Back to Landing Pages
+                    </a>
+                </div>
+                {$actionButtons}
             </div>
-            <div class="alert alert-info">
-                Every field is optional. Leave a field blank to fall back to <strong>{$name}</strong>'s
-                own data (for example, no logo &rarr; the project name is shown).
+            <div class="alert alert-info d-flex align-items-center gap-3 mb-4">
+                <i class="ti ti-info-circle fs-2 text-info flex-shrink-0"></i>
+                <div>
+                    <div class="fw-bold mb-1">Customize Landing Page Content for {$name}</div>
+                    <div class="text-muted small">
+                        All fields below are optional. Any field left blank will automatically fall back to the project's standard details (e.g., if no custom logo is uploaded, the main project name will be displayed).
+                    </div>
+                </div>
             </div>
             <script>
                 document.addEventListener('DOMContentLoaded', function () {
