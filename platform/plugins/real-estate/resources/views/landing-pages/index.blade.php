@@ -151,7 +151,7 @@
                 }
                 results.innerHTML = items.map(function (it) {
                     const badge = it.assigned
-                        ? '<span class="badge bg-success ms-2">Assigned</span>'
+                        ? '<span class="ms-2" style="display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;background-color:#2fb344;">Assigned</span>'
                         : '';
                     return '<button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-id="' + it.id + '">'
                         + '<span>' + it.name + badge + '</span>'

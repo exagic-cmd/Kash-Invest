@@ -216,10 +216,20 @@
         color: #6C757D; font-weight: 400; margin-top: .25rem;
     }
     .kl-topbar__brand {
+        display: flex; align-items: center; justify-content: flex-end; flex: none;
         font-family: 'Jost', sans-serif; font-weight: 700; font-size: clamp(.95rem, 2vw, 1.35rem);
         line-height: 1; text-align: right; color: #111; text-decoration: none; white-space: nowrap;
     }
+    .kl-topbar__brand img {
+        max-height: 44px;
+        width: auto;
+        max-width: 180px;
+        object-fit: contain;
+    }
     .kl-topbar__brand span { display: block; }
+    @media (max-width: 600px) {
+        .kl-topbar__brand img { max-height: 34px; max-width: 120px; }
+    }
 
     /* ---------- hero: full-bleed art, copy left ---------- */
     .kl-hero { position: relative; min-height: min(78vh, 720px); display: flex; align-items: center; }

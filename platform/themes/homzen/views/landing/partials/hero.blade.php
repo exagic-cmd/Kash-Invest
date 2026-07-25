@@ -34,7 +34,13 @@
             </span>
         </a>
 
-        <a href="#register" class="kl-topbar__brand">{{ $brand }}</a>
+        <a href="{{ BaseHelper::getHomepageUrl() }}" class="kl-topbar__brand">
+            @if (Theme::getLogo())
+                {!! Theme::getLogoImage(maxHeight: 44) !!}
+            @else
+                {{ $brand }}
+            @endif
+        </a>
     </div>
 </div>
 
