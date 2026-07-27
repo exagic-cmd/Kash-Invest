@@ -1,3 +1,13 @@
+@php
+    // Brand accent comes from the site's own theme options (Appearance → Theme
+    // Options → Colors), so the landing pages always match the Kash Invest green
+    // used across the public site instead of carrying their own hardcoded teal.
+    // Defaults mirror the current brand values.
+    $klAccent = theme_option('primary_color') ?: '#006838';
+    $klAccentHover = theme_option('hover_color') ?: '#16a750';
+    // `#` has to be percent-encoded to sit inside an inline SVG data: URI.
+    $klAccentSvg = str_replace('#', '%23', $klAccent);
+@endphp
 {{--
     Landing design system. One structural stylesheet, two token sets.
     Everything below is scoped under .kl so it can never leak into (or be
@@ -51,9 +61,10 @@
         --kl-surface-2: #F3F7FD;
         --kl-ink: #212529;
         --kl-muted: #6C757D;
-        --kl-accent: #0392A6;
+        --kl-accent: {{ $klAccent }};
+        --kl-accent-hover: {{ $klAccentHover }};
         --kl-accent-ink: #FFFFFF;
-        --kl-cool: #0392A6;
+        --kl-cool: {{ $klAccent }};
         --kl-line: rgba(33, 37, 41, .12);
         --kl-display: 'Jost', 'Helvetica Neue', Arial, sans-serif;
         --kl-body: 'Jost', 'Helvetica Neue', Arial, sans-serif;
@@ -120,7 +131,14 @@
         background: var(--kl-accent); color: #FFFFFF !important;
         cursor: pointer; transition: transform .18s var(--kl-ease), opacity .18s var(--kl-ease);
     }
-    .kl-btn:hover, .kl-btn:focus, .kl-btn:active { opacity: .88; transform: translateY(-1px); color: #FFFFFF !important; }
+    /* Hover shifts to the brand's own hover green rather than just fading the
+       accent, matching the buttons on the public site. */
+    .kl-btn:hover, .kl-btn:focus, .kl-btn:active {
+        background: var(--kl-accent-hover, var(--kl-accent));
+        border-color: var(--kl-accent-hover, var(--kl-accent));
+        transform: translateY(-1px);
+        color: #FFFFFF !important;
+    }
     .kl-btn--ghost { background: transparent; color: var(--kl-ink) !important; border-color: var(--kl-line); }
     .kl-btn--ghost:hover { border-color: var(--kl-accent); color: var(--kl-accent) !important; }
     .kl-btn--block { width: 100%; }
@@ -292,7 +310,7 @@
         content: ""; flex: none; width: 22px; height: 22px; margin-top: .15rem;
         border-radius: 50%; border: 1.5px solid var(--kl-accent);
         background: no-repeat center/11px 11px;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%230392A6' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 8.5L6 12.5L14 3.5'/%3e%3c/svg%3e");
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='{{ $klAccentSvg }}' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 8.5L6 12.5L14 3.5'/%3e%3c/svg%3e");
     }
     /* the dark theme tints its checks bronze instead of teal */
     .kl[data-landing-theme="dark"] .kl-checks li::before {
@@ -335,7 +353,7 @@
         width: 27px; height: 27px; margin-top: 0;
         border: 0; border-radius: 0;
         background: no-repeat center/27px 27px;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none'%3e%3ccircle cx='11.5' cy='13.5' r='9.4' stroke='%230392A6' stroke-width='1.4'/%3e%3cpath d='M5.8 13.8 L9.9 17.9 L23 3.6' stroke='%230392A6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none'%3e%3ccircle cx='11.5' cy='13.5' r='9.4' stroke='{{ $klAccentSvg }}' stroke-width='1.4'/%3e%3cpath d='M5.8 13.8 L9.9 17.9 L23 3.6' stroke='{{ $klAccentSvg }}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
     }
     .kl[data-landing-theme="dark"] .kl-checks--facts li::before {
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none'%3e%3ccircle cx='11.5' cy='13.5' r='9.4' stroke='%23B08D57' stroke-width='1.4'/%3e%3cpath d='M5.8 13.8 L9.9 17.9 L23 3.6' stroke='%23B08D57' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");

@@ -1,10 +1,12 @@
 @extends(BaseHelper::getAdminMasterLayoutTemplate())
 
 @section('content')
-    {{-- Same chip style as the Featured Projects table: Bootstrap's `badge bg-*`
-         utilities render washed-out/low-contrast on the dark admin theme, so the
-         status pills use explicit colours with white text instead. --}}
-    @php($chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;line-height:1;')
+    {{-- Badges and icons go through the framework's own helpers so this page
+         matches the rest of the admin: BaseHelper::renderBadge() emits the native
+         `badge bg-* text-*-fg` pair (which carries a readable foreground colour,
+         unlike a bare `bg-secondary`), and icons must use <x-core::icon> because
+         Botble renders `ti ti-*` as inline SVG — a bare <i class="ti ..."> shows
+         nothing at all. --}}
 
     {{-- Mobile only (<=767px). Desktop untouched. The source cards are already
          full-width below lg and the history table scrolls inside
@@ -32,9 +34,12 @@
                         <div class="d-flex justify-content-between align-items-start mb-2 sync-card-head">
                             <div>
                                 <h5 class="mb-1">{{ $source['label'] }}</h5>
-                                <span style="{{ $chip }}background-color:{{ $source['enabled'] ? '#2fb344' : '#64748b' }};">
-                                    {{ $source['enabled'] ? trans('plugins/real-estate::api-sync.enabled') : trans('plugins/real-estate::api-sync.disabled') }}
-                                </span>
+                                {!! BaseHelper::renderBadge(
+                                    $source['enabled']
+                                        ? trans('plugins/real-estate::api-sync.enabled')
+                                        : trans('plugins/real-estate::api-sync.disabled'),
+                                    $source['enabled'] ? 'success' : 'secondary'
+                                ) !!}
                             </div>
                             <a href="{{ $source['projects_url'] }}" class="btn btn-sm btn-outline-secondary">
                                 {{ trans('plugins/real-estate::api-sync.view_projects', ['count' => number_format($source['projects_count'])]) }}
@@ -57,7 +62,7 @@
                         </div>
 
                         <button type="button" class="btn btn-primary" data-run-sync="{{ $source['key'] }}" @disabled(! $source['enabled'])>
-                            <i class="ti ti-refresh me-1"></i>{{ trans('plugins/real-estate::api-sync.run_now') }}
+                            <x-core::icon name="ti ti-refresh" />{{ trans('plugins/real-estate::api-sync.run_now') }}
                         </button>
                     </div>
                 </div>
@@ -90,8 +95,8 @@
                         <tr>
                             <td>{{ \Illuminate\Support\Str::headline($log->source) }}</td>
                             <td>
-                                @php($color = $log->status === 'success' ? '#2fb344' : ($log->status === 'failed' ? '#d63939' : '#f76707'))
-                                <span style="{{ $chip }}background-color:{{ $color }};">{{ ucfirst($log->status) }}</span>
+                                @php($color = $log->status === 'success' ? 'success' : ($log->status === 'failed' ? 'danger' : 'warning'))
+                                {!! BaseHelper::renderBadge(ucfirst($log->status), $color) !!}
                             </td>
                             <td>{{ ucfirst($log->triggered_by) }}</td>
                             <td class="text-center">{{ $log->created }}</td>
@@ -108,15 +113,23 @@
                                  doesn't look half-empty; runs with nothing to show
                                  render it disabled rather than omitting it. --}}
                             <td class="text-end">
+                                {{-- Icon-only, like the Operations column on the other
+                                     admin tables. The label lives in the tooltip so the
+                                     action stays discoverable. --}}
                                 @if (($log->items_count ?? 0) > 0)
-                                    <button type="button" class="btn btn-sm btn-outline-primary"
-                                            data-details-url="{{ route('real-estate.api-sync.details', $log->id) }}">
-                                        <i class="ti ti-list-details me-1"></i>{{ trans('plugins/real-estate::api-sync.details') }}
+                                    <button type="button" class="btn btn-sm btn-icon btn-outline-primary"
+                                            data-details-url="{{ route('real-estate.api-sync.details', $log->id) }}"
+                                            data-bs-toggle="tooltip"
+                                            title="{{ trans('plugins/real-estate::api-sync.details') }}">
+                                        <x-core::icon name="ti ti-list-details" />
+                                        <span class="sr-only">{{ trans('plugins/real-estate::api-sync.details') }}</span>
                                     </button>
                                 @else
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                    <button type="button" class="btn btn-sm btn-icon btn-outline-secondary" disabled
+                                            data-bs-toggle="tooltip"
                                             title="{{ trans('plugins/real-estate::api-sync.no_changes_recorded') }}">
-                                        <i class="ti ti-list-details me-1"></i>{{ trans('plugins/real-estate::api-sync.details') }}
+                                        <x-core::icon name="ti ti-list-details" />
+                                        <span class="sr-only">{{ trans('plugins/real-estate::api-sync.details') }}</span>
                                     </button>
                                 @endif
                             </td>

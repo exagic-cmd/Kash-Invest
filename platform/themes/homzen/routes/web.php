@@ -37,8 +37,14 @@ Route::middleware(['web', 'core'])
  | admin table (Preview / Copy Link). Honors is_published and the assignment.
  */
 Route::middleware(['web', 'core'])->group(function (): void {
+    // Bare URL -> the project's default landing page. Kept first and unchanged so
+    // ad links created before multi-page support still resolve to the same page.
     Route::get('landing/{project}', [LandingPageController::class, 'show'])
         ->name('landing.page');
+
+    // One URL per campaign page.
+    Route::get('landing/{project}/{slug}', [LandingPageController::class, 'show'])
+        ->name('landing.page.slug');
 });
 
 /*

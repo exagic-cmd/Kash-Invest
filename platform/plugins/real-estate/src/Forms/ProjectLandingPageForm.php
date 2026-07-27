@@ -41,13 +41,26 @@ class ProjectLandingPageForm extends FormAbstract
 
         $this
             ->model(ProjectLandingPage::class)
-            ->setUrl(route('real-estate.landing-pages.update', $project?->getKey()))
+            ->setUrl(route('real-estate.landing-pages.pages.update', [$project?->getKey(), $model?->getKey()]))
             ->setFormOption('method', 'PUT')
 
             // Top toolbar + info note. Lives inside the form because renderForm()
             // renders the whole admin page itself — content written around it in a
             // wrapper blade view never shows (its section gets clobbered).
-            ->add('lp_toolbar', 'html', ['html' => $this->toolbar($project)])            // ---- Hero -------------------------------------------------------
+            ->add('lp_toolbar', 'html', ['html' => $this->toolbar($project)])
+
+            // ---- This page --------------------------------------------------
+            // Identity of this campaign page. The slug is the URL segment, so a
+            // project can carry several pages: /landing/{project}/{slug}.
+            ->add('page_divider', 'html', ['html' => $this->heading('This Landing Page', 'Name it for your own reference; the URL slug is what appears in the public link.')])
+            ->add('page_name', TextField::class, $this->text('Page Name (internal)', $model?->name))
+            ->add('page_slug', TextField::class, TextFieldOption::make()
+                ->label('URL Slug')
+                ->value($model?->slug)
+                ->helperText($project ? 'Public URL: ' . route('landing.page', $project->getKey()) . '/<slug>' : '')
+                ->toArray())
+
+            // ---- Hero -------------------------------------------------------
             ->add('hero_divider', 'html', ['html' => $this->heading('Hero')])
             ->add('hero_logo', MediaImageField::class, MediaImageFieldOption::make()
                 ->label('Logo')
@@ -367,6 +380,59 @@ class ProjectLandingPageForm extends FormAbstract
      * (draft-safe ?preview=1), plus the fallback explainer. Inline script because
      * html fields render inside the form — there's no blade stack to push to.
      */
+    /**
+     * One tab per campaign page, plus an "Add" tab.
+     *
+     * These are plain links rather than JS tab-panes: each tab loads that page's
+     * own form, so there is no way to silently edit one page and save it over
+     * another. Hidden while the project has only a single page, so the common
+     * case stays uncluttered.
+     */
+    protected function tabs(Project $project, ?ProjectLandingPage $current): string
+    {
+        $pages = $project->landingPages()->get();
+        $addUrl = e(route('real-estate.landing-pages.pages.create', $project->getKey()));
+
+        if ($pages->count() < 2) {
+            return <<<HTML
+                <div class="mb-3">
+                    <a href="{$addUrl}" class="btn btn-sm btn-outline-primary">
+                        <i class="ti ti-plus"></i> Add another landing page
+                    </a>
+                </div>
+HTML;
+        }
+
+        $items = '';
+        foreach ($pages as $page) {
+            $isActive = $current && $current->getKey() === $page->getKey();
+            $url = e(route('real-estate.landing-pages.edit-page', [$project->getKey(), $page->getKey()]));
+            $label = e($page->name ?: 'Untitled');
+            $active = $isActive ? ' active' : '';
+            $badge = $page->is_primary
+                ? ' <span class="badge bg-blue-lt ms-1">Default</span>'
+                : '';
+            $draft = $page->is_published ? '' : ' <span class="badge bg-secondary-lt ms-1">Draft</span>';
+
+            $items .= <<<HTML
+                <li class="nav-item">
+                    <a class="nav-link{$active}" href="{$url}">{$label}{$badge}{$draft}</a>
+                </li>
+HTML;
+        }
+
+        return <<<HTML
+            <ul class="nav nav-tabs mb-3">
+                {$items}
+                <li class="nav-item ms-auto">
+                    <a class="nav-link text-primary" href="{$addUrl}">
+                        <i class="ti ti-plus"></i> Add page
+                    </a>
+                </li>
+            </ul>
+HTML;
+    }
+
     protected function toolbar(?Project $project): string
     {
         if (! $project) {
@@ -374,12 +440,18 @@ class ProjectLandingPageForm extends FormAbstract
         }
 
         $backUrl = e(route('real-estate.landing-pages.index'));
-        $landingUrl = e(route('landing.page', $project->getKey()));
         $name = e($project->name);
 
         /** @var ProjectLandingPage|null $model */
         $model = $this->getModel();
         $isSaved = ($project->landing_template === 'light') && ($model && $model->exists);
+
+        // Preview/copy point at THIS campaign page, not just the project.
+        $landingUrl = e($model && $model->exists
+            ? $model->url
+            : route('landing.page', $project->getKey()));
+
+        $tabs = $this->tabs($project, $model);
 
         $actionButtons = '';
         if ($isSaved) {
@@ -404,6 +476,7 @@ HTML;
                 </div>
                 {$actionButtons}
             </div>
+            {$tabs}
             <div class="alert alert-info d-flex align-items-center gap-3 mb-4">
                 <i class="ti ti-info-circle fs-2 text-info flex-shrink-0"></i>
                 <div>

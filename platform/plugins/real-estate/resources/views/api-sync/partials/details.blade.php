@@ -2,20 +2,18 @@
     /** @var \Botble\RealEstate\Models\ProjectSyncLog $log */
     $groups = $log->items->groupBy('action');
     // Show the most actionable groups first.
-    $sections = ['failed' => '#d63939', 'created' => '#2fb344', 'updated' => '#4299e1'];
+    $sections = ['failed' => 'danger', 'created' => 'success', 'updated' => 'info'];
 @endphp
 
-{{-- Explicit colours rather than bg-* utilities: on the dark admin theme
-     `bg-secondary` resolves to a pale grey and the white label inside it became
-     invisible. These four tones read on both the light and dark themes. --}}
-@php
-    $chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;';
-@endphp
+{{-- Native badges (BaseHelper::renderBadge) so this modal matches the rest of the
+     admin. The helper emits `badge bg-* text-*-fg`, and that foreground class is
+     what keeps `secondary` legible on the dark theme — a bare `bg-secondary` with
+     white text was the reason these were hand-coloured before. --}}
 <div class="d-flex flex-wrap gap-2 mb-3">
-    <span style="{{ $chip }}background-color:#2fb344;">{{ trans('plugins/real-estate::api-sync.columns.created') }}: {{ $log->created }}</span>
-    <span style="{{ $chip }}background-color:#4299e1;">{{ trans('plugins/real-estate::api-sync.columns.updated') }}: {{ $log->updated }}</span>
-    <span style="{{ $chip }}background-color:#64748b;">{{ trans('plugins/real-estate::api-sync.columns.unchanged') }}: {{ $log->unchanged }}</span>
-    <span style="{{ $chip }}background-color:#d63939;">{{ trans('plugins/real-estate::api-sync.columns.failed') }}: {{ $log->failed }}</span>
+    {!! BaseHelper::renderBadge(trans('plugins/real-estate::api-sync.columns.created') . ': ' . $log->created, 'success') !!}
+    {!! BaseHelper::renderBadge(trans('plugins/real-estate::api-sync.columns.updated') . ': ' . $log->updated, 'info') !!}
+    {!! BaseHelper::renderBadge(trans('plugins/real-estate::api-sync.columns.unchanged') . ': ' . $log->unchanged, 'secondary') !!}
+    {!! BaseHelper::renderBadge(trans('plugins/real-estate::api-sync.columns.failed') . ': ' . $log->failed, 'danger') !!}
 </div>
 
 @if ($log->items->isEmpty())
@@ -25,7 +23,7 @@
         @php($group = $groups->get($action))
         @if ($group && $group->count())
             <h5 class="mt-3 mb-2">
-                <span style="{{ $chip }}background-color:{{ $color }};">{{ \Illuminate\Support\Str::headline($action) }}</span>
+                {!! BaseHelper::renderBadge(\Illuminate\Support\Str::headline($action), $color) !!}
                 <span class="small">({{ $group->count() }})</span>
             </h5>
             <div class="table-responsive mb-2">
@@ -64,7 +62,7 @@
                                                     <li class="mb-1">
                                                         <strong>{{ $change['field'] }}:</strong>
                                                         <span class="text-muted text-decoration-line-through">{{ $change['from'] ?? '—' }}</span>
-                                                        <i class="ti ti-arrow-right mx-1"></i>
+                                                        <x-core::icon name="ti ti-arrow-right" class="mx-1" />
                                                         <span class="fw-medium">{{ $change['to'] ?? '—' }}</span>
                                                     </li>
                                                 @endforeach

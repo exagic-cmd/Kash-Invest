@@ -1,7 +1,6 @@
 @extends(BaseHelper::getAdminMasterLayoutTemplate())
 
 @section('content')
-    @php($chip = 'display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;')
 
     {{-- Mobile only (<=767px). Desktop is untouched: the table already scrolls
          inside .table-responsive, but the per-row action buttons are the widest
@@ -30,6 +29,13 @@
         #lp-results .list-group-item:focus {
             background-color: var(--tblr-bg-surface-secondary, #334155) !important;
         }
+        /* URL column reads as a path, not a code block */
+        .lp-actions code,
+        td code {
+            background: transparent;
+            padding: 0;
+        }
+
         @media (max-width: 767.98px) {
             .lp-actions {
                 flex-wrap: wrap;
@@ -43,8 +49,10 @@
 
     <div class="max-width-1200 mx-auto">
         <p class="text-muted">
-            Assign a preconstruction landing page to a project, then edit every section like a CMS.
-            Search a project below to create or edit its landing page.
+            A project can have several landing pages — one per ad campaign. Search below to
+            configure a new project, or use <strong>Add page</strong> on any project to create
+            another campaign page. The <strong>Default</strong> page is the one served at the
+            short <code>/landing/&lt;project&gt;</code> URL.
         </p>
 
         {{-- Search + assign --}}
@@ -59,62 +67,98 @@
             </div>
         </div>
 
-        {{-- Currently assigned --}}
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Assigned landing pages ({{ $assigned->count() }})</h5>
+                <h5 class="card-title mb-0">Landing pages ({{ $pages->count() }})</h5>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
                             <th>Project</th>
-                            <th>Template</th>
+                            <th>Landing page</th>
+                            <th>Public URL</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($assigned as $project)
-                            @php($published = $project->landingPage?->is_published ?? true)
-                            <tr>
-                                <td>{{ $project->name }}</td>
-                                {{-- Explicit colours: bg-secondary renders as a pale
-                                     grey pill on the dark theme and swallowed its label. --}}
-                                <td>
-                                    <span style="{{ $chip }}background-color:#64748b;">Light</span>
-                                </td>
-                                <td>
-                                    <span style="{{ $chip }}background-color:{{ $published ? '#2fb344' : '#64748b' }};">
-                                        {{ $published ? 'Published' : 'Hidden' }}
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    @php($landingUrl = route('landing.page', $project->getKey()))
-                                    <div class="d-flex align-items-center justify-content-end gap-1 lp-actions">
-                                        <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
-                                           class="btn btn-sm btn-outline-secondary" title="Open the landing page in a new tab">
-                                            <i class="ti ti-external-link"></i> Preview
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary lp-copy-link"
-                                                data-url="{{ $landingUrl }}" title="Copy the public landing page URL">
-                                            <i class="ti ti-link"></i> Copy Link
-                                        </button>
-                                        <a href="{{ route('real-estate.landing-pages.edit', $project->getKey()) }}"
-                                           class="btn btn-sm btn-primary">
-                                            <i class="ti ti-pencil"></i> Edit
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger lp-unassign"
-                                                data-id="{{ $project->getKey() }}" data-name="{{ $project->name }}">
-                                            <i class="ti ti-trash"></i> Unassign
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                        {{-- One row per landing page: a project with several campaign
+                             pages appears once per page it owns. --}}
+                        @forelse ($pages as $page)
+                                @php($project = $page->project)
+                                @php($projectId = $project->getKey())
+                                @php($published = $page->is_published)
+                                @php($landingUrl = $page->url)
+                                @php($path = $page->is_primary ? '/landing/' . $projectId : '/landing/' . $projectId . '/' . $page->slug)
+                                <tr>
+                                    <td>{{ $project->name }}</td>
+                                    <td>
+                                        {{ $page->name ?: 'Untitled' }}
+                                        @if ($page->is_primary)
+                                            <span title="Served at the short /landing/{{ $projectId }} URL">
+                                                {!! BaseHelper::renderBadge('Default', 'info') !!}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td><code class="text-muted small">{{ $path }}</code></td>
+                                    <td>
+                                        {!! $published
+                                            ? BaseHelper::renderBadge('Published', 'success')
+                                            : BaseHelper::renderBadge('Draft', 'secondary') !!}
+                                    </td>
+                                    <td class="text-end">
+                                        {{-- Icon-only square buttons, matching the operations
+                                             column on the Projects table. Icons must go through
+                                             <x-core::icon>: Botble renders `ti ti-*` as inline
+                                             SVG, there is no icon webfont, so a bare
+                                             <i class="ti ti-..."> renders nothing at all. --}}
+                                        <div class="d-flex align-items-center justify-content-end gap-1 lp-actions">
+                                            <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
+                                               class="btn btn-sm btn-icon btn-outline-secondary"
+                                               data-bs-toggle="tooltip" title="Preview this page">
+                                                <x-core::icon name="ti ti-eye" />
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-copy-link"
+                                                    data-url="{{ $landingUrl }}"
+                                                    data-bs-toggle="tooltip" title="Copy this page's public URL">
+                                                <x-core::icon name="ti ti-link" />
+                                            </button>
+                                            <a href="{{ route('real-estate.landing-pages.edit-page', [$projectId, $page->getKey()]) }}"
+                                               class="btn btn-sm btn-icon btn-primary"
+                                               data-bs-toggle="tooltip" title="Edit this landing page">
+                                                <x-core::icon name="ti ti-edit" />
+                                            </a>
+                                            <a href="{{ route('real-estate.landing-pages.pages.create', $projectId) }}"
+                                               class="btn btn-sm btn-icon btn-outline-secondary"
+                                               data-bs-toggle="tooltip" title="Add another landing page to {{ $project->name }}">
+                                                <x-core::icon name="ti ti-plus" />
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
+                                                    data-url="{{ route('real-estate.landing-pages.pages.duplicate', [$projectId, $page->getKey()]) }}"
+                                                    data-bs-toggle="tooltip" title="Duplicate as a draft">
+                                                <x-core::icon name="ti ti-copy" />
+                                            </button>
+                                            @unless ($page->is_primary)
+                                                <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
+                                                        data-url="{{ route('real-estate.landing-pages.pages.primary', [$projectId, $page->getKey()]) }}"
+                                                        data-bs-toggle="tooltip" title="Serve this page at /landing/{{ $projectId }}">
+                                                    <x-core::icon name="ti ti-star" />
+                                                </button>
+                                            @endunless
+                                            <button type="button" class="btn btn-sm btn-icon btn-danger lp-delete-page"
+                                                    data-url="{{ route('real-estate.landing-pages.pages.destroy', [$projectId, $page->getKey()]) }}"
+                                                    data-name="{{ $page->name }} ({{ $project->name }})"
+                                                    data-bs-toggle="tooltip" title="Delete this landing page">
+                                                <x-core::icon name="ti ti-trash" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">
-                                    No landing pages assigned yet. Use the search above to select a project.
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    No landing pages yet. Use the search above to select a project.
                                 </td>
                             </tr>
                         @endforelse
@@ -129,6 +173,47 @@
         @csrf
         @method('DELETE')
     </form>
+
+    {{-- Generic submitter for the per-page row actions (duplicate / make default /
+         delete). Each button carries its own URL, so one form serves them all. --}}
+    <form id="lp-action-form" method="POST" class="d-none">
+        @csrf
+        <input type="hidden" name="_method" id="lp-action-method" value="POST">
+    </form>
+
+    <script>
+        (function () {
+            var form = document.getElementById('lp-action-form');
+            var method = document.getElementById('lp-action-method');
+
+            function submitTo(url, httpMethod) {
+                form.action = url;
+                method.value = httpMethod;
+                form.submit();
+            }
+
+            document.querySelectorAll('.lp-post').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    submitTo(btn.getAttribute('data-url'), 'POST');
+                });
+            });
+
+            // KashConfirm is the shared Kash Invest dialog, injected on every admin
+            // page by RealEstateHookServiceProvider.
+            document.querySelectorAll('.lp-delete-page').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    KashConfirm.ask({
+                        title: 'Delete this landing page?',
+                        message: '“' + btn.getAttribute('data-name') + '” will be removed and its public URL will stop working. The project and its other landing pages are not affected.',
+                        confirmLabel: 'Delete',
+                        type: 'danger',
+                    }, function () {
+                        submitTo(btn.getAttribute('data-url'), 'DELETE');
+                    });
+                });
+            });
+        })();
+    </script>
 
     <script>
         (function () {
@@ -150,12 +235,24 @@
                     return;
                 }
                 results.innerHTML = items.map(function (it) {
-                    const badge = it.assigned
-                        ? '<span class="ms-2" style="display:inline-block;padding:.35rem .6rem;border-radius:6px;font-size:.75rem;font-weight:600;color:#fff;background-color:#2fb344;">Assigned</span>'
-                        : '';
+                    // Already-configured projects get a direct "Add page" action, so a
+                    // new campaign page can be created straight from the search box
+                    // without opening the editor first.
+                    if (it.assigned) {
+                        return '<div class="list-group-item d-flex justify-content-between align-items-center">'
+                            + '<span>' + it.name
+                            + '<span class="badge bg-success text-success-fg ms-2">Configured</span>'
+                            + '</span>'
+                            + '<span class="d-flex gap-2">'
+                            + '<a class="btn btn-sm btn-outline-primary" href="' + unassignBase + '/' + it.id + '/pages/create">+ Add page</a>'
+                            + '<a class="btn btn-sm btn-primary" href="' + unassignBase + '/' + it.id + '/edit">Edit</a>'
+                            + '</span>'
+                            + '</div>';
+                    }
+
                     return '<button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-id="' + it.id + '">'
-                        + '<span>' + it.name + badge + '</span>'
-                        + '<span class="text-primary">' + (it.assigned ? 'Edit →' : 'Configure →') + '</span>'
+                        + '<span>' + it.name + '</span>'
+                        + '<span class="text-primary">Configure →</span>'
                         + '</button>';
                 }).join('');
                 results.style.display = 'block';
@@ -188,12 +285,16 @@
 
             document.querySelectorAll('.lp-unassign').forEach(function (btn) {
                 btn.addEventListener('click', function () {
-                    if (!confirm('Unassign the landing page from "' + btn.getAttribute('data-name') + '"? The project reverts to its standard page.')) {
-                        return;
-                    }
-                    const form = document.getElementById('lp-unassign-form');
-                    form.action = unassignBase + '/' + btn.getAttribute('data-id');
-                    form.submit();
+                    KashConfirm.ask({
+                        title: 'Remove all landing pages?',
+                        message: '“' + btn.getAttribute('data-name') + '” will revert to its standard project page and every landing page it has will be deleted.',
+                        confirmLabel: 'Remove',
+                        type: 'danger',
+                    }, function () {
+                        const form = document.getElementById('lp-unassign-form');
+                        form.action = unassignBase + '/' + btn.getAttribute('data-id');
+                        form.submit();
+                    });
                 });
             });
 
@@ -202,7 +303,7 @@
                     const url = btn.getAttribute('data-url');
                     const original = btn.innerHTML;
                     const done = function () {
-                        btn.innerHTML = '<i class="ti ti-check"></i> Copied';
+                        btn.innerHTML = 'Copied';
                         setTimeout(function () { btn.innerHTML = original; }, 1500);
                     };
                     if (navigator.clipboard && navigator.clipboard.writeText) {

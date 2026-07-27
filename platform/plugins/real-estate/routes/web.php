@@ -62,18 +62,51 @@ Route::group(['namespace' => 'Botble\RealEstate\Http\Controllers', 'middleware' 
                 'permission' => 'real-estate.landing-pages',
             ]);
 
+            // Tabbed editor: one screen per project, one tab per landing page.
+            // Without a page id the project's default page is opened.
             Route::get('{project}/edit', [
                 'as' => 'edit',
                 'uses' => 'ProjectLandingPageController@edit',
                 'permission' => 'real-estate.landing-pages',
             ]);
 
-            Route::put('{project}', [
-                'as' => 'update',
+            Route::get('{project}/edit/{landingPage}', [
+                'as' => 'edit-page',
+                'uses' => 'ProjectLandingPageController@edit',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::get('{project}/pages/create', [
+                'as' => 'pages.create',
+                'uses' => 'ProjectLandingPageController@createPage',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::put('{project}/pages/{landingPage}', [
+                'as' => 'pages.update',
                 'uses' => 'ProjectLandingPageController@update',
                 'permission' => 'real-estate.landing-pages',
             ]);
 
+            Route::post('{project}/pages/{landingPage}/duplicate', [
+                'as' => 'pages.duplicate',
+                'uses' => 'ProjectLandingPageController@duplicatePage',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::post('{project}/pages/{landingPage}/primary', [
+                'as' => 'pages.primary',
+                'uses' => 'ProjectLandingPageController@makePrimary',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            Route::delete('{project}/pages/{landingPage}', [
+                'as' => 'pages.destroy',
+                'uses' => 'ProjectLandingPageController@destroyPage',
+                'permission' => 'real-estate.landing-pages',
+            ]);
+
+            // Unassign the whole project (removes all of its landing pages).
             Route::delete('{project}', [
                 'as' => 'destroy',
                 'uses' => 'ProjectLandingPageController@destroy',

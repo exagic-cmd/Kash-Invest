@@ -133,7 +133,9 @@ class Project extends BaseModel
             $project->facilities()->detach();
             $project->properties()->update(['project_id' => 0]);
             $project->metadata()->delete();
-            $project->landingPage()->delete();
+            // All of them, not just the default one — and without the relation's
+            // ORDER BY, which has no place in a DELETE.
+            ProjectLandingPage::query()->where('project_id', $project->getKey())->delete();
         });
     }
 
@@ -160,9 +162,27 @@ class Project extends BaseModel
         return $this->belongsTo(Investor::class)->withDefault();
     }
 
+    /**
+     * All landing pages for this project — one per ad campaign.
+     */
+    public function landingPages(): HasMany
+    {
+        return $this->hasMany(ProjectLandingPage::class, 'project_id')
+            ->orderByDesc('is_primary')
+            ->orderBy('id');
+    }
+
+    /**
+     * The project's DEFAULT landing page — what the bare /landing/{project} URL
+     * serves. Ordering keeps every pre-existing call site (LandingData, the public
+     * controller, the admin index) behaving exactly as it did when a project could
+     * only have one page.
+     */
     public function landingPage(): HasOne
     {
-        return $this->hasOne(ProjectLandingPage::class, 'project_id');
+        return $this->hasOne(ProjectLandingPage::class, 'project_id')
+            ->orderByDesc('is_primary')
+            ->orderBy('id');
     }
 
     public function features(): BelongsToMany

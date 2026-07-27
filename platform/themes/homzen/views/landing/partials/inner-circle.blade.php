@@ -95,7 +95,7 @@
         justify-content: center;
         width: 80px;
         height: 80px;
-        color: var(--kl-accent, #0392A6);
+        color: var(--kl-accent, #006838);
     }
     .kl-inner-circle-item__icon img {
         width: 100%;

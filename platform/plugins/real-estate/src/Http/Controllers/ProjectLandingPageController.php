@@ -21,13 +21,19 @@ class ProjectLandingPageController extends BaseController
     {
         $this->pageTitle('Landing Pages');
 
-        $assigned = Project::query()
-            ->where('landing_template', 'light')
-            ->with('landingPage')
-            ->orderBy('name')
-            ->get();
+        // One row per landing page — a project with several campaign pages
+        // legitimately appears more than once.
+        $pages = ProjectLandingPage::query()
+            ->with('project')
+            ->get()
+            ->filter(fn (ProjectLandingPage $page) => $page->project?->exists)
+            ->sortBy([
+                fn ($a, $b) => strcasecmp((string) $a->project->name, (string) $b->project->name),
+                fn ($a, $b) => ($b->is_primary <=> $a->is_primary) ?: ($a->getKey() <=> $b->getKey()),
+            ])
+            ->values();
 
-        return view('plugins/real-estate::landing-pages.index', compact('assigned'));
+        return view('plugins/real-estate::landing-pages.index', compact('pages'));
     }
 
     /**
@@ -61,56 +67,144 @@ class ProjectLandingPageController extends BaseController
         $request->validate(['project_id' => 'required|exists:re_projects,id']);
 
         $project = Project::query()->findOrFail($request->input('project_id'));
-        $project->landing_template = 'light';
-        $project->save();
 
-        ProjectLandingPage::query()->firstOrCreate(
-            ['project_id' => $project->getKey()],
-            ['template' => 'light', 'is_published' => true],
-        );
+        $landingPage = $project->landingPages()->first() ?: $this->createPageFor($project, 'Default');
+
+        $this->syncAssignment($project);
 
         return $this
             ->httpResponse()
-            ->setNextUrl(route('real-estate.landing-pages.edit', $project->getKey()))
+            ->setNextUrl(route('real-estate.landing-pages.edit-page', [$project->getKey(), $landingPage->getKey()]))
             ->setMessage('Featured project assigned. Now edit its content below.');
     }
 
-    public function edit(int|string $id)
+    /**
+     * The tabbed editor. Without a page id we open the project's default page.
+     */
+    public function edit(int|string $id, int|string|null $landingPageId = null)
     {
         $project = Project::query()->findOrFail($id);
 
-        $landingPage = ProjectLandingPage::query()->firstOrNew(['project_id' => $project->getKey()]);
+        $landingPage = $landingPageId
+            ? $project->landingPages()->whereKey($landingPageId)->firstOrFail()
+            : ($project->landingPages()->first() ?: $this->createPageFor($project, 'Default'));
+
         $landingPage->setRelation('project', $project);
 
         $this->pageTitle('Landing page — ' . $project->name);
 
         // renderForm() produces the whole admin page (its template extends the
         // layout), so return it directly — wrapping it in another blade view
-        // silently discards that view's own content. The toolbar/notice live
+        // silently discards that view's own content. The tabs/toolbar/notice live
         // inside the form (see ProjectLandingPageForm::toolbar()).
         return ProjectLandingPageForm::createFromModel($landingPage)->renderForm();
     }
 
-    public function update(int|string $id, Request $request)
+    /**
+     * Add another campaign page to a project and open its tab.
+     */
+    public function createPage(int|string $id)
     {
         $project = Project::query()->findOrFail($id);
 
-        $landingPage = ProjectLandingPage::query()->firstOrNew(['project_id' => $project->getKey()]);
+        $landingPage = $this->createPageFor($project, 'Campaign ' . ($project->landingPages()->count() + 1));
+
+        $this->syncAssignment($project);
+
+        return $this
+            ->httpResponse()
+            ->setNextUrl(route('real-estate.landing-pages.edit-page', [$project->getKey(), $landingPage->getKey()]))
+            ->setMessage('Landing page added.');
+    }
+
+    public function update(int|string $id, int|string $landingPageId, Request $request)
+    {
+        $project = Project::query()->findOrFail($id);
+        $landingPage = $project->landingPages()->whereKey($landingPageId)->firstOrFail();
+
+        $name = trim((string) $request->input('page_name')) ?: ($landingPage->name ?: 'Default');
+        $slug = trim((string) $request->input('page_slug')) ?: $name;
+
+        $landingPage->name = $name;
+        $landingPage->slug = ProjectLandingPage::generateSlug($slug, $project->getKey(), $landingPage->getKey());
         $landingPage->template = 'light';
         $landingPage->is_published = $request->boolean('is_published');
         $landingPage->content = $this->buildContent($request);
         $landingPage->save();
 
-        // Keep the assignment in sync so the public router serves the landing page.
-        if ($project->landing_template !== 'light') {
-            $project->landing_template = 'light';
-            $project->save();
-        }
+        $this->syncAssignment($project);
 
         return $this
             ->httpResponse()
-            ->setNextUrl(route('real-estate.landing-pages.edit', $project->getKey()))
+            ->setNextUrl(route('real-estate.landing-pages.edit-page', [$project->getKey(), $landingPage->getKey()]))
             ->withUpdatedSuccessMessage();
+    }
+
+    /**
+     * Copy an existing page — the quick way to build a campaign variant.
+     */
+    public function duplicatePage(int|string $id, int|string $landingPageId)
+    {
+        $project = Project::query()->findOrFail($id);
+        $source = $project->landingPages()->whereKey($landingPageId)->firstOrFail();
+
+        $name = $source->name . ' (copy)';
+
+        $copy = ProjectLandingPage::query()->create([
+            'project_id' => $project->getKey(),
+            'name' => $name,
+            'slug' => ProjectLandingPage::generateSlug($name, $project->getKey()),
+            'template' => $source->template,
+            'is_published' => false, // a fresh copy starts as a draft
+            'is_primary' => false,
+            'content' => $source->content,
+        ]);
+
+        return $this
+            ->httpResponse()
+            ->setNextUrl(route('real-estate.landing-pages.edit-page', [$project->getKey(), $copy->getKey()]))
+            ->setMessage('Landing page duplicated as a draft.');
+    }
+
+    /**
+     * Make this the page that the bare /landing/{project} URL serves.
+     */
+    public function makePrimary(int|string $id, int|string $landingPageId)
+    {
+        $project = Project::query()->findOrFail($id);
+        $landingPage = $project->landingPages()->whereKey($landingPageId)->firstOrFail();
+
+        ProjectLandingPage::query()->where('project_id', $project->getKey())->update(['is_primary' => false]);
+        $landingPage->forceFill(['is_primary' => true])->save();
+
+        return $this
+            ->httpResponse()
+            ->setNextUrl(route('real-estate.landing-pages.index'))
+            ->setMessage('Default landing page updated.');
+    }
+
+    /**
+     * Delete a single campaign page (not the whole project's assignment).
+     */
+    public function destroyPage(int|string $id, int|string $landingPageId)
+    {
+        $project = Project::query()->findOrFail($id);
+        $landingPage = $project->landingPages()->whereKey($landingPageId)->firstOrFail();
+
+        $wasPrimary = $landingPage->is_primary;
+        $landingPage->delete();
+
+        // Never leave a project with pages but no default one.
+        if ($wasPrimary && ($next = $project->landingPages()->first())) {
+            $next->forceFill(['is_primary' => true])->save();
+        }
+
+        $this->syncAssignment($project);
+
+        return $this
+            ->httpResponse()
+            ->setNextUrl(route('real-estate.landing-pages.index'))
+            ->withDeletedSuccessMessage();
     }
 
     /**
@@ -128,6 +222,39 @@ class ProjectLandingPageController extends BaseController
             ->httpResponse()
             ->setNextUrl(route('real-estate.landing-pages.index'))
             ->withDeletedSuccessMessage();
+    }
+
+    /**
+     * Create a landing page for a project. The first one becomes the default, so
+     * the bare /landing/{project} URL always resolves.
+     */
+    protected function createPageFor(Project $project, string $name): ProjectLandingPage
+    {
+        $isFirst = ! $project->landingPages()->exists();
+
+        return ProjectLandingPage::query()->create([
+            'project_id' => $project->getKey(),
+            'name' => $name,
+            // The very first page keeps the historic 'default' slug.
+            'slug' => ProjectLandingPage::generateSlug($isFirst ? 'default' : $name, $project->getKey()),
+            'template' => 'light',
+            'is_published' => true,
+            'is_primary' => $isFirst,
+        ]);
+    }
+
+    /**
+     * re_projects.landing_template is the flag the public router checks. Keep it
+     * derived from whether the project actually has any landing pages.
+     */
+    protected function syncAssignment(Project $project): void
+    {
+        $expected = $project->landingPages()->exists() ? 'light' : null;
+
+        if ($project->landing_template !== $expected) {
+            $project->landing_template = $expected;
+            $project->save();
+        }
     }
 
     /**

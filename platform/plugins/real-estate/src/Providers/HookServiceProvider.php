@@ -63,6 +63,17 @@ class HookServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->booted(function (): void {
+            // Kash Invest themed confirmation dialog, available on every admin
+            // screen so destructive actions never fall back to the browser's
+            // native confirm() box. See partials/kash-confirm-modal.blade.php.
+            add_filter(BASE_FILTER_FOOTER_LAYOUT_TEMPLATE, function ($html) {
+                if (! AdminHelper::isInAdmin() || ! Auth::guard()->check()) {
+                    return $html;
+                }
+
+                return $html . view('plugins/real-estate::partials.kash-confirm-modal')->render();
+            }, 99);
+
             add_filter(BASE_FILTER_TOP_HEADER_LAYOUT, [$this, 'registerTopHeaderNotification'], 130);
             add_filter(BASE_FILTER_APPEND_MENU_NAME, [$this, 'getUnReadCount'], 130, 2);
             add_filter(BASE_FILTER_MENU_ITEMS_COUNT, [$this, 'getMenuItemCount'], 130);

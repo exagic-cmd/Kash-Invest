@@ -4,6 +4,7 @@ namespace Theme\Homzen\Support;
 
 use Botble\Media\Facades\RvMedia;
 use Botble\RealEstate\Models\Project;
+use Botble\RealEstate\Models\ProjectLandingPage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -48,7 +49,11 @@ class LandingData
     /**
      * @return array<string, mixed>
      */
-    public static function fromProject(Project $project): array
+    /**
+     * @param  ProjectLandingPage|null  $landingPage  the campaign page to render;
+     *                                                null falls back to the project's default page
+     */
+    public static function fromProject(Project $project, ?ProjectLandingPage $landingPage = null): array
     {
         $project->loadMissing(['investor', 'features', 'facilities', 'customFields', 'city', 'state', 'country', 'categories', 'landingPage']);
 
@@ -110,16 +115,18 @@ class LandingData
             ],
         ];
 
-        return static::applyOverrides($data, $project);
+        return static::applyOverrides($data, $project, $landingPage);
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    protected static function applyOverrides(array $data, Project $project): array
+    protected static function applyOverrides(array $data, Project $project, ?ProjectLandingPage $landingPage = null): array
     {
-        $landingPage = $project->relationLoaded('landingPage')
+        // An explicit page wins (one project can have several campaign pages);
+        // otherwise fall back to the project's default page.
+        $landingPage ??= $project->relationLoaded('landingPage')
             ? $project->landingPage
             : $project->landingPage()->first();
 
