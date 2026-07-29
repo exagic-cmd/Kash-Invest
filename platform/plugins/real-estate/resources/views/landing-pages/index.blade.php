@@ -145,11 +145,6 @@
                                                data-bs-toggle="tooltip" title="Add another campaign page to {{ $project->name }}">
                                                 <x-core::icon name="ti ti-plus" />
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
-                                                    data-url="{{ route('real-estate.landing-pages.pages.duplicate', [$projectId, $page->getKey()]) }}"
-                                                    data-bs-toggle="tooltip" title="Duplicate as a campaign variant">
-                                                <x-core::icon name="ti ti-copy" />
-                                            </button>
                                             <a href="{{ route('real-estate.landing-pages.edit-page', [$projectId, $page->getKey()]) }}"
                                                class="btn btn-sm btn-icon btn-primary"
                                                data-bs-toggle="tooltip" title="Edit content">
