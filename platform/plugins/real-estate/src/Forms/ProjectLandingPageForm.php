@@ -39,9 +39,17 @@ class ProjectLandingPageForm extends FormAbstract
         $project = $model?->project;
         $saved = $model && is_array($model->content) ? $model->content : [];
 
+        $updateUrl = ($project?->getKey() && $model?->getKey())
+            ? route('real-estate.landing-pages.pages.update', [$project->getKey(), $model->getKey()])
+            : '#';
+
+        $helperText = ($project && $project->getKey())
+            ? 'Public URL: ' . route('landing.page', $project->getKey()) . '/<slug>'
+            : '';
+
         $this
             ->model(ProjectLandingPage::class)
-            ->setUrl(route('real-estate.landing-pages.pages.update', [$project?->getKey(), $model?->getKey()]))
+            ->setUrl($updateUrl)
             ->setFormOption('method', 'PUT')
 
             // Top toolbar + info note. Lives inside the form because renderForm()
@@ -57,7 +65,7 @@ class ProjectLandingPageForm extends FormAbstract
             ->add('page_slug', TextField::class, TextFieldOption::make()
                 ->label('URL Slug')
                 ->value($model?->slug)
-                ->helperText($project ? 'Public URL: ' . route('landing.page', $project->getKey()) . '/<slug>' : '')
+                ->helperText($helperText)
                 ->toArray())
 
             // ---- Hero -------------------------------------------------------

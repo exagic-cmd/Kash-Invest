@@ -126,17 +126,21 @@
                     var link = e.target.closest('a');
                     if (!link) return;
 
-                    // Skip links handled via AJAX (such as filter form pagination, tabs, modal triggers, fancybox)
+                    // Skip links handled via AJAX (such as filter form pagination, tabs, modal triggers, fancybox, dropdowns)
                     if (
                         link.closest('.filter-form') ||
                         link.closest('.flat-pagination') ||
                         link.hasAttribute('data-bs-toggle') ||
                         link.hasAttribute('data-bb-toggle') ||
+                        link.hasAttribute('data-bs-target') ||
+                        link.hasAttribute('data-toggle') ||
                         link.hasAttribute('data-ajax') ||
                         link.hasAttribute('data-fancybox') ||
                         link.closest('[data-fancybox]') ||
                         link.hasAttribute('data-src') ||
-                        link.classList.contains('lightbox-image')
+                        link.classList.contains('lightbox-image') ||
+                        link.classList.contains('dropdown-toggle') ||
+                        link.classList.contains('no-loader')
                     ) {
                         return;
                     }
