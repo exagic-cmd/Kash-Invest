@@ -94,7 +94,7 @@
                                 <tr>
                                     <td><strong>{{ $project->name }}</strong></td>
                                     <td>
-                                        <span class="fw-semibold">{{ $page->name ?: ($page->is_primary ? 'Primary Landing Page' : 'Campaign Variant') }}</span>
+                                        <span class="fw-semibold">{{ $page->name ?: ($page->is_primary ? 'Landing Page 1' : 'Landing Page ' . $loop->iteration) }}</span>
                                         @if ($page->is_primary)
                                             <span title="Primary page served at main URL /landing/{{ $projectId }}">
                                                 {!! BaseHelper::renderBadge('Primary Page', 'info') !!}
