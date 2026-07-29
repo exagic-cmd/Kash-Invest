@@ -37,7 +37,7 @@
     <div class="gallery-grid-row">
         {{-- Slot 1: Main (Left 2-col span) --}}
         <div class="gallery-col col-main position-relative">
-            <a href="{{ RvMedia::getImageUrl($gridImages[0]) ?: $defaultImage }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($gridImages[0], 'thumb') ?: $defaultImage }}" class="gallery-img-link d-block">
+            <a href="{{ $model->url . '?view-gallery=1' }}" class="gallery-img-link d-block">
                 {{ RvMedia::image($gridImages[0], $model->name, null, attributes: ['fetchpriority' => 'high', 'loading' => 'eager'], lazy: false) }}
             </a>
             
@@ -50,7 +50,7 @@
 
         {{-- Slot 2: Second (Center 1-col) --}}
         <div class="gallery-col col-second">
-            <a href="{{ RvMedia::getImageUrl($gridImages[1]) ?: $defaultImage }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($gridImages[1], 'thumb') ?: $defaultImage }}" class="gallery-img-link d-block">
+            <a href="{{ $model->url . '?view-gallery=1' }}" class="gallery-img-link d-block">
                 {{ RvMedia::image($gridImages[1], $model->name, null, attributes: ['loading' => 'eager'], lazy: false) }}
             </a>
         </div>
@@ -69,11 +69,6 @@
                 </div>
             </a>
         </div>
-
-        {{-- Hidden remaining images for Fancybox lightbox modal navigation --}}
-        @foreach ($remainingImages as $extraImage)
-            <a href="{{ RvMedia::getImageUrl($extraImage) }}" data-fancybox="gallery" data-thumb="{{ RvMedia::getImageUrl($extraImage, 'thumb') }}" class="d-none"></a>
-        @endforeach
     </div>
 </section>
 
