@@ -140,11 +140,6 @@
                                                     data-bs-toggle="tooltip" title="Copy public URL">
                                                 <x-core::icon name="ti ti-link" />
                                             </button>
-                                            <a href="{{ route('real-estate.landing-pages.edit-page', [$projectId, $page->getKey()]) }}"
-                                               class="btn btn-sm btn-icon btn-primary"
-                                               data-bs-toggle="tooltip" title="Edit content">
-                                                <x-core::icon name="ti ti-edit" />
-                                            </a>
                                             <a href="{{ route('real-estate.landing-pages.pages.create', $projectId) }}"
                                                class="btn btn-sm btn-icon btn-outline-secondary"
                                                data-bs-toggle="tooltip" title="Add another campaign page to {{ $project->name }}">
@@ -155,6 +150,11 @@
                                                     data-bs-toggle="tooltip" title="Duplicate as a campaign variant">
                                                 <x-core::icon name="ti ti-copy" />
                                             </button>
+                                            <a href="{{ route('real-estate.landing-pages.edit-page', [$projectId, $page->getKey()]) }}"
+                                               class="btn btn-sm btn-icon btn-primary"
+                                               data-bs-toggle="tooltip" title="Edit content">
+                                                <x-core::icon name="ti ti-edit" />
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-icon btn-danger lp-delete-page"
                                                     data-url="{{ route('real-estate.landing-pages.pages.destroy', [$projectId, $page->getKey()]) }}"
                                                     data-name="{{ $page->name }} ({{ $project->name }})"
