@@ -90,7 +90,7 @@
                                 @php($projectId = $project->getKey())
                                 @php($published = $page->is_published)
                                 @php($landingUrl = $page->url)
-                                @php($path = $page->is_primary ? '/landing/' . $projectId : '/landing/' . $projectId . '/' . $page->slug)
+                                @php($path = ($page->is_primary || empty($page->slug)) ? '/landing/' . $projectId : '/landing/' . $projectId . '/' . $page->slug)
                                 <tr>
                                     <td>{{ $project->name }}</td>
                                     <td>

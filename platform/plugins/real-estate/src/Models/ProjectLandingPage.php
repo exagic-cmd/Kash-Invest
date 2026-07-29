@@ -71,8 +71,10 @@ class ProjectLandingPage extends BaseModel
      */
     public function getUrlAttribute(): string
     {
-        return $this->is_primary
-            ? route('landing.page', $this->project_id)
-            : route('landing.page.slug', [$this->project_id, $this->slug]);
+        if ($this->is_primary || empty($this->slug)) {
+            return route('landing.page', $this->project_id);
+        }
+
+        return route('landing.page.slug', [$this->project_id, $this->slug]);
     }
 }
