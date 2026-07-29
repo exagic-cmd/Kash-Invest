@@ -92,12 +92,16 @@
                                 @php($landingUrl = $page->url)
                                 @php($path = ($page->is_primary || empty($page->slug)) ? '/landing/' . $projectId : '/landing/' . $projectId . '/' . $page->slug)
                                 <tr>
-                                    <td>{{ $project->name }}</td>
+                                    <td><strong>{{ $project->name }}</strong></td>
                                     <td>
-                                        {{ $page->name ?: 'Untitled' }}
+                                        <span class="fw-semibold">{{ $page->name ?: ($page->is_primary ? 'Primary Landing Page' : 'Campaign Variant') }}</span>
                                         @if ($page->is_primary)
-                                            <span title="Served at the short /landing/{{ $projectId }} URL">
-                                                {!! BaseHelper::renderBadge('Default', 'info') !!}
+                                            <span title="Primary page served at main URL /landing/{{ $projectId }}">
+                                                {!! BaseHelper::renderBadge('Primary Page', 'info') !!}
+                                            </span>
+                                        @else
+                                            <span title="Campaign variant page served at /landing/{{ $projectId }}/{{ $page->slug }}">
+                                                {!! BaseHelper::renderBadge('Campaign Variant', 'warning') !!}
                                             </span>
                                         @endif
                                     </td>
@@ -121,28 +125,28 @@
                                             </a>
                                             <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-copy-link"
                                                     data-url="{{ $landingUrl }}"
-                                                    data-bs-toggle="tooltip" title="Copy this page's public URL">
+                                                    data-bs-toggle="tooltip" title="Copy public URL">
                                                 <x-core::icon name="ti ti-link" />
                                             </button>
                                             <a href="{{ route('real-estate.landing-pages.edit-page', [$projectId, $page->getKey()]) }}"
                                                class="btn btn-sm btn-icon btn-primary"
-                                               data-bs-toggle="tooltip" title="Edit this landing page">
+                                               data-bs-toggle="tooltip" title="Edit content">
                                                 <x-core::icon name="ti ti-edit" />
                                             </a>
                                             <a href="{{ route('real-estate.landing-pages.pages.create', $projectId) }}"
                                                class="btn btn-sm btn-icon btn-outline-secondary"
-                                               data-bs-toggle="tooltip" title="Add another landing page to {{ $project->name }}">
+                                               data-bs-toggle="tooltip" title="Add another campaign page to {{ $project->name }}">
                                                 <x-core::icon name="ti ti-plus" />
                                             </a>
                                             <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
                                                     data-url="{{ route('real-estate.landing-pages.pages.duplicate', [$projectId, $page->getKey()]) }}"
-                                                    data-bs-toggle="tooltip" title="Duplicate as a draft">
+                                                    data-bs-toggle="tooltip" title="Duplicate as a campaign variant">
                                                 <x-core::icon name="ti ti-copy" />
                                             </button>
                                             @unless ($page->is_primary)
                                                 <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
                                                         data-url="{{ route('real-estate.landing-pages.pages.primary', [$projectId, $page->getKey()]) }}"
-                                                        data-bs-toggle="tooltip" title="Serve this page at /landing/{{ $projectId }}">
+                                                        data-bs-toggle="tooltip" title="Set as primary page for /landing/{{ $projectId }}">
                                                     <x-core::icon name="ti ti-star" />
                                                 </button>
                                             @endunless

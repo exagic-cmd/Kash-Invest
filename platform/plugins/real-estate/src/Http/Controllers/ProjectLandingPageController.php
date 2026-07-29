@@ -148,14 +148,15 @@ class ProjectLandingPageController extends BaseController
         $project = Project::query()->findOrFail($id);
         $source = $project->landingPages()->whereKey($landingPageId)->firstOrFail();
 
-        $name = $source->name . ' (copy)';
+        $count = $project->landingPages()->count() + 1;
+        $name = $source->name ? 'Copy of ' . $source->name : 'Campaign Variant ' . $count;
 
         $copy = ProjectLandingPage::query()->create([
             'project_id' => $project->getKey(),
             'name' => $name,
             'slug' => ProjectLandingPage::generateSlug($name, $project->getKey()),
             'template' => $source->template,
-            'is_published' => false, // a fresh copy starts as a draft
+            'is_published' => true, // Published by default so campaign variant pages are immediately functional
             'is_primary' => false,
             'content' => $source->content,
         ]);
@@ -163,7 +164,7 @@ class ProjectLandingPageController extends BaseController
         return $this
             ->httpResponse()
             ->setNextUrl(route('real-estate.landing-pages.edit-page', [$project->getKey(), $copy->getKey()]))
-            ->setMessage('Landing page duplicated as a draft.');
+            ->setMessage('Landing page variant created and published successfully.');
     }
 
     /**
@@ -180,7 +181,7 @@ class ProjectLandingPageController extends BaseController
         return $this
             ->httpResponse()
             ->setNextUrl(route('real-estate.landing-pages.index'))
-            ->setMessage('Default landing page updated.');
+            ->setMessage('Primary landing page updated.');
     }
 
     /**
@@ -231,12 +232,13 @@ class ProjectLandingPageController extends BaseController
     protected function createPageFor(Project $project, string $name): ProjectLandingPage
     {
         $isFirst = ! $project->landingPages()->exists();
+        $defaultName = $isFirst ? 'Primary Landing Page' : $name;
 
         return ProjectLandingPage::query()->create([
             'project_id' => $project->getKey(),
-            'name' => $name,
+            'name' => $defaultName,
             // The very first page keeps the historic 'default' slug.
-            'slug' => ProjectLandingPage::generateSlug($isFirst ? 'default' : $name, $project->getKey()),
+            'slug' => ProjectLandingPage::generateSlug($isFirst ? 'default' : $defaultName, $project->getKey()),
             'template' => 'light',
             'is_published' => true,
             'is_primary' => $isFirst,
