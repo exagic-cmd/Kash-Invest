@@ -1,4 +1,4 @@
-@if (RealEstateHelper::isEnabledReview())
+@if (RealEstateHelper::isEnabledReview() && !($model instanceof \Botble\RealEstate\Models\Project))
     @php
         Theme::asset()->add('star-rating', 'vendor/core/plugins/real-estate/libraries/star-rating/star-rating.min.css');
         Theme::asset()->container('footer')->add('star-rating', 'vendor/core/plugins/real-estate/libraries/star-rating/star-rating.min.js');

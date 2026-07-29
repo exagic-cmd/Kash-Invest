@@ -45,11 +45,13 @@
                     </a>
                 </li>
             @endif
-            <li>
-                <a  class="cate-single-item" href="#reviews">
-                    {{ __('Reviews') }}
-                </a>
-            </li>
+            @if (RealEstateHelper::isEnabledReview() && !($model instanceof \Botble\RealEstate\Models\Project))
+                <li>
+                    <a  class="cate-single-item" href="#reviews">
+                        {{ __('Reviews') }}
+                    </a>
+                </li>
+            @endif
         </ul>
     </div>
 </section>

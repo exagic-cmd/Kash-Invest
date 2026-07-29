@@ -1,7 +1,7 @@
 <div class="content-bottom">
     <div class="info-box">
         <ul class="meta">
-            @if (RealEstateHelper::isEnabledReview())
+            @if (RealEstateHelper::isEnabledReview() && !($model instanceof \Botble\RealEstate\Models\Project))
                 <li class="meta-item rating-star-wrapper" style="cursor: pointer;">
                     <div class="rating-star" style="--bb-rating-size: 100px">
                         <span style="width: {{ $model->reviews_avg_star * 20 }}%;"></span>
