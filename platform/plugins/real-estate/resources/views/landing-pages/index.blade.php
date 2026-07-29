@@ -118,6 +118,18 @@
                                              SVG, there is no icon webfont, so a bare
                                              <i class="ti ti-..."> renders nothing at all. --}}
                                         <div class="d-flex align-items-center justify-content-end gap-1 lp-actions">
+                                            @if ($page->is_primary)
+                                                <button type="button" class="btn btn-sm btn-icon btn-warning"
+                                                        data-bs-toggle="tooltip" title="Primary Landing Page (serves /landing/{{ $projectId }})">
+                                                    <x-core::icon name="ti ti-star-filled" />
+                                                </button>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
+                                                        data-url="{{ route('real-estate.landing-pages.pages.primary', [$projectId, $page->getKey()]) }}"
+                                                        data-bs-toggle="tooltip" title="Set as primary page for /landing/{{ $projectId }}">
+                                                    <x-core::icon name="ti ti-star" />
+                                                </button>
+                                            @endif
                                             <a href="{{ $landingUrl . '?preview=1' }}" target="_blank" rel="noopener"
                                                class="btn btn-sm btn-icon btn-outline-secondary"
                                                data-bs-toggle="tooltip" title="Preview this page">
@@ -143,13 +155,6 @@
                                                     data-bs-toggle="tooltip" title="Duplicate as a campaign variant">
                                                 <x-core::icon name="ti ti-copy" />
                                             </button>
-                                            @unless ($page->is_primary)
-                                                <button type="button" class="btn btn-sm btn-icon btn-outline-secondary lp-post"
-                                                        data-url="{{ route('real-estate.landing-pages.pages.primary', [$projectId, $page->getKey()]) }}"
-                                                        data-bs-toggle="tooltip" title="Set as primary page for /landing/{{ $projectId }}">
-                                                    <x-core::icon name="ti ti-star" />
-                                                </button>
-                                            @endunless
                                             <button type="button" class="btn btn-sm btn-icon btn-danger lp-delete-page"
                                                     data-url="{{ route('real-estate.landing-pages.pages.destroy', [$projectId, $page->getKey()]) }}"
                                                     data-name="{{ $page->name }} ({{ $project->name }})"
