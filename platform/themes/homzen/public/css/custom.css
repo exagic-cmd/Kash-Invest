@@ -184,6 +184,17 @@
     height: 100% !important;
 }
 
+/* Ensure project cards in the listing grid stretch evenly across columns and
+   keep the same footer alignment. */
+.page-template .modern-card,
+[class*="flat-section"] .modern-card,
+[class*="flat-section"] .col.d-flex > .property-item,
+[class*="flat-section"] .col.d-flex > .homeya-box,
+[class*="flat-section"] .col.d-flex > .modern-card {
+    width: 100%;
+    height: 100%;
+}
+
 /* Photo takes a fixed slice.
  *
  * `min-height: 0` is load-bearing: .images-group is a flex item in a column
