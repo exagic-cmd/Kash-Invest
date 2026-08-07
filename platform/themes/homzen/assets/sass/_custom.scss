@@ -3759,16 +3759,20 @@ h6, .h6 {
     
     .style8-grid {
         display: grid;
-        grid-template-columns: 180px 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
         gap: 16px;
         // Stretch every column to the tallest so all cards are equal height
         // regardless of how many detail lines each project has.
         align-items: stretch;
         
-        @media (max-width: 991px) {
+        @media (max-width: 1440px) {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        @media (max-width: 1024px) {
             grid-template-columns: 1fr 1fr;
         }
-        
+
         @media (max-width: 575px) {
             grid-template-columns: 1fr;
         }

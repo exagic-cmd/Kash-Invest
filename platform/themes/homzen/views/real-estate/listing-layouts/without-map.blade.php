@@ -20,7 +20,7 @@
     <input type="hidden" name="layout" value="{{ BaseHelper::stringify(request()->input('layout')) }}" />
 
     <section class="flat-map">
-        <div class="container">
+        <div class="container-fluid">
             <div class="search-box-offcanvas container">
                 <div class="search-box-offcanvas-backdrop"></div>
                 <div class="search-box-offcanvas-content">
@@ -39,7 +39,7 @@
     </section>
 
     <section class="flat-section-v5 flat-recommended flat-recommended-v2">
-        <div class="container">
+        <div class="container-fluid">
             @if (isset($category) && $category)
                 <h3 class="fw-7 mb-3">{{ __('Properties in :name', ['name' => $category->name]) }}</h3>
                 @if ($category->content)

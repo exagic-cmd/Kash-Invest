@@ -1,7 +1,8 @@
 <section class="flat-project-style8 bg-surface">
-    <div class="container">
+    <div class="container-fluid">
         {!! Theme::partial('shortcode-heading', compact('shortcode')) !!}
         <div class="style8-grid">
+            {{--
             <!-- Left Card -->
             <div class="left-card">
                 <div class="icon-box">
@@ -17,9 +18,10 @@
                     <a href="{{ $shortcode->button_url }}" class="btn-view-all">{!! BaseHelper::clean($shortcode->button_label) !!}</a>
                 @endif
             </div>
+            --}}
 
             <!-- Project Cards -->
-            @foreach($projects->take(3) as $project)
+            @foreach($projects->take(4) as $project)
                 <div class="project-card-style8">
                     <a href="{{ $project->url }}" class="card-image-link d-block position-relative">
                         <div class="images-style card-image-wrapper">

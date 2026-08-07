@@ -12637,11 +12637,16 @@ h6, .h6 {
 }
 .flat-project-style8 .style8-grid {
   display: grid;
-  grid-template-columns: 180px 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 16px;
   align-items: stretch;
 }
-@media (max-width: 991px) {
+@media (max-width: 1440px) {
+  .flat-project-style8 .style8-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+@media (max-width: 1024px) {
   .flat-project-style8 .style8-grid {
     grid-template-columns: 1fr 1fr;
   }

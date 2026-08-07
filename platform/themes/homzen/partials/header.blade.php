@@ -24,6 +24,7 @@
                         </nav>
                     </div>
                     <div class="header-account">
+                        {{--
                         @if (is_plugin_active('real-estate'))
                             <div class="header-currency-switcher">
                                 {!! Theme::partial('currency-switcher') !!}
@@ -76,6 +77,7 @@
                                 <a class="tf-btn primary" href="{{ route('public.account.properties.index') }}">{{ __('Submit Property') }}</a>
                             </div>
                         @endif
+                        --}}
                     </div>
                     <div class="mobile-nav-toggler mobile-button">
                         <x-core::icon name="ti ti-menu-2" />
@@ -98,6 +100,7 @@
                 </a>
             </div>
             <div class="bottom-canvas">
+                {{--
                 @if (is_plugin_active('real-estate') && RealEstateHelper::isLoginEnabled())
                     <div class="mobile-add-listing-wrapper">
                         <a href="{{ route('public.account.properties.index') }}" class="mobile-add-listing-btn">
@@ -149,6 +152,7 @@
                         </div>
                     @endauth
                 @endif
+                --}}
 
                 <div class="menu-outer"></div>
 
@@ -167,11 +171,13 @@
                     @endif
 
                     @if ($mobileSwitcherStyle === 'dropdown')
+                        {{--
                         @if (is_plugin_active('real-estate'))
                             <div class="box">
                                 {!! Theme::partial('currency-switcher') !!}
                             </div>
                         @endif
+                        --}}
 
                         @if ($languageSwitcher = Theme::partial('language-switcher'))
                             <div class="box">
@@ -196,9 +202,11 @@
 
                 @if ($mobileSwitcherStyle === 'inline')
                     <div class="mobile-switchers">
+                        {{--
                         @if (is_plugin_active('real-estate'))
                             {!! Theme::partial('currency-switcher-mobile') !!}
                         @endif
+                        --}}
                         {!! Theme::partial('language-switcher-mobile') !!}
                     </div>
                 @endif

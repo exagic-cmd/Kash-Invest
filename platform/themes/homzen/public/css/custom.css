@@ -107,6 +107,43 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * Listing grids (projects / properties) — card count per row
+ *
+ * The blade templates only carry Bootstrap's row-cols-* up to `xl` (>=1200px),
+ * so anything wider than that (laptop, desktop, 4K) was stuck at 3 cards per
+ * row forever, and the site's actual breakpoints don't line up with
+ * Bootstrap's stock sm/md/xl scale anyway. Overriding the column width
+ * directly (higher specificity than Bootstrap's row-cols-* utilities, so it
+ * wins regardless of source order) gives the same 4/3/2/1 step used on the
+ * homepage "Featured New Homes" grid:
+ *   >1440px          -> 4 cards
+ *   1025px - 1440px  -> 3 cards
+ *   576px  - 1024px  -> 2 cards
+ *   <=575px          -> 1 card
+ * ------------------------------------------------------------------------- */
+[class*="flat-section"] .row.g-3[class*="row-cols-"] > * {
+    width: 33.3333%;
+}
+
+@media (min-width: 1441px) {
+    [class*="flat-section"] .row.g-3[class*="row-cols-"] > * {
+        width: 25%;
+    }
+}
+
+@media (max-width: 1024px) {
+    [class*="flat-section"] .row.g-3[class*="row-cols-"] > * {
+        width: 50%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    [class*="flat-section"] .row.g-3[class*="row-cols-"] > * {
+        width: 100%;
+    }
+}
+
+/* ---------------------------------------------------------------------------
  * Listing cards — FIXED HEIGHT
  *
  * >>> TWEAK THESE TWO NUMBERS <<<
