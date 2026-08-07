@@ -5,8 +5,8 @@
     $investor = $project->investor;
 @endphp
 
-<div @class(['property-item homeya-box modern-card', $class]) @if ($project->latitude && $project->longitude) data-lat="{{ $project->latitude }}" data-lng="{{ $project->longitude }}" @endif>
-    <div class="archive-top">
+<div @class(['property-item homeya-box modern-card w-100', $class]) @if ($project->latitude && $project->longitude) data-lat="{{ $project->latitude }}" data-lng="{{ $project->longitude }}" @endif>
+    <div class="archive-top h-100">
         <a href="{{ $project->url }}" class="images-group">
             <div class="images-style">
                 @include(Theme::getThemeNamespace('partials.real-estate.card-image-slider'), [
