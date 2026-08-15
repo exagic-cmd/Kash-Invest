@@ -89,3 +89,37 @@
     @endif
 </div>
 
+{{-- Sticky Request Info Button for Mobile View Only --}}
+<div class="mobile-sticky-request-bar d-block d-lg-none">
+    <a href="#contact-form" class="btn-mobile-request-info tf-btn primary w-100 d-flex align-items-center justify-content-center gap-2">
+        <x-core::icon name="ti ti-mail" style="width: 20px; height: 20px;" />
+        <span>{{ __('Request Info') }}</span>
+    </a>
+</div>
+
+<style>
+.mobile-sticky-request-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1040;
+    padding: 10px 16px;
+    background: #ffffff;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+    border-top: 1px solid #eaedf1;
+}
+.mobile-sticky-request-bar .btn-mobile-request-info {
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+@media (min-width: 992px) {
+    .mobile-sticky-request-bar {
+        display: none !important;
+    }
+}
+</style>

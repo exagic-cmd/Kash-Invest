@@ -13,6 +13,7 @@ use Botble\RealEstate\Facades\RealEstateHelper;
 use Botble\RealEstate\Forms\Fronts\ConsultForm;
 use Botble\RealEstate\Http\Requests\SendConsultRequest;
 use Botble\RealEstate\Models\Account;
+use Botble\RealEstate\Models\Category;
 use Botble\RealEstate\Models\Consult;
 use Botble\RealEstate\Models\ConsultCustomField;
 use Botble\RealEstate\Models\Currency;
@@ -429,5 +430,179 @@ class PublicController extends BaseController
         Theme::breadcrumb()->add(trans('plugins/real-estate::real-estate.agents'), route('public.agents'));
 
         return Theme::scope('real-estate.agents', compact('accounts'), 'plugins/real-estate::themes.agents')->render();
+    }
+
+    public function getRealEstateByLocation(string $locationSlug, Request $request)
+    {
+        $cleanLocation = str_replace('-real-estate', '', $locationSlug);
+        $cleanLocation = str_replace('-', ' ', $cleanLocation);
+
+        $city = null;
+        $state = null;
+
+        if (is_plugin_active('location')) {
+            $city = City::query()->wherePublished()->where(function ($q) use ($locationSlug, $cleanLocation) {
+                $q->where('slug', $locationSlug)
+                  ->orWhere('slug', strtolower($cleanLocation))
+                  ->orWhere('name', 'LIKE', $cleanLocation);
+            })->first();
+
+            if (! $city) {
+                $state = State::query()->wherePublished()->where(function ($q) use ($locationSlug, $cleanLocation) {
+                    $q->where('slug', $locationSlug)
+                      ->orWhere('slug', strtolower($cleanLocation))
+                      ->orWhere('name', 'LIKE', $cleanLocation);
+                })->first();
+            }
+        }
+
+        $locationName = $city ? $city->name : ($state ? $state->name : ucwords($cleanLocation));
+        $title = trans(':location Real Estate & Pre-Construction Projects', ['location' => $locationName]);
+        $pageUrl = url($locationSlug . '-real-estate');
+
+        SeoHelper::setTitle($title);
+        SeoHelper::meta()->setUrl($pageUrl);
+        SeoHelper::openGraph()->setUrl($pageUrl);
+
+        Theme::breadcrumb()
+            ->add(trans('plugins/real-estate::real-estate.projects'), route('public.projects'))
+            ->add($title, $pageUrl);
+
+        $perPage = $request->integer('per_page') ?: (int) theme_option('number_of_projects_per_page', 12);
+
+        if ($city) {
+            $request->merge(['city' => $city->slug, 'city_id' => $city->id, 'location' => $city->name]);
+        } elseif ($state) {
+            $request->merge(['state' => $state->slug, 'state_id' => $state->id, 'location' => $state->name]);
+        } else {
+            $request->merge(['location' => $locationName, 'keyword' => $locationName]);
+        }
+
+        $projects = RealEstateHelper::getProjectsFilter($perPage, RealEstateHelper::getReviewExtraData());
+
+        if ($request->ajax()) {
+            if ($request->input('minimal')) {
+                return $this
+                    ->httpResponse()
+                    ->setData(Theme::partial('search-suggestion', ['items' => $projects]));
+            }
+
+            $view = Theme::getThemeNamespace('partials.real-estate.projects.items');
+
+            if (! view()->exists($view)) {
+                $view = Theme::getThemeNamespace('views.real-estate.projects.index');
+            }
+
+            return $this
+                ->httpResponse()
+                ->setData(view($view, compact('projects'))->render());
+        }
+
+        return Theme::scope('real-estate.projects', [
+            'projects' => $projects,
+            'ajaxUrl' => $pageUrl,
+            'actionUrl' => $pageUrl,
+            'mapUrl' => route('public.ajax.projects.map-all') . ($city ? '?city_id=' . $city->id : ''),
+        ], 'plugins/real-estate::themes.projects')
+            ->render();
+    }
+
+    public function getRealEstateByLocationAndCategory(string $locationSlug, string $categorySlug, Request $request)
+    {
+        $cleanLocation = str_replace('-real-estate', '', $locationSlug);
+        $cleanLocation = str_replace('-', ' ', $cleanLocation);
+
+        $city = null;
+        $state = null;
+
+        if (is_plugin_active('location')) {
+            $city = City::query()->wherePublished()->where(function ($q) use ($locationSlug, $cleanLocation) {
+                $q->where('slug', $locationSlug)
+                  ->orWhere('slug', strtolower($cleanLocation))
+                  ->orWhere('name', 'LIKE', $cleanLocation);
+            })->first();
+
+            if (! $city) {
+                $state = State::query()->wherePublished()->where(function ($q) use ($locationSlug, $cleanLocation) {
+                    $q->where('slug', $locationSlug)
+                      ->orWhere('slug', strtolower($cleanLocation))
+                      ->orWhere('name', 'LIKE', $cleanLocation);
+                })->first();
+            }
+        }
+
+        $singularSlug = rtrim($categorySlug, 's');
+        if (str_ends_with($categorySlug, 'houses')) {
+            $singularSlug = 'house';
+        }
+
+        $category = Category::query()->wherePublished()->where(function ($q) use ($categorySlug, $singularSlug) {
+            $q->where('name', 'LIKE', '%' . $singularSlug . '%')
+              ->orWhere('name', 'LIKE', '%' . $categorySlug . '%')
+              ->orWhereHas('slugable', function ($sub) use ($categorySlug, $singularSlug) {
+                  $sub->where('key', $categorySlug)
+                      ->orWhere('key', $singularSlug);
+              });
+        })->first();
+
+        $locationName = $city ? $city->name : ($state ? $state->name : ucwords($cleanLocation));
+        $categoryName = $category ? $category->name : ucwords(str_replace('-', ' ', $categorySlug));
+
+        $title = trans(':location :category for Sale & Pre-Construction', [
+            'location' => $locationName,
+            'category' => $categoryName,
+        ]);
+        $pageUrl = url($locationSlug . '-real-estate/' . $categorySlug);
+
+        SeoHelper::setTitle($title);
+        SeoHelper::meta()->setUrl($pageUrl);
+        SeoHelper::openGraph()->setUrl($pageUrl);
+
+        Theme::breadcrumb()
+            ->add(trans('plugins/real-estate::real-estate.projects'), route('public.projects'))
+            ->add($locationName . ' Real Estate', url($locationSlug . '-real-estate'))
+            ->add($categoryName, $pageUrl);
+
+        $perPage = $request->integer('per_page') ?: (int) theme_option('number_of_projects_per_page', 12);
+
+        if ($city) {
+            $request->merge(['city' => $city->slug, 'city_id' => $city->id, 'location' => $city->name]);
+        } elseif ($state) {
+            $request->merge(['state' => $state->slug, 'state_id' => $state->id, 'location' => $state->name]);
+        } else {
+            $request->merge(['location' => $locationName]);
+        }
+
+        if ($category) {
+            $request->merge(['category_id' => $category->id]);
+        }
+
+        $projects = RealEstateHelper::getProjectsFilter($perPage, RealEstateHelper::getReviewExtraData());
+
+        if ($request->ajax()) {
+            if ($request->input('minimal')) {
+                return $this
+                    ->httpResponse()
+                    ->setData(Theme::partial('search-suggestion', ['items' => $projects]));
+            }
+
+            $view = Theme::getThemeNamespace('partials.real-estate.projects.items');
+
+            if (! view()->exists($view)) {
+                $view = Theme::getThemeNamespace('views.real-estate.projects.index');
+            }
+
+            return $this
+                ->httpResponse()
+                ->setData(view($view, compact('projects'))->render());
+        }
+
+        return Theme::scope('real-estate.projects', [
+            'projects' => $projects,
+            'ajaxUrl' => $pageUrl,
+            'actionUrl' => $pageUrl,
+            'mapUrl' => route('public.ajax.projects.map-all') . ($city ? '?city_id=' . $city->id : ''),
+        ], 'plugins/real-estate::themes.projects')
+            ->render();
     }
 }

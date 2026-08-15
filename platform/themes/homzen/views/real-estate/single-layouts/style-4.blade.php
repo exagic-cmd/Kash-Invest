@@ -26,6 +26,8 @@
 
         @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.floor-plans'), ['class' => 'single-property-element', 'model' => $model])
 
+        @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.faq'), ['model' => $model])
+
         {!! apply_filters('after_single_content_detail', null, $model) !!}
 
         <div class="wrapper-onepage">

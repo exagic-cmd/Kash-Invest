@@ -1,10 +1,16 @@
 @php
     $model = $model ?? $property ?? null;
+    $isProject = $model instanceof \Botble\RealEstate\Models\Project;
 @endphp
 
 @if (($model->formatted_floor_plans ?? collect())->isNotEmpty())
-     <div @class(['single-property-floor', $class ?? null])>
-        <div class="h7 title fw-7">{{ __('Floor plans') }}</div>
+    <div @class([$isProject ? 'box-project-card' : 'single-property-floor', $class ?? null])>
+        @if ($isProject)
+            <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Floor Plans') }}</h3>
+            <hr class="project-section-divider">
+        @else
+            <div class="h7 title fw-7">{{ __('Floor plans') }}</div>
+        @endif
         <ul class="box-floor" id="parent-floor">
             @foreach ($model->formatted_floor_plans as $floorPlan)
                 @php

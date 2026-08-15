@@ -2851,4 +2851,42 @@ $(() => {
             { passive: true, capture: true }
         )
     })
+
+    /* URL as Single Source of Truth: Browser Back/Forward navigation support */
+    window.addEventListener('popstate', function(e) {
+        const $filterForm = $('.filter-form');
+        const $listing = $('[data-bb-toggle="data-listing"]');
+        if (!$filterForm.length || !$listing.length) return;
+
+        const searchParams = new URLSearchParams(window.location.search);
+
+        // Update form fields to match current URL params
+        $filterForm.find('input:not([type="hidden"]), select').each(function() {
+            const name = $(this).attr('name');
+            if (name && searchParams.has(name)) {
+                $(this).val(searchParams.get(name));
+            } else if (name && $(this).attr('type') !== 'checkbox') {
+                $(this).val('');
+            }
+        });
+
+        // Fetch results for the active URL state
+        $listing.append('<div class="loading-spinner"></div>');
+        $.ajax({
+            url: $filterForm.data('url') || $filterForm.prop('action'),
+            type: 'POST',
+            data: searchParams.toString() + '&_token=' + ($('input[name="_token"]').val() || ''),
+            success: function(response) {
+                if (response && response.data) {
+                    $listing.html(response.data);
+                    if (typeof initAllCardSliders === 'function') initAllCardSliders();
+                    if (typeof Theme.lazyLoadInstance !== 'undefined') Theme.lazyLoadInstance.update();
+                }
+            },
+            complete: function() {
+                $listing.find('.loading-spinner').remove();
+            }
+        });
+    });
 })
+

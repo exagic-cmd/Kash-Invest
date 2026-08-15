@@ -112,7 +112,8 @@ class ProjectRepository extends RepositoriesAbstract implements ProjectInterface
                             ->addSearch('name', $keyword, false, false)
                             ->addSearch('location', $keyword, false)
                             ->addSearch('description', $keyword, false)
-                            ->addSearch('unique_id', $keyword, false);
+                            ->addSearch('unique_id', $keyword, false)
+                            ->addSearch('neighbour', $keyword, false);
                     });
             }
         }
@@ -237,6 +238,21 @@ class ProjectRepository extends RepositoriesAbstract implements ProjectInterface
             $this->model = $this->model
                 ->whereHas('categories', function (Builder $query) use ($categoryIds): void {
                     $query->whereIn('category_id', $categoryIds);
+                });
+        } elseif (! empty($filters['category_id'])) {
+            $categoryId = $filters['category_id'];
+
+            $this->model = $this->model
+                ->where(function ($query) use ($categoryId) {
+                    $query->whereHas('categories', function (Builder $query) use ($categoryId): void {
+                        $query->where('category_id', $categoryId);
+                    });
+
+                    $cat = \Botble\RealEstate\Models\Category::find($categoryId);
+                    if ($cat) {
+                        $catKeyword = rtrim($cat->name, 's');
+                        $query->orWhere('name', 'LIKE', '%' . $catKeyword . '%');
+                    }
                 });
         }
 

@@ -10860,7 +10860,9 @@ body[dir=rtl] .single-property-video {
   background-color: var(--bd-callout-bg, var(--bs-gray-100));
   border-left: 0.25rem solid var(--bd-callout-border, var(--bs-gray-300));
 }
-
+.single-detail{
+  font-size: 1rem
+}
 .single-detail.ck-content p:not([class]), .single-detail.ck-content i:not([class]), .single-detail.ck-content ul li:not([class]), .single-detail.ck-content ol li:not([class]), .single-detail.ck-content table td:not([class]), .single-detail.ck-content table th:not([class]) {
   color: #161e2d;
 }

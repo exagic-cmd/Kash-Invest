@@ -30,6 +30,8 @@
 
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.floor-plans'), ['class' => 'single-property-element', 'model' => $model])
 
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.faq'), ['model' => $model])
+
                 {!! apply_filters('after_single_content_detail', null, $model) !!}
 
 
@@ -45,7 +47,7 @@
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.reviews'), ['model' => $model, 'class' => 'single-property-element'])
             </div>
             <div class="col-lg-4">
-                <div class="widget-sidebar wrapper-sidebar-right sticky-top" style="top: 20px; z-index: 10;">
+                <div class="widget-sidebar wrapper-sidebar-right sticky-top" style="top: 60px; z-index: 10;">
                     {!! apply_filters('ads_render', null, 'detail_page_sidebar_before') !!}
 
                     @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.contact'), ['class' => 'bg-surface', 'model' => $model])

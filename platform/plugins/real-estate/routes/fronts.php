@@ -48,6 +48,16 @@ if (defined('THEME_MODULE_SCREEN_NAME')) {
 
                 Route::match(['POST', 'GET'], RealEstateHelper::getPageSlug('properties_state') . '/{slug}', 'PublicController@getPropertiesByState')
                     ->name('public.properties-by-state');
+
+                // Zolo-style pretty search URLs
+                Route::match(['POST', 'GET'], '{location}-real-estate/{category}', 'PublicController@getRealEstateByLocationAndCategory')
+                    ->where('location', '[a-zA-Z0-9\-_]+')
+                    ->where('category', '[a-zA-Z0-9\-_]+')
+                    ->name('public.location-real-estate-category');
+
+                Route::match(['POST', 'GET'], '{location}-real-estate', 'PublicController@getRealEstateByLocation')
+                    ->where('location', '[a-zA-Z0-9\-_]+')
+                    ->name('public.location-real-estate');
             }
 
             if (! RealEstateHelper::isDisabledPublicProfile()) {

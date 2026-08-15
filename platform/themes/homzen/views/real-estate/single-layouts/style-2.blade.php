@@ -91,6 +91,9 @@
                         @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.floor-plans'), ['class' => 'widget-box-single', 'model' => $model])
                     </div>
                 @endif
+                <div class="wrapper-onepage" id="faq">
+                    @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.faq'), ['model' => $model])
+                </div>
                 {!! apply_filters('after_single_content_detail', null, $model) !!}
 
                 <div class="wrapper-onepage">

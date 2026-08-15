@@ -25,3 +25,5 @@
         {{ $projects->onEachSide(1)->withQueryString()->links(Theme::getThemeNamespace('partials.pagination')) }}
     </div>
 @endif
+
+@include(Theme::getThemeNamespace('views.real-estate.partials.popular-searches'))
