@@ -6,8 +6,6 @@
 .DS_Store
 Thumbs.db
 /bower_components
-.env
-.env.*
 !.env.example
 .env.backup
 /.idea
@@ -73,3 +71,4 @@ temp_interactive_push.bat
 .gitignore
 php83.bat
 serve-php83.bat
+config.bat
