@@ -16,6 +16,7 @@ class ProjectSyncLogItem extends BaseModel
     protected $fillable = [
         'sync_log_id',
         'project_id',
+        'property_id',
         'external_id',
         'name',
         'action',
@@ -24,6 +25,7 @@ class ProjectSyncLogItem extends BaseModel
 
     protected $casts = [
         'project_id' => 'int',
+        'property_id' => 'int',
         'change_set' => 'array',
     ];
 

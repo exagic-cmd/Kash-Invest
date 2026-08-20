@@ -9,6 +9,7 @@ use Botble\RealEstate\Models\ProjectSyncLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Str;
 
 /**
  * Admin "API Sync" page — run each API sync on demand and see what it pulled.
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Artisan;
  */
 class ProjectSyncController extends BaseController
 {
+    /** Symfony\Component\Console\Command\Command::SUCCESS */
+    protected const COMMAND_SUCCESS = 0;
+
     public function index()
     {
         PageTitle::setTitle(trans('plugins/real-estate::api-sync.name'));
@@ -44,15 +48,50 @@ class ProjectSyncController extends BaseController
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
 
-        Artisan::call($sources[$key]['command'], ['--trigger' => 'manual']);
+        $exitCode = Artisan::call($sources[$key]['command'], ['--trigger' => 'manual']);
 
         $log = ProjectSyncLog::query()->where('source', $key)->latest('id')->first();
+
+        // A command that fails before it writes a sync-log row (missing API key,
+        // sync disabled, ...) used to be completely invisible: the page just span
+        // "Running..." until its poll budget ran out. Surface the exit code so the
+        // card can show what actually happened.
+        if ($exitCode !== self::COMMAND_SUCCESS) {
+            return response()->json([
+                'error' => true,
+                'message' => $this->extractFailureMessage() ?: trans('plugins/real-estate::api-sync.run_failed'),
+                'data' => $this->presentLog($log),
+            ]);
+        }
 
         return response()->json([
             'error' => false,
             'message' => trans('plugins/real-estate::api-sync.run_finished'),
             'data' => $this->presentLog($log),
         ]);
+    }
+
+    /**
+     * Pull a human-readable reason out of the console output of a failed command.
+     *
+     * Console output is decoration-heavy (ANSI colours, box drawing, blank lines),
+     * so this keeps the last meaningful line — which is where Symfony's error
+     * block ends up — and caps the length before it reaches the UI.
+     */
+    protected function extractFailureMessage(): ?string
+    {
+        $output = preg_replace('/\e\[[0-9;]*m/', '', Artisan::output()) ?? '';
+
+        $lines = array_values(array_filter(
+            array_map('trim', explode("\n", $output)),
+            fn (string $line): bool => $line !== '' && ! preg_match('/^[\p{Pd}=_\s]+$/u', $line)
+        ));
+
+        if ($lines === []) {
+            return null;
+        }
+
+        return Str::limit(preg_replace('/\s+/', ' ', (string) end($lines)), 300);
     }
 
     /**
@@ -105,7 +144,19 @@ class ProjectSyncController extends BaseController
             ],
         ];
 
-        return apply_filters('real_estate_api_sync_sources', $sources);
+        $sources = apply_filters('real_estate_api_sync_sources', $sources);
+
+        // Sources registered through the filter shouldn't have to know how a run
+        // is presented — fill in the last run for anyone who didn't supply one.
+        foreach ($sources as $key => $source) {
+            if (! array_key_exists('last_log', $source)) {
+                $sources[$key]['last_log'] = $this->presentLog(
+                    ProjectSyncLog::query()->where('source', $key)->latest('id')->first()
+                );
+            }
+        }
+
+        return $sources;
     }
 
     /**

@@ -21,6 +21,8 @@ use Botble\Location\Models\City;
 use Botble\Location\Models\State;
 use Botble\RealEstate\Commands\RenewPropertiesCommand;
 use Botble\RealEstate\Commands\SyncBuildifyProjectsCommand;
+use Botble\RealEstate\Commands\SyncTreebPropertiesCommand;
+use Botble\RealEstate\Services\Treeb\TreebPropertySyncer;
 use Botble\RealEstate\Facades\RealEstateHelper;
 use Botble\RealEstate\Forms\Fronts\Auth\ForgotPasswordForm;
 use Botble\RealEstate\Forms\Fronts\Auth\LoginForm;
@@ -98,6 +100,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class RealEstateServiceProvider extends ServiceProvider
@@ -197,7 +200,7 @@ class RealEstateServiceProvider extends ServiceProvider
         add_filter(IS_IN_ADMIN_FILTER, [$this, 'setInAdmin'], 128);
 
         $this->setNamespace('plugins/real-estate')
-            ->loadAndPublishConfigurations(['permissions', 'email', 'real-estate', 'general', 'buildify'])
+            ->loadAndPublishConfigurations(['permissions', 'email', 'real-estate', 'general', 'buildify', 'treeb'])
             ->loadMigrations()
             ->loadAndPublishViews()
             ->loadAndPublishTranslations()
@@ -844,7 +847,19 @@ class RealEstateServiceProvider extends ServiceProvider
                     ->dailyAt('02:00')
                     ->withoutOverlapping();
             }
+
+            // The PROPTX/TRREB IDX Agreement requires the displayed listing data
+            // to be refreshed at least every 24 hours, so this schedule is a
+            // compliance obligation, not just a convenience.
+            if (config('plugins.real-estate.treeb.enabled')) {
+                $schedule
+                    ->command(SyncTreebPropertiesCommand::class, ['--trigger=cron'])
+                    ->dailyAt((string) config('plugins.real-estate.treeb.schedule_at', '03:00'))
+                    ->withoutOverlapping();
+            }
         });
+
+        $this->registerTreebApiSyncSource();
 
         if (is_plugin_active('captcha')) {
             Captcha::registerFormSupport(LoginForm::class, LoginRequest::class, trans('plugins/real-estate::real-estate.login_form'));
@@ -854,6 +869,66 @@ class RealEstateServiceProvider extends ServiceProvider
             Captcha::registerFormSupport(ConsultForm::class, SendConsultRequest::class, trans('plugins/real-estate::real-estate.consult_form'));
             Captcha::registerFormSupport(ReviewForm::class, ReviewRequest::class, trans('plugins/real-estate::real-estate.review_form'));
         }
+    }
+
+    /**
+     * Puts the Treeb (TRREB / PROPTX) card on the admin "API Sync" page.
+     *
+     * The page discovers its sources through this filter, so neither the
+     * controller, the routes, nor the view need to know Treeb exists — the same
+     * seam a future third feed would use. Unlike Buildify, this source counts
+     * and links properties rather than projects.
+     */
+    protected function registerTreebApiSyncSource(): void
+    {
+        add_filter('real_estate_api_sync_sources', function (array $sources): array {
+            // re_properties.source arrives with this feature's own migration. If
+            // the code is deployed ahead of it, hide the card rather than 500 the
+            // whole API Sync page on an unknown column.
+            if (! Schema::hasColumn('re_properties', 'source')) {
+                return $sources;
+            }
+
+            $scheduleAt = (string) config('plugins.real-estate.treeb.schedule_at', '03:00');
+            $timestamp = strtotime($scheduleAt);
+            $scheduleLabel = $timestamp === false ? $scheduleAt : date('g:i A', $timestamp);
+
+            $meta = [
+                trans('plugins/real-estate::api-sync.feed') => 'TRREB / PROPTX (RESO)',
+                trans('plugins/real-estate::api-sync.scope') => ucwords(str_replace(
+                    ',',
+                    ' + ',
+                    (string) config('plugins.real-estate.treeb.transaction_types', 'sale,lease')
+                )),
+            ];
+
+            // Surfaced on the card so a capped test run can never be mistaken for
+            // a full catalog sync.
+            if ($cap = (int) config('plugins.real-estate.treeb.max_records', 0)) {
+                $meta[trans('plugins/real-estate::api-sync.test_cap')] = trans(
+                    'plugins/real-estate::api-sync.first_n_records',
+                    ['count' => $cap]
+                );
+            }
+
+            $count = Property::query()->where('source', TreebPropertySyncer::SOURCE)->count();
+
+            $sources['treeb'] = [
+                'key' => 'treeb',
+                'label' => 'Treeb (TRREB / PROPTX)',
+                'command' => 'cms:treeb:sync-properties',
+                'enabled' => (bool) config('plugins.real-estate.treeb.enabled'),
+                'schedule' => trans('plugins/real-estate::api-sync.daily_at', ['time' => $scheduleLabel]),
+                'meta' => $meta,
+                'projects_count' => $count,
+                'projects_url' => route('property.index'),
+                'view_label' => trans('plugins/real-estate::api-sync.view_properties', [
+                    'count' => number_format($count),
+                ]),
+            ];
+
+            return $sources;
+        }, 10, 1);
     }
 
     public function setInAdmin(bool $isInAdmin): bool

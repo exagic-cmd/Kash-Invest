@@ -51,7 +51,16 @@
                                             </li>
                                         @endif
                                     </ul>
-                                    @if($author = $property->author)
+                                    {{-- IDX rows are attributed to the listing
+                                         brokerage, not the local admin account. --}}
+                                    @if($brokerage = $property->listing_brokerage)
+                                        <div class="box-avatar d-flex gap-12 align-items-center">
+                                            <div class="info">
+                                                <p class="body-2 text-variant-1">{{ __('Listing Brokerage') }}</p>
+                                                <div class="mt-4 h7 fw-7">{{ $brokerage }}</div>
+                                            </div>
+                                        </div>
+                                    @elseif($author = $property->author)
                                         <div class="box-avatar d-flex gap-12 align-items-center">
                                             <div class="avatar avt-60 round">
                                                 {{ RvMedia::image($author->avatar_url, $author->name, 'thumb') }}

@@ -41,8 +41,11 @@
                                     $source['enabled'] ? 'success' : 'secondary'
                                 ) !!}
                             </div>
+                            {{-- Sources registered through the filter can override
+                                 the label — Treeb counts properties, not projects. --}}
                             <a href="{{ $source['projects_url'] }}" class="btn btn-sm btn-outline-secondary">
-                                {{ trans('plugins/real-estate::api-sync.view_projects', ['count' => number_format($source['projects_count'])]) }}
+                                {{ $source['view_label']
+                                    ?? trans('plugins/real-estate::api-sync.view_projects', ['count' => number_format($source['projects_count'])]) }}
                             </a>
                         </div>
 
@@ -172,7 +175,15 @@
                 running: @json(trans('plugins/real-estate::api-sync.running')),
                 loading: @json(trans('plugins/real-estate::api-sync.loading')),
                 loadError: @json(trans('plugins/real-estate::api-sync.load_error')),
+                runFailed: @json(trans('plugins/real-estate::api-sync.run_failed')),
             };
+
+            function escapeHtml(value) {
+                const div = document.createElement('div');
+                div.textContent = String(value == null ? '' : value);
+
+                return div.innerHTML;
+            }
 
             function render(log) {
                 if (!log) {
@@ -206,7 +217,14 @@
                     btn.disabled = true;
                     box.innerHTML = render({ status: 'running' });
 
-                    // Fire the run; the UI is driven by polling the sync log, not this response.
+                    // Set when the run reports failure, so the poll below stops
+                    // instead of spinning out its whole budget on a run that will
+                    // never produce a log row.
+                    let aborted = false;
+
+                    // Fire the run; the UI is driven by polling the sync log, not
+                    // this response — except when the command fails outright, which
+                    // is the only thing this response is used for.
                     fetch(runUrl, {
                         method: 'POST',
                         headers: {
@@ -215,10 +233,26 @@
                             'X-Requested-With': 'XMLHttpRequest',
                         },
                         body: JSON.stringify({ source: key }),
-                    }).catch(function () {});
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (res) {
+                            if (!res || !res.error) {
+                                return;
+                            }
+
+                            aborted = true;
+                            btn.disabled = false;
+                            box.innerHTML = '<span class="text-danger fw-semibold">'
+                                + escapeHtml(res.message || L.runFailed) + '</span>';
+                        })
+                        .catch(function () {});
 
                     let tries = 0;
                     (function poll() {
+                        if (aborted) {
+                            return;
+                        }
+
                         fetch(statusUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                             .then(function (r) { return r.json(); })
                             .then(function (res) {

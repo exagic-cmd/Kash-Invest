@@ -4,32 +4,12 @@
 @endphp
 
 <div id="contact-form" @class(['widget-box single-property-contact', $class ?? null])>
-    @if (! RealEstateHelper::hideAgentInfoInPropertyDetailPage() && ($account = $model->author) && $account->exists)
-        <div class="h7 title fw-7">{{ __('Contact Agency') }}</div>
-
-        <div class="box-avatar">
-            <div class="avatar avt-100 round">
-                <a href="{{ $account->url }}" class="d-block">
-                    {{ RvMedia::image($account->avatar?->url ?: $account->avatar_url, $account->name) }}
-                </a>
-            </div>
-            <div class="info line-clamp-1">
-                <div @class(['text-1 name', 'fw-7' => theme_option('real_estate_bold_agent_name', 'no') === 'yes'])>
-                    <a href="{{ $account->url }}">{{ $account->name }} {!! $account->badge !!}</a>
-                </div>
-                @if ($account->phone && ! setting('real_estate_hide_agency_phone', false) && ! $account->hide_phone)
-                    <a href="tel:{{ $account->phone }}" class="info-item">{{ $account->phone }}</a>
-                @elseif($hotline = theme_option('hotline'))
-                    <a href="tel:{{ $hotline }}" class="info-item">{{ $hotline }}</a>
-                @endif
-                @if ($account->email && ! setting('real_estate_hide_agency_email', false) && ! $account->hide_email)
-                    <a href="mailto:{{ $account->email }}" class="info-item">{{ $account->email }}</a>
-                @endif
-            </div>
-        </div>
-    @else
-        <div class="h7 title fw-7">{{ __('Contact') }}</div>
-    @endif
+    {{-- The "Contact Agency" block (and its leftover "Contact" heading) was
+         removed deliberately. It rendered the local admin account that owns the
+         row (e.g. "System Admin") with placeholder contact details — meaningless
+         for a manually added property and misleading on an imported MLS listing.
+         The enquiry form below is the contact path; it needs no heading of its
+         own since it carries its own "Ask About this Home" title. --}}
 
     @if ($isProject)
         {!! apply_filters('project_right_details_info', null, $model) !!}
