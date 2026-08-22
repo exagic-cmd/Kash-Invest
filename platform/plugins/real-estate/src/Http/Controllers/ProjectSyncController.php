@@ -41,9 +41,32 @@ class ProjectSyncController extends BaseController
             return response()->json(['error' => true, 'message' => trans('plugins/real-estate::api-sync.unknown_source')], 422);
         }
 
-        // The sync is long-running (paging + image downloads). Keep it going even
-        // if the browser navigates away or the connection drops — the page tracks
-        // progress by polling the sync log, not this response.
+        // On Linux/production: spawn the sync as a detached background process and
+        // return immediately. The gateway (nginx/Apache) on shared hosting has a
+        // hard timeout (typically 60 s) that set_time_limit() cannot extend — a
+        // full TRREB sync easily exceeds it and returns a 504.
+        //
+        // The admin page already polls /status every 3 s for up to 12 minutes and
+        // drives the UI from the sync-log table, so this response only needs to
+        // acknowledge that the run was started; it does not need to carry results.
+        //
+        // On Windows (local dev): fall back to the synchronous Artisan::call path
+        // so the dev workflow is unchanged (no background process management needed).
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $artisan = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(base_path('artisan'));
+            $cmd     = $artisan . ' ' . escapeshellarg($sources[$key]['command']) . ' --trigger=manual';
+            exec($cmd . ' > /dev/null 2>&1 &');
+
+            $log = ProjectSyncLog::query()->where('source', $key)->latest('id')->first();
+
+            return response()->json([
+                'error'   => false,
+                'message' => trans('plugins/real-estate::api-sync.run_finished'),
+                'data'    => $this->presentLog($log),
+            ]);
+        }
+
+        // Windows / local dev — synchronous path (unchanged behaviour).
         @ignore_user_abort(true);
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
@@ -52,22 +75,18 @@ class ProjectSyncController extends BaseController
 
         $log = ProjectSyncLog::query()->where('source', $key)->latest('id')->first();
 
-        // A command that fails before it writes a sync-log row (missing API key,
-        // sync disabled, ...) used to be completely invisible: the page just span
-        // "Running..." until its poll budget ran out. Surface the exit code so the
-        // card can show what actually happened.
         if ($exitCode !== self::COMMAND_SUCCESS) {
             return response()->json([
-                'error' => true,
+                'error'   => true,
                 'message' => $this->extractFailureMessage() ?: trans('plugins/real-estate::api-sync.run_failed'),
-                'data' => $this->presentLog($log),
+                'data'    => $this->presentLog($log),
             ]);
         }
 
         return response()->json([
-            'error' => false,
+            'error'   => false,
             'message' => trans('plugins/real-estate::api-sync.run_finished'),
-            'data' => $this->presentLog($log),
+            'data'    => $this->presentLog($log),
         ]);
     }
 
