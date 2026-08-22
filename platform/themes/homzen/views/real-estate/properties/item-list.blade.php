@@ -68,7 +68,15 @@
             </ul>
         </div>
         <div class="d-flex justify-content-between align-items-center archive-bottom">
-            @if (! \Botble\RealEstate\Facades\RealEstateHelper::isDisabledPublicProfile() && ($author = $property->author) && $author->exists)
+            {{-- Attribution: the listing brokerage for IDX rows (no avatar — it's
+                 an organisation, not a user), the author only for manually added
+                 ones. Showing the local admin account against an MLS listing
+                 misrepresents who listed it. --}}
+            @if ($brokerage = $property->listing_brokerage)
+                <div class="d-flex gap-8 align-items-center">
+                    <span class="line-clamp-1" title="{{ $brokerage }}">{{ $brokerage }}</span>
+                </div>
+            @elseif (! \Botble\RealEstate\Facades\RealEstateHelper::isDisabledPublicProfile() && ($author = $property->author) && $author->exists)
                 <div class="d-flex gap-8 align-items-center">
                     <div class="avatar avt-40 round">
                         {{ RvMedia::image($author->avatar_url, $author->name, 'thumb') }}

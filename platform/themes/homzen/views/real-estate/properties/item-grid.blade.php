@@ -2,6 +2,7 @@
     $class ??= null;
     $itemsPerRow ??= 3;
     $author = $property->author;
+    $brokerage = $property->listing_brokerage;
 
     // Realistic Built-in years mapped to property ID
     // TODO: placeholder data — properties have no real "year built" field yet.
@@ -84,7 +85,13 @@
                 @if($property->unique_id)
                     <span>MLS® {{ $property->unique_id }}</span>
                 @endif
-                @if($author && $author->exists)
+                {{-- Attribution: the listing brokerage for IDX rows, the author
+                     only for manually added ones. Showing the local admin account
+                     against an MLS listing misrepresents who listed it. --}}
+                @if($brokerage)
+                    <span class="dot-separator">•</span>
+                    <span title="{{ $brokerage }}">{{ $brokerage }}</span>
+                @elseif($author && $author->exists)
                     <span class="dot-separator">•</span>
                     <span>{{ $author->name }}</span>
                 @endif

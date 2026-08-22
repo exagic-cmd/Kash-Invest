@@ -78,6 +78,10 @@ class RealEstateHelper
     {
         $relations = [
             'slugable:id,key,prefix,reference_id',
+            // Carries the IDX "Listing Brokerage" attribution that the cards and
+            // detail page are required to display. Eager loaded so listing pages
+            // don't fall into N+1 resolving it per card.
+            'customFields',
             'currency:id,is_default,exchange_rate,symbol,title,is_prefix_symbol,decimals,space_between_price_and_currency,number_format_style',
             'categories' => function (BelongsToMany|BaseQueryBuilder $query) {
                 return $query

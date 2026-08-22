@@ -500,11 +500,40 @@
                     <span class="fw-bold text-dark">{{ $model->square_text }}</span>
                 </div>
             @endif
+            @php
+                // Date-valued custom fields written by the API syncers render as
+                // "Sep 5, 2025 (340 days ago)" rather than a bare ISO date. The
+                // relative part is computed at render time so it never goes stale.
+                $dateCustomFields = ['listed on', 'last updated'];
+
+                $renderCustomFieldValue = function ($field) use ($dateCustomFields) {
+                    if (! in_array(strtolower(trim((string) $field->name)), $dateCustomFields, true)) {
+                        return BaseHelper::clean($field->value);
+                    }
+
+                    try {
+                        $date = \Illuminate\Support\Carbon::parse($field->value);
+                    } catch (\Throwable) {
+                        return BaseHelper::clean($field->value);
+                    }
+
+                    $days = (int) abs($date->copy()->startOfDay()->diffInDays(\Illuminate\Support\Carbon::now()->startOfDay()));
+
+                    $relative = match (true) {
+                        $days === 0 => __('today'),
+                        $days === 1 => __('1 day ago'),
+                        default => __(':count days ago', ['count' => number_format($days)]),
+                    };
+
+                    return e($date->format('M j, Y'))
+                        . ' <span class="fw-normal text-muted">(' . e($relative) . ')</span>';
+                };
+            @endphp
             @foreach ($model->customFields as $customField)
                 @continue(! $customField->value)
                 <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
                     <span class="fw-semibold text-muted">{!! BaseHelper::clean($customField->name) !!}:</span>
-                    <span class="fw-bold text-dark">{!! BaseHelper::clean($customField->value) !!}</span>
+                    <span class="fw-bold text-dark">{!! $renderCustomFieldValue($customField) !!}</span>
                 </div>
             @endforeach
         </div>

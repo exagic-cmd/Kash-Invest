@@ -2,7 +2,7 @@
     /** @var \Botble\RealEstate\Models\ProjectSyncLog $log */
     $groups = $log->items->groupBy('action');
     // Show the most actionable groups first.
-    $sections = ['failed' => 'danger', 'created' => 'success', 'updated' => 'info'];
+    $sections = ['failed' => 'danger', 'created' => 'success', 'updated' => 'info', 'delisted' => 'warning'];
 @endphp
 
 {{-- Native badges (BaseHelper::renderBadge) so this modal matches the rest of the
@@ -38,9 +38,15 @@
                         @foreach ($group as $item)
                             <tr>
                                 <td>
+                                    {{-- A run writes either project_id (Buildify) or
+                                         property_id (Treeb), never both. --}}
                                     @if ($item->project_id && Route::has('project.edit'))
                                         <a href="{{ route('project.edit', $item->project_id) }}" target="_blank" rel="noopener">
                                             {{ $item->name ?: '#' . $item->project_id }}
+                                        </a>
+                                    @elseif ($item->property_id && Route::has('property.edit'))
+                                        <a href="{{ route('property.edit', $item->property_id) }}" target="_blank" rel="noopener">
+                                            {{ $item->name ?: '#' . $item->property_id }}
                                         </a>
                                     @else
                                         {{ $item->name ?: '—' }}

@@ -273,6 +273,32 @@ class Property extends BaseModel
         return Attribute::get(fn () => CustomFieldValue::getCustomFieldValuesArray($this));
     }
 
+    /**
+     * The brokerage that listed this property.
+     *
+     * Written by the TRREB/PROPTX syncer as a custom field. Displaying it is
+     * mandatory under the IDX agreement, and it must be shown INSTEAD of the
+     * local admin account that technically "authored" the imported row —
+     * attributing an MLS listing to our own admin user misrepresents it.
+     *
+     * Null for manually entered properties, which keep their author.
+     */
+    protected function listingBrokerage(): Attribute
+    {
+        return Attribute::get(
+            fn (): ?string => $this->customFields->firstWhere('name', 'Listing Brokerage')?->value ?: null
+        );
+    }
+
+    /**
+     * Whether this row came from an external IDX feed rather than being entered
+     * by hand. Drives brokerage attribution and the accuracy disclaimer.
+     */
+    protected function isIdxListing(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->source === 'treeb');
+    }
+
     public function reviews(): MorphMany
     {
         return $this->morphMany(Review::class, 'reviewable');
