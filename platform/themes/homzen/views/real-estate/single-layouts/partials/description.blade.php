@@ -501,9 +501,15 @@
                 </div>
             @endif
             @php
-                // Date-valued custom fields written by the API syncers render as
-                // "Sep 5, 2025 (340 days ago)" rather than a bare ISO date. The
-                // relative part is computed at render time so it never goes stale.
+                // Only these fields belong in the overview strip.
+                // All RESO detail fields (Style, Heating, Basement, Parking …) live
+                // in the Property Details section below.
+                $overviewFields = [
+                    'mls number', 'listing brokerage', 'co-listing brokerage',
+                    'listed on', 'last updated',
+                ];
+
+                // Date-valued custom fields render as "Sep 5, 2025 (340 days ago)".
                 $dateCustomFields = ['listed on', 'last updated'];
 
                 $renderCustomFieldValue = function ($field) use ($dateCustomFields) {
@@ -531,6 +537,7 @@
             @endphp
             @foreach ($model->customFields as $customField)
                 @continue(! $customField->value)
+                @continue(! in_array(strtolower(trim($customField->name)), $overviewFields, true))
                 <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
                     <span class="fw-semibold text-muted">{!! BaseHelper::clean($customField->name) !!}:</span>
                     <span class="fw-bold text-dark">{!! $renderCustomFieldValue($customField) !!}</span>

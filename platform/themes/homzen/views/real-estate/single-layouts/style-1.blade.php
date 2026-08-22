@@ -18,6 +18,8 @@
 
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.features'), ['class' => 'single-property-element', 'model' => $model])
 
+                @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.property-details'), ['class' => 'single-property-element', 'model' => $model])
+
                 @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.facilities'), ['class' => 'single-property-element', 'model' => $model])
 
                 @if (!($model instanceof \Botble\RealEstate\Models\Project))

@@ -132,8 +132,10 @@ class TreebPropertySyncer
                     break 2;
                 }
 
-                // Long feeds plus image downloads outlive the default limit.
-                @set_time_limit(300);
+                // CLI has no default time limit; remove any limit so large image
+                // GD processing on slow hosts does not kill the run.
+                @set_time_limit(0);
+                @ini_set('memory_limit', '1G');
 
                 try {
                     $this->importListing($listing);
@@ -304,7 +306,8 @@ class TreebPropertySyncer
         $property->features()->sync($this->resolveFeatureIds($listing));
         $property->categories()->sync($this->resolveCategoryIds($listing));
 
-        $newCustomFields = $this->buildCustomFields($listing);
+        $rooms = $this->client->roomsFor($listingKey);
+        $newCustomFields = $this->buildCustomFields($listing, $rooms);
         $property->customFields()->delete();
         foreach ($newCustomFields as $field) {
             $property->customFields()->create($field);
@@ -755,7 +758,7 @@ class TreebPropertySyncer
         }
 
         try {
-            $response = Http::connectTimeout(10)->timeout(20)->get($imageUrl);
+            $response = Http::withoutVerifying()->connectTimeout(10)->timeout(20)->get($imageUrl);
         } catch (\Throwable) {
             return null;
         }
@@ -980,37 +983,141 @@ class TreebPropertySyncer
      *
      * @return array<int, array{name: string, value: string}>
      */
-    protected function buildCustomFields(array $listing): array
+    protected function buildCustomFields(array $listing, array $rooms = []): array
     {
         $fields = [
-            // TRREB sends no ListingId — ListingKey is the MLS number here.
+            // ── Attribution (IDX mandatory) ──────────────────────────────────
             $this->customField('MLS Number', Arr::get($listing, 'ListingKey')),
-            // Mandatory attribution. Present on 100% of sampled records.
             $this->customField('Listing Brokerage', Arr::get($listing, 'ListOfficeName')),
             $this->customField('Co-Listing Brokerage', Arr::get($listing, 'CoListOfficeName')),
-            // ListAgentFullName is absent from this IDX feed by design — agent
-            // details are not licensed for display, only the brokerage.
+
+            // ── Property (overview) ──────────────────────────────────────────
             $this->customField('Property Type', Arr::get($listing, 'PropertyType')),
             $this->customField('Property Sub Type', Arr::get($listing, 'PropertySubType')),
             $this->customField('Transaction Type', Arr::get($listing, 'TransactionType')),
             $this->customField('Standard Status', Arr::get($listing, 'StandardStatus')),
-            // Keeps the exact band PROPTX supplied, since `square` stores only the
-            // midpoint we derived from it.
-            $this->customField('Living Area Range', Arr::get($listing, 'LivingAreaRange')),
-            $this->customField('Square Foot Source', Arr::get($listing, 'SquareFootSource')),
-            $this->customField('Lot Size', Arr::get($listing, 'LotSizeArea')),
+            $this->customField('Style', Arr::get($listing, 'ArchitecturalStyle')),
             $this->customField('Year Built', Arr::get($listing, 'YearBuilt')),
-            $this->customField('Parking Spaces', Arr::get($listing, 'ParkingTotal')),
-            $this->customField('Tax Annual Amount', Arr::get($listing, 'TaxAnnualAmount')),
-            $this->customField('Association Fee', Arr::get($listing, 'AssociationFee')),
+            $this->customField('Year Built Source', Arr::get($listing, 'YearBuiltSource')),
+            $this->customField('Approximate Age', Arr::get($listing, 'ApproximateAge')),
+            $this->customField('Assessment Year', Arr::get($listing, 'AssessmentYear')),
+            $this->customField('Survey Type', Arr::get($listing, 'SurveyType')),
+            $this->customField('Common Interest', Arr::get($listing, 'CommonInterest')),
+            $this->customField('Area Major', Arr::get($listing, 'CountyOrParish')),
+            $this->customField('Area Minor', Arr::get($listing, 'CityRegion')),
             $this->customField('Neighbourhood', Arr::get($listing, 'CityRegion')),
-            // OnMarketDate and ListingContractDate are absent from this feed;
-            // OriginalEntryTimestamp is the one that is always populated.
+            $this->customField('Occupant Type', Arr::get($listing, 'OccupantType')),
+            $this->customField('Possession Type', Arr::get($listing, 'PossessionType')),
+            $this->customField('Special Designation', Arr::get($listing, 'SpecialDesignation')),
+            $this->customField('Cross Street', Arr::get($listing, 'CrossStreet')),
             $this->customField('Listed On', $this->normalizeDate(Arr::get($listing, 'OriginalEntryTimestamp'))),
             $this->customField('Last Updated', $this->normalizeDate(Arr::get($listing, 'ModificationTimestamp'))),
+
+            // ── Interior ─────────────────────────────────────────────────────
+            $this->customField('Bedrooms', Arr::get($listing, 'BedroomsTotal')),
+            $this->customField('Total Bathrooms', Arr::get($listing, 'BathroomsTotalInteger')),
+            $this->customField('Cooling', Arr::get($listing, 'Cooling')),
+            $this->customField('Heating', $this->resolveHeating($listing)),
+            $this->customField('Fireplaces Total', Arr::get($listing, 'FireplacesTotal')
+                ?: (Arr::get($listing, 'FireplaceYN') ? '1' : null)),
+            $this->customField('Fireplace Features', Arr::get($listing, 'FireplaceFeatures')),
+            $this->customField('Interior Features', Arr::get($listing, 'InteriorFeatures')),
+            $this->customField('Laundry Features', Arr::get($listing, 'LaundryFeatures')),
+            $this->customField('Inclusions', Arr::get($listing, 'Inclusions')),
+            $this->customField('Exclusions', Arr::get($listing, 'Exclusions')),
+            $this->customField('Kitchen Appliances', Arr::get($listing, 'Appliances')),
+
+            // ── Building ─────────────────────────────────────────────────────
+            $this->customField('Kitchens Total', Arr::get($listing, 'KitchensTotal')),
+            $this->customField('Basement', Arr::get($listing, 'Basement')),
+            $this->customField('Foundation', Arr::get($listing, 'FoundationDetails')),
+            $this->customField('Roof', Arr::get($listing, 'Roof')),
+            $this->customField('Construction Materials', Arr::get($listing, 'ConstructionMaterials')),
+            $this->customField('Security Features', Arr::get($listing, 'SecurityFeatures')),
+            $this->customField('Pool', Arr::get($listing, 'PoolFeatures')),
+            $this->customField('Building Area Total', Arr::get($listing, 'BuildingAreaTotal')),
+            $this->customField('Building Area Units', Arr::get($listing, 'BuildingAreaUnits')),
+            $this->customField('Living Area Range', Arr::get($listing, 'LivingAreaRange')),
+            $this->customField('HST Application', Arr::get($listing, 'HSTApplication')),
+
+            // ── Parking ──────────────────────────────────────────────────────
+            $this->customField('Garage Type', Arr::get($listing, 'GarageType')),
+            $this->customField('Parking Features', Arr::get($listing, 'ParkingFeatures')),
+            $this->customField('Parking Spaces', Arr::get($listing, 'ParkingSpaces')),
+            $this->customField('Parking Total', Arr::get($listing, 'ParkingTotal')),
+            $this->customField('Covered Spaces', Arr::get($listing, 'CoveredSpaces')),
+
+            // ── Financial ────────────────────────────────────────────────────
+            $this->customField('Tax Annual Amount', Arr::get($listing, 'TaxAnnualAmount')),
+            $this->customField('Tax Year', Arr::get($listing, 'TaxYear')),
+            $this->customField('Tax Legal Description', Arr::get($listing, 'TaxLegalDescription')),
+            $this->customField('Association Fee', Arr::get($listing, 'AssociationFee')),
+            $this->customField('Association Fee Frequency', Arr::get($listing, 'AssociationFeeFrequency')),
+
+            // ── Land ─────────────────────────────────────────────────────────
+            $this->customField('Lot Width', Arr::get($listing, 'LotWidth')),
+            $this->customField('Lot Depth', Arr::get($listing, 'LotDepth')),
+            $this->customField('Lot Size', Arr::get($listing, 'LotSizeArea')),
+            $this->customField('Lot Size Source', Arr::get($listing, 'LotSizeSource')),
+            $this->customField('Lot Features', Arr::get($listing, 'LotFeatures')),
+            $this->customField('Direction Faces', Arr::get($listing, 'DirectionFaces')),
+            $this->customField('Directions', Arr::get($listing, 'Directions')),
+            $this->customField('Water Source', Arr::get($listing, 'WaterSource')),
+            $this->customField('Sewer', Arr::get($listing, 'Sewer')),
+            $this->customField('Zoning', Arr::get($listing, 'Zoning')),
+            $this->customField('Parcel Number', Arr::get($listing, 'ParcelNumber')),
+            $this->customField('Roll Number', Arr::get($listing, 'RollNumber')),
+            $this->customField('Community Features', Arr::get($listing, 'CommunityFeatures')),
+
+            // ── Extra ────────────────────────────────────────────────────────
+            $this->customField('Virtual Tour', Arr::get($listing, 'VirtualTourURLBranded')),
         ];
 
+        // ── Rooms (from PropertyRooms sub-resource) ───────────────────────────
+        $roomIndex = 1;
+        foreach ($rooms as $room) {
+            $type = trim((string) Arr::get($room, 'RoomType'));
+
+            if ($type === '') {
+                continue;
+            }
+
+            $level  = trim((string) Arr::get($room, 'RoomLevel', ''));
+            $width  = (float) Arr::get($room, 'RoomWidth', 0);
+            $length = (float) Arr::get($room, 'RoomLength', 0);
+
+            $dims   = ($width > 0 && $length > 0)
+                ? $this->fmtDim($width) . ' x ' . $this->fmtDim($length)
+                : '';
+
+            $valueParts = array_filter([$level, $dims]);
+            $value = $type . ($valueParts !== [] ? ' / ' . implode(' / ', $valueParts) : '');
+
+            $fields[] = ['name' => sprintf('Room %02d', $roomIndex++), 'value' => $value];
+        }
+
         return array_values(array_filter($fields));
+    }
+
+    protected function fmtDim(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    }
+
+    protected function resolveHeating(array $listing): ?string
+    {
+        $types = Arr::get($listing, 'HeatTypeMulti') ?: Arr::get($listing, 'HeatType');
+        $sources = Arr::get($listing, 'HeatSourceMulti') ?: Arr::get($listing, 'HeatSource');
+
+        $parts = [];
+        if ($types) {
+            $parts[] = is_array($types) ? implode(', ', $types) : $types;
+        }
+        if ($sources && $sources !== $types) {
+            $parts[] = is_array($sources) ? implode(', ', $sources) : $sources;
+        }
+
+        return $parts !== [] ? implode(' / ', $parts) : null;
     }
 
     /**
@@ -1028,7 +1135,7 @@ class TreebPropertySyncer
 
         return [
             'name' => $name,
-            'value' => Str::limit((string) $value, 120, ''),
+            'value' => Str::limit((string) $value, 250, ''),
         ];
     }
 

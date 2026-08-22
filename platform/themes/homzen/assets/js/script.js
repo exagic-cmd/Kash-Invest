@@ -2850,7 +2850,7 @@ $(() => {
             },
             { passive: true, capture: true }
         )
-    })
+    });
 
     /* URL as Single Source of Truth: Browser Back/Forward navigation support */
     window.addEventListener('popstate', function(e) {

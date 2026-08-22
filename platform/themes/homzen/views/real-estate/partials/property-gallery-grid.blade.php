@@ -28,7 +28,9 @@
             if ($model->images && is_array($model->images)) {
                 foreach ($model->images as $img) {
                     if (empty($img)) continue;
-                    if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://')) {
+                    $resolvedUrl = RvMedia::url($img);
+                    if (str_starts_with($resolvedUrl, 'http://') || str_starts_with($resolvedUrl, 'https://')) {
+                        // Remote storage (S3, R2, etc.) — trust the path without a local file check
                         $validImages[] = $img;
                     } else {
                         $path = public_path('storage/' . ltrim($img, '/'));

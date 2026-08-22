@@ -3,13 +3,7 @@
          {!! Theme::partial('shortcode-heading', ['shortcode' => $shortcode, 'hasButton' => false, 'class' => 'style-2']) !!}
 
         @if ($properties->isNotEmpty())
-            <div class="row wow fadeInUpSmall" data-wow-delay=".2s" data-wow-duration="2000ms">
-                @foreach($properties as $property)
-                    <div class="col-xl-4 col-md-6">
-                        @include(Theme::getThemeNamespace('views.real-estate.properties.item-grid'))
-                    </div>
-                @endforeach
-            </div>
+            @include(Theme::getThemeNamespace('views.real-estate.properties.grid'), ['itemsPerRow' => 3])
         @endif
         @if ($shortcode->button_label && $shortcode->button_url)
             <div class="text-center">

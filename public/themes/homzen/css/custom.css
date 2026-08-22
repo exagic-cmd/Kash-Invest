@@ -380,6 +380,39 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * Homepage "Featured New Homes" (style-8 project grid) — responsive columns
+ *
+ * The base CSS defines `grid-template-columns: 180px 1fr 1fr 1fr`, designed
+ * for a left description card + 3 project cards. The left card is not rendered,
+ * so we override to match the same 3→4 breakpoint used by the properties grid:
+ *   > 1440px  → 4 cards
+ *   1025–1440 → 3 cards  (default)
+ *   576–1024  → 2 cards
+ *   ≤ 575px   → 1 card
+ * ------------------------------------------------------------------------- */
+.flat-project-style8 .style8-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+}
+
+@media (min-width: 1441px) {
+    .flat-project-style8 .style8-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .flat-project-style8 .style8-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .flat-project-style8 .style8-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ---------------------------------------------------------------------------
  * Listing Pagination Spacing Fix
  * ------------------------------------------------------------------------- */
 .wd-navigation,

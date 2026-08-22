@@ -77,7 +77,47 @@ class TreebClient
         $body = $this->request($this->baseUrl . '/Media', [
             '$filter' => $filter,
             '$orderby' => 'Order asc',
-            '$top' => max($limit, 1),
+            '$top' => max($limit * 5, 25),
+        ]);
+
+        $raw = Arr::get($body, 'value', []);
+
+        $uniquePhotos = [];
+        foreach ($raw as $item) {
+            $objId = Arr::get($item, 'MediaObjectID') ?: Arr::get($item, 'MediaKey');
+            if (! $objId) {
+                continue;
+            }
+
+            $size = Arr::get($item, 'ImageSizeDescription');
+            if (! isset($uniquePhotos[$objId])) {
+                $uniquePhotos[$objId] = $item;
+            } else {
+                $currentSize = Arr::get($uniquePhotos[$objId], 'ImageSizeDescription');
+                if (in_array($size, ['Largest', 'Large', 'HighRes'], true) && ! in_array($currentSize, ['Largest', 'HighRes'], true)) {
+                    $uniquePhotos[$objId] = $item;
+                }
+            }
+
+            if (count($uniquePhotos) >= $limit) {
+                break;
+            }
+        }
+
+        return array_values($uniquePhotos);
+    }
+
+    /**
+     * Room dimensions for one listing, ordered by board sequence.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function roomsFor(string $listingKey): array
+    {
+        $body = $this->request($this->baseUrl . '/PropertyRooms', [
+            '$filter' => "ListingKey eq '{$this->escape($listingKey)}'",
+            '$orderby' => 'Order asc',
+            '$top' => 50,
         ]);
 
         return Arr::get($body, 'value', []);
@@ -100,7 +140,8 @@ class TreebClient
      */
     protected function request(string $url, array $query = []): array
     {
-        $response = Http::withToken($this->apiKey)
+        $response = Http::withoutVerifying()
+            ->withToken($this->apiKey)
             ->acceptJson()
             ->timeout(60)
             ->retry(2, 1000, throw: false)

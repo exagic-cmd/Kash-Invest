@@ -1370,7 +1370,7 @@ class RvMedia
         config()->set([
             'filesystems.disks.s3' => [
                 'driver' => 's3',
-                'visibility' => 'public',
+                'visibility' => null,
                 'throw' => true,
                 'key' => $config['key'],
                 'secret' => $config['secret'],
@@ -1379,8 +1379,13 @@ class RvMedia
                 'url' => $config['url'],
                 'endpoint' => $config['endpoint'],
                 'use_path_style_endpoint' => (bool) $config['use_path_style_endpoint'],
+                'http' => [
+                    'verify' => env('AWS_HTTP_VERIFY', false),
+                ],
             ],
         ]);
+
+        Storage::forgetDisk('s3');
     }
 
     public function setR2Disk(array $config): void

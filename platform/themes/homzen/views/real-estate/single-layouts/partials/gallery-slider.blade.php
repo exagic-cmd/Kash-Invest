@@ -7,13 +7,13 @@
         $rawImages = array_values($model->images);
         foreach ($rawImages as $img) {
             if (empty($img)) continue;
-            if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://')) {
+            $resolvedUrl = RvMedia::url($img);
+            if (str_starts_with($resolvedUrl, 'http://') || str_starts_with($resolvedUrl, 'https://')) {
+                // Remote storage (S3, R2, etc.) — trust the path without a local file check
                 $validImages[] = $img;
             } else {
                 $cleanPath = ltrim($img, '/');
-                $storagePath = public_path('storage/' . $cleanPath);
-                $publicPath = public_path($cleanPath);
-                if (file_exists($storagePath) || file_exists($publicPath)) {
+                if (file_exists(public_path('storage/' . $cleanPath)) || file_exists(public_path($cleanPath))) {
                     $validImages[] = $img;
                 }
             }
