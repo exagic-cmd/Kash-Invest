@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\MimeTypes;
 
@@ -528,6 +529,10 @@ class BuildifyProjectSyncer
             if (Str::contains($image, ['http://', 'https://'])) {
                 return false;
             }
+
+            if (! Storage::exists($image)) {
+                return false;
+            }
         }
 
         return true;
@@ -560,11 +565,15 @@ class BuildifyProjectSyncer
             ->first();
 
         if ($existingMedia) {
-            return $existingMedia->url;
+            if (Storage::exists($existingMedia->url)) {
+                return $existingMedia->url;
+            }
+
+            $existingMedia->delete();
         }
 
         try {
-            $response = Http::connectTimeout(10)->timeout(20)->get($imageUrl);
+            $response = Http::withoutVerifying()->connectTimeout(10)->timeout(20)->get($imageUrl);
         } catch (\Throwable) {
             return $imageUrl;
         }

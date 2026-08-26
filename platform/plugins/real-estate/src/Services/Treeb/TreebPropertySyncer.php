@@ -28,6 +28,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\MimeTypes;
 
@@ -754,7 +755,11 @@ class TreebPropertySyncer
             ->first();
 
         if ($existingMedia) {
-            return $existingMedia->url;
+            if (Storage::exists($existingMedia->url)) {
+                return $existingMedia->url;
+            }
+
+            $existingMedia->delete();
         }
 
         try {
