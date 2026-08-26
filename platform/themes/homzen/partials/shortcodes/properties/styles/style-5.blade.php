@@ -1,16 +1,9 @@
 <section class="flat-section-v5 bg-surface flat-recommended flat-recommended-v2">
-    <div class="container">
-         {!! Theme::partial('shortcode-heading', ['shortcode' => $shortcode, 'hasButton' => false, 'class' => 'style-2']) !!}
+    <div class="container-fluid">
+        {!! Theme::partial('shortcode-heading', compact('shortcode')) !!}
 
         @if ($properties->isNotEmpty())
-            @include(Theme::getThemeNamespace('views.real-estate.properties.grid'), ['itemsPerRow' => 3])
-        @endif
-        @if ($shortcode->button_label && $shortcode->button_url)
-            <div class="text-center">
-                <a href="{{ $shortcode->button_url }}" class="tf-btn primary size-1">
-                    {{ $shortcode->button_label }}
-                </a>
-            </div>
+            @include(Theme::getThemeNamespace('views.real-estate.properties.grid'), ['itemsPerRow' => 4])
         @endif
     </div>
 </section>
