@@ -22,7 +22,7 @@
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Share') }}" style="padding: 0.25rem 0.5rem;">
                         <x-core::icon name="ti ti-share" />
-                        <span class="action-btn-text d-none d-md-inline">{{ __('Share') }}</span>
+                        <!-- <span class="action-btn-text d-none d-md-inline">{{ __('Share') }}</span> -->
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end p-2">
                         <li class="d-flex gap-2">
@@ -44,7 +44,7 @@
                         data-remove-message="{{ __('Removed ":name" from wishlist successfully!', ['name' => $model->name]) }}"
                         aria-label="{{ __('Save') }}" style="padding: 0.25rem 0.5rem;">
                     <x-core::icon name="ti ti-heart" />
-                    <span class="action-btn-text d-none d-md-inline">{{ __('Save') }}</span>
+                    <!-- <span class="action-btn-text d-none d-md-inline">{{ __('Save') }}</span> -->
                 </button>
             @endif
         </div>

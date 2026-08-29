@@ -253,6 +253,7 @@
 
 <style>
 .property-details-reso { font-size: 0.95rem; }
+.reso-section-block { margin-top: 1.5rem; }
 .reso-item { line-height: 1.5; }
 .reso-toggle-wrap { text-align: center; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; }
 .reso-toggle-btn {

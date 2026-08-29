@@ -249,7 +249,7 @@
         <div class="box-project-card">
             <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Total Units') }}</h3>
             <hr class="project-section-divider">
-            <div class="row g-4 style-project-specs-grid">
+            <div class="row style-project-specs-grid">
                 <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
                     @foreach ($leftCol as $item)
                         <div class="d-flex align-items-center gap-3 spec-item">
@@ -261,7 +261,7 @@
                                 @endif
                             </div>
                             <div class="spec-content">
-                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                 <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                             </div>
                         </div>
@@ -278,7 +278,7 @@
                                 @endif
                             </div>
                             <div class="spec-content">
-                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                 <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                             </div>
                         </div>
@@ -298,7 +298,7 @@
         <div class="box-project-card">
             <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Building Attributes') }}</h3>
             <hr class="project-section-divider">
-            <div class="row g-4 style-project-specs-grid">
+            <div class="row style-project-specs-grid">
                 <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
                     @foreach ($leftCol as $item)
                         <div class="d-flex align-items-center gap-3 spec-item">
@@ -310,7 +310,7 @@
                                 @endif
                             </div>
                             <div class="spec-content">
-                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                 <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                             </div>
                         </div>
@@ -327,7 +327,7 @@
                                 @endif
                             </div>
                             <div class="spec-content">
-                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                 <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                             </div>
                         </div>
@@ -348,7 +348,7 @@
             <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Parking & Access') }}</h3>
             <hr class="project-section-divider">
             @if (!empty($parkingItems))
-                <div class="row g-4 style-project-specs-grid">
+                <div class="row style-project-specs-grid">
                     <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
                         @foreach ($leftCol as $item)
                             <div class="d-flex align-items-center gap-3 spec-item">
@@ -360,7 +360,7 @@
                                     @endif
                                 </div>
                                 <div class="spec-content">
-                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                     <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                                 </div>
                             </div>
@@ -377,7 +377,7 @@
                                     @endif
                                 </div>
                                 <div class="spec-content">
-                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                     <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                                 </div>
                             </div>
@@ -408,7 +408,7 @@
             <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Services & Policies') }}</h3>
             <hr class="project-section-divider">
             @if (!empty($serviceItems))
-                <div class="row g-4 style-project-specs-grid">
+                <div class="row style-project-specs-grid">
                     <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
                         @foreach ($leftCol as $item)
                             <div class="d-flex align-items-center gap-3 spec-item">
@@ -420,7 +420,7 @@
                                     @endif
                                 </div>
                                 <div class="spec-content">
-                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                     <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                                 </div>
                             </div>
@@ -437,7 +437,7 @@
                                     @endif
                                 </div>
                                 <div class="spec-content">
-                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 1.2;">{{ $item['label'] }}</div>
+                                    <div class="spec-label text-muted" style="font-size: 0.85rem; line-height: 0.2;">{{ $item['label'] }}</div>
                                     <div class="spec-value fw-bold text-dark mt-1" style="font-size: 1rem; line-height: 1.3;">{!! $item['value'] !!}</div>
                                 </div>
                             </div>

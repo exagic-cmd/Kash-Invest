@@ -8,7 +8,7 @@
             <span class="h5 fw-6 mb-0 text-truncate max-width-md">{{ $model->name }}</span>
         </div>
         
-        <div class="d-flex align-items-center gap-2">
+        <!-- <div class="d-flex align-items-center gap-2">
             <a href="{{ $model->url . '#contact-form' }}" class="btn-ask-home text-decoration-none">
                 {{ __('Ask About this Home') }}
             </a>
@@ -18,7 +18,7 @@
             <a href="{{ $model->url }}" class="btn-gallery-tab text-decoration-none text-black">
                 {{ __('Map') }}
             </a>
-        </div>
+        </div> -->
     </div>
 
     {{-- Compact 2-Column Image List --}}
