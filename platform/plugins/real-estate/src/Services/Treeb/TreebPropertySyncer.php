@@ -348,17 +348,23 @@ class TreebPropertySyncer
     protected function createSlug(Property $property, string $name, string $listingKey): void
     {
         $prefix = (string) SlugHelper::getPrefix(Property::class, 'properties');
-        $key = Str::slug($name . '-' . $listingKey);
+        $baseKey = Str::slug($name) ?: ('property-' . $property->getKey());
+        $key = $baseKey;
+        $counter = 1;
 
-        Slug::query()
-            ->where('key', $key)
-            ->where('prefix', $prefix)
-            ->where(function ($query) use ($property): void {
-                $query
-                    ->where('reference_type', '!=', Property::class)
-                    ->orWhere('reference_id', '!=', $property->getKey());
-            })
-            ->delete();
+        while (
+            Slug::query()
+                ->where('key', $key)
+                ->where('prefix', $prefix)
+                ->where(function ($query) use ($property): void {
+                    $query
+                        ->where('reference_type', '!=', Property::class)
+                        ->orWhere('reference_id', '!=', $property->getKey());
+                })
+                ->exists()
+        ) {
+            $key = $baseKey . '-' . (++$counter);
+        }
 
         Slug::query()->updateOrCreate(
             [

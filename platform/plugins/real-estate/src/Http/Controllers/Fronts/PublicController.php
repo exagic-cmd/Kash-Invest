@@ -457,7 +457,7 @@ class PublicController extends BaseController
         }
 
         $locationName = $city ? $city->name : ($state ? $state->name : ucwords($cleanLocation));
-        $title = trans(':location Real Estate & Pre-Construction Projects', ['location' => $locationName]);
+        $title = trans(':location & Pre-Construction Projects', ['location' => $locationName]);
         $pageUrl = url($locationSlug . '-real-estate');
 
         SeoHelper::setTitle($title);

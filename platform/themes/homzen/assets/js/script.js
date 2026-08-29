@@ -758,14 +758,21 @@ $(() => {
 
     // Mobile Nav Hide Show
     if ($('.mobile-menu').length) {
-        //$('.mobile-menu .menu-box').mCustomScrollbar();
+        if ($('.mobile-menu .menu-box .menu-outer').is(':empty')) {
+            const mobileMenuContent = $('.main-header .nav-outer .main-menu').html()
+            if (mobileMenuContent) {
+                $('.mobile-menu .menu-box .menu-outer').append(mobileMenuContent)
+            }
+        }
+        if ($('.sticky-header .main-menu').length && $('.sticky-header .main-menu').is(':empty')) {
+            const mobileMenuContent = $('.main-header .nav-outer .main-menu').html()
+            if (mobileMenuContent) {
+                $('.sticky-header .main-menu').append(mobileMenuContent)
+            }
+        }
 
-        const mobileMenuContent = $('.main-header .nav-outer .main-menu').html()
-        $('.mobile-menu .menu-box .menu-outer').append(mobileMenuContent)
-        $('.sticky-header .main-menu').append(mobileMenuContent)
-
-        //Hide / Show Submenu
-        $('.mobile-menu .navigation > li.dropdown2 > .dropdown2-btn').on('click', function (e) {
+        // Hide / Show Submenu
+        $(document).on('click', '.mobile-menu .navigation > li.dropdown2 > .dropdown2-btn', function (e) {
             e.preventDefault()
             const target = $(this).parent('li').children('ul')
             const args = {duration: 300}
@@ -783,8 +790,8 @@ $(() => {
             }
         })
 
-        //3rd Level Nav
-        $('.mobile-menu .navigation > li.dropdown2 > ul  > li.dropdown2 > .dropdown2-btn').on('click', function (e) {
+        // 3rd Level Nav
+        $(document).on('click', '.mobile-menu .navigation > li.dropdown2 > ul > li.dropdown2 > .dropdown2-btn', function (e) {
             e.preventDefault()
             const targetInner = $(this).parent('li').children('ul')
 
@@ -802,13 +809,15 @@ $(() => {
             }
         })
 
-        //Menu Toggle Btn
-        $('.mobile-nav-toggler').on('click', function () {
+        // Open Menu Toggle (Delegated)
+        $(document).on('click', '.mobile-nav-toggler, .mobile-button', function (e) {
+            e.preventDefault()
             $('body').addClass('mobile-menu-visible')
         })
 
-        //Menu Toggle Btn
-        $('.mobile-menu .menu-backdrop, .close-btn').on('click', function () {
+        // Close Menu Toggle (Delegated)
+        $(document).on('click', '.mobile-menu .menu-backdrop, .close-btn', function (e) {
+            e.preventDefault()
             $('body').removeClass('mobile-menu-visible')
             $('.mobile-menu .navigation > li').removeClass('open')
             $('.mobile-menu .navigation li ul').slideUp(0)
@@ -2103,21 +2112,31 @@ $(() => {
         const projectWishlistArray = projectWishlist ? projectWishlist.split(',') : []
 
         wishlistArray.forEach((id) => {
-            $(`[data-bb-toggle="add-to-wishlist"][data-type="property"][data-id="${id}"]`).addClass('active').html(`
+            const $el = $(`[data-bb-toggle="add-to-wishlist"][data-type="property"][data-id="${id}"]`).addClass('active')
+            const $span = $el.find('span')
+            $el.html(`
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z" />
                 </svg>
             `)
+            if ($span.length) {
+                $el.append($span)
+            }
         })
 
         projectWishlistArray.forEach((id) => {
-            $(`[data-bb-toggle="add-to-wishlist"][data-type="project"][data-id="${id}"]`).addClass('active').html(`
+            const $el = $(`[data-bb-toggle="add-to-wishlist"][data-type="project"][data-id="${id}"]`).addClass('active')
+            const $span = $el.find('span')
+            $el.html(`
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z" />
                 </svg>
             `)
+            if ($span.length) {
+                $el.append($span)
+            }
         })
 
         initWishlistCount()
@@ -2340,6 +2359,7 @@ $(() => {
 
             const wishlist = decodeURIComponent(getCookie(cookieName) || '')
             const wishlistArray = wishlist ? wishlist.split(',') : []
+            const $span = $currentTarget.find('span')
 
             if (wishlistArray.includes(String(id))) {
                 wishlistArray.splice(wishlistArray.indexOf(id), 1)
@@ -2349,6 +2369,9 @@ $(() => {
                         <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"></path>
                     </svg>
                 `)
+                if ($span.length) {
+                    $currentTarget.append($span)
+                }
 
                 Theme.showSuccess($currentTarget.data('remove-message'))
             } else {
@@ -2359,6 +2382,9 @@ $(() => {
                         <path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z" />
                     </svg>
                 `)
+                if ($span.length) {
+                    $currentTarget.append($span)
+                }
 
                 Theme.showSuccess($currentTarget.data('add-message'))
             }

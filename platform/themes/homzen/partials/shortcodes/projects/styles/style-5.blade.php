@@ -3,13 +3,7 @@
         {!! Theme::partial('shortcode-heading', compact('shortcode')) !!}
 
         @if ($projects->isNotEmpty())
-            <div class="row wow fadeInUpSmall" data-wow-delay=".2s" data-wow-duration="2000ms">
-                @foreach($projects as $project)
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        @include(Theme::getThemeNamespace('views.real-estate.projects.item-grid'))
-                    </div>
-                @endforeach
-            </div>
+            @include(Theme::getThemeNamespace('views.real-estate.projects.grid'), ['itemsPerRow' => 4])
         @endif
     </div>
 </section>

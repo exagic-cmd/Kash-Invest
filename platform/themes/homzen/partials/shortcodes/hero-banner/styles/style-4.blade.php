@@ -44,7 +44,7 @@
             </div>
 
             {{-- Interactive Dropdown Filter Pills --}}
-            <div class="quick-filters-row d-flex justify-content-between align-items-center mt-3 gap-2 flex-wrap">
+            <!-- <div class="quick-filters-row d-flex justify-content-between align-items-center mt-3 gap-2 flex-wrap">
                 <div class="d-flex align-items-center gap-2 overflow-x-auto no-scrollbar py-1 flex-grow-1">
                     {{-- Type Filter --}}
                     @if (count($selectedTabs) > 1)
@@ -135,7 +135,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0d6efd" viewBox="0 0 24 24" style="color: #0d6efd;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                     </button>
                 </div>
-            </div>
+            </div> -->
         </div>
     @endif
 </section>

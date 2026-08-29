@@ -7,7 +7,7 @@
     <!-- Top Row: Title, Location, Action Buttons -->
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div class="box-name">
-            <h1 class="h4 title mb-1" style="font-size: 1.25rem;">
+            <h1 class="h5 title mb-1" style="font-size: 1.25rem;">
                 {!! BaseHelper::clean($model->name) !!}
             </h1>
             @if ($model->short_address)
@@ -20,9 +20,9 @@
         <div class="action-buttons d-flex gap-2">
             @if($socialSharing)
                 <div class="dropdown">
-                    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 0.25rem 0.5rem;">
+                    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Share') }}" style="padding: 0.25rem 0.5rem;">
                         <x-core::icon name="ti ti-share" />
-                        <span>{{ __('Share') }}</span>
+                        <span class="action-btn-text d-none d-md-inline">{{ __('Share') }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end p-2">
                         <li class="d-flex gap-2">
@@ -44,7 +44,7 @@
                         data-remove-message="{{ __('Removed ":name" from wishlist successfully!', ['name' => $model->name]) }}"
                         aria-label="{{ __('Save') }}" style="padding: 0.25rem 0.5rem;">
                     <x-core::icon name="ti ti-heart" />
-                    <span>{{ __('Save') }}</span>
+                    <span class="action-btn-text d-none d-md-inline">{{ __('Save') }}</span>
                 </button>
             @endif
         </div>
@@ -54,7 +54,7 @@
     <div class="d-flex justify-content-between align-items-end mb-3">
         @if (!setting('real_estate_hide_price', false) && (($model->price_html ?? null) || ($model->formatted_price ?? null)))
             <div class="box-price">
-                <span class="fw-bold text-dark" style="font-size: 1rem;">{{ $model->price_html ?? $model->formatted_price }}</span>
+                <span class="fw-bold text-dark" style="font-size: 1.4rem;">{{ $model->price_html ?? $model->formatted_price }}</span>
             </div>
         @endif
 

@@ -90,7 +90,7 @@
                      against an MLS listing misrepresents who listed it. --}}
                 @if($brokerage)
                     <span class="dot-separator">•</span>
-                    <span title="{{ $brokerage }}">{{ $brokerage }}</span>
+                    <span title="{{ $brokerage }}">{{ Str::limit($brokerage, 30) }}</span>
                 @elseif($author && $author->exists)
                     <span class="dot-separator">•</span>
                     <span>{{ $author->name }}</span>

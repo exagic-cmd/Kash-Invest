@@ -387,3 +387,89 @@
     margin-top: 1.5rem !important;
     margin-bottom: 1.25rem !important;
 }
+
+/* ---------------------------------------------------------------------------
+ * Property / project detail header: Action buttons (Save & Share)
+ *
+ * Hide button text on mobile view and show only icons in front of title.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+    .header-property-detail .action-buttons .action-btn-text,
+    .header-property-detail .action-buttons button > span:not(.icon):not(.ti),
+    .header-property-detail .action-buttons .btn > span:not(.icon):not(.ti) {
+        display: none !important;
+    }
+
+    .listing-no-map .flat-title-page {
+        padding: 18px 0 18px !important;
+    }
+}
+
+/* --- Card Font Updates --- */
+.modern-card .modern-content .modern-specs {
+    font-size: 14.5px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 2px !important;
+}
+
+.modern-card .modern-content .modern-address {
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.3 !important;
+    margin-bottom: 1px !important;
+}
+
+.modern-card .modern-content .modern-address a {
+    font-weight: 400 !important;
+}
+
+.modern-card .modern-content .modern-meta {
+    font-size: 11px !important;
+    padding-top: 3px !important;
+}
+
+/* --- Mobile Search Bar Fix --- */
+@media (max-width: 767.98px) {
+    .wd-find-select,
+    .kash-search-bar {
+        flex-direction: row !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        padding: 4px 12px !important;
+        border-radius: 12px !important;
+        gap: 0 !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+        border: 1px solid #e5e7eb !important;
+        background: #ffffff !important;
+    }
+    .kash-search-inside-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: 32px;
+        background: transparent !important;
+        border: none !important;
+        color: #6b7280 !important;
+        font-size: 18px !important;
+        cursor: pointer;
+        padding: 0 !important;
+        z-index: 3;
+    }
+    .kash-search-input {
+        height: 42px !important;
+        padding-left: 34px !important;
+        padding-right: 8px !important;
+        font-size: 14px !important;
+        border: none !important;
+        background: transparent !important;
+    }
+    .kash-search-desktop-btn,
+    .wd-find-select > button.tf-btn.primary:not(.kash-search-inside-btn) {
+        display: none !important;
+    }
+}

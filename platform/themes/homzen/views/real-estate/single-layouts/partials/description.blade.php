@@ -458,89 +458,101 @@
     @endif
 
 @else
+    @php
+        $isUnknown = function ($value): bool {
+            if ($value === null || $value === '') {
+                return true;
+            }
+            $str = strtolower(trim(strip_tags((string) $value)));
+            return in_array($str, ['unknown', 'n/a', 'na', 'null', 'none', '-'], true);
+        };
+
+        // Only these fields belong in the overview strip.
+        // All RESO detail fields (Style, Heating, Basement, Parking …) live
+        // in the Property Details section below.
+        $overviewFields = [
+            'mls number', 'listing brokerage', 'co-listing brokerage',
+            'listed on', 'last updated',
+        ];
+
+        // Date-valued custom fields render as "Sep 5, 2025 (340 days ago)".
+        $dateCustomFields = ['listed on', 'last updated'];
+
+        $renderCustomFieldValue = function ($field) use ($dateCustomFields) {
+            if (! in_array(strtolower(trim((string) $field->name)), $dateCustomFields, true)) {
+                return BaseHelper::clean($field->value);
+            }
+
+            try {
+                $date = \Illuminate\Support\Carbon::parse($field->value);
+            } catch (\Throwable) {
+                return BaseHelper::clean($field->value);
+            }
+
+            $days = (int) abs($date->copy()->startOfDay()->diffInDays(\Illuminate\Support\Carbon::now()->startOfDay()));
+
+            $relative = match (true) {
+                $days === 0 => __('today'),
+                $days === 1 => __('1 day ago'),
+                default => __(':count days ago', ['count' => number_format($days)]),
+            };
+
+            return e($date->format('M j, Y'))
+                . ' <span class="fw-normal text-muted">(' . e($relative) . ')</span>';
+        };
+    @endphp
+
     <!-- Original Property Overview (for Properties) -->
     <div @class(['single-property-overview', $class ?? null])>
         <div class="h7 title fw-7 mb-3">{{ __('Overview') }}</div>
-        <div class="row row-cols-1 row-cols-md-2 g-x-4 g-y-2" style="font-size: 0.875rem;">
-            <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                <span class="fw-semibold text-muted">{{ __('Property ID:') }}</span>
-                <span class="fw-bold text-dark">{{ $model->unique_id ?: $model->getKey() }}</span>
-            </div>
+        <div class="row row-cols-1 row-cols-md-2" style="font-size: 0.95rem;">
+            @if ($model->unique_id && !$isUnknown($model->unique_id))
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Property ID:') }}</span>
+                    <span class="fw-normal text-dark">{{ $model->unique_id }}</span>
+                </div>
+            @endif
             @if ($model->categories->isNotEmpty())
-                <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <span class="fw-semibold text-muted{{ $model->categories->isNotEmpty() ? ' w-50' : '' }}">{{ __('Type:') }}</span>
-                    <span class="fw-bold text-dark">
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Type:') }}</span>
+                    <span class="fw-normal text-dark">
                         @foreach ($model->categories as $category)
                             <a href="{{ $category->url }}" class="text-dark">{!! BaseHelper::clean($category->name) !!}</a>@if (!$loop->last),&nbsp;@endif
                         @endforeach
                     </span>
                 </div>
             @endif
-            @if (($model->number_bedroom ?? null))
-                <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <span class="fw-semibold text-muted">{{ __('Bedrooms:') }}</span>
-                    <span class="fw-bold text-dark">{{ fmod($model->number_bedroom, 1) == 0 ? number_format($model->number_bedroom) : $model->number_bedroom }}</span>
+            @if (($model->number_bedroom ?? null) && !$isUnknown($model->number_bedroom))
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Bedrooms:') }}</span>
+                    <span class="fw-normal text-dark">{{ fmod($model->number_bedroom, 1) == 0 ? number_format($model->number_bedroom) : $model->number_bedroom }}</span>
                 </div>
             @endif
-            @if (($model->number_bathroom ?? null))
-                <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <span class="fw-semibold text-muted">{{ __('Bathrooms:') }}</span>
-                    <span class="fw-bold text-dark">{{ fmod($model->number_bathroom, 1) == 0 ? number_format($model->number_bathroom) : $model->number_bathroom }}</span>
+            @if (($model->number_bathroom ?? null) && !$isUnknown($model->number_bathroom))
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Bathrooms:') }}</span>
+                    <span class="fw-normal text-dark">{{ fmod($model->number_bathroom, 1) == 0 ? number_format($model->number_bathroom) : $model->number_bathroom }}</span>
                 </div>
             @endif
-            @if (($model->number_floor ?? null))
-                <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <span class="fw-semibold text-muted">{{ __('Floors:') }}</span>
-                    <span class="fw-bold text-dark">{{ number_format($model->number_floor) }}</span>
+            @if (($model->number_floor ?? null) && !$isUnknown($model->number_floor))
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Floors:') }}</span>
+                    <span class="fw-normal text-dark">{{ number_format($model->number_floor) }}</span>
                 </div>
             @endif
-            @if (($model->square ?? null))
-                <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <span class="fw-semibold text-muted">{{ __('Square:') }}</span>
-                    <span class="fw-bold text-dark">{{ $model->square_text }}</span>
+            @if (($model->square ?? null) && !$isUnknown($model->square))
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Square:') }}</span>
+                    <span class="fw-normal text-dark">{{ $model->square_text }}</span>
                 </div>
             @endif
-            @php
-                // Only these fields belong in the overview strip.
-                // All RESO detail fields (Style, Heating, Basement, Parking …) live
-                // in the Property Details section below.
-                $overviewFields = [
-                    'mls number', 'listing brokerage', 'co-listing brokerage',
-                    'listed on', 'last updated',
-                ];
-
-                // Date-valued custom fields render as "Sep 5, 2025 (340 days ago)".
-                $dateCustomFields = ['listed on', 'last updated'];
-
-                $renderCustomFieldValue = function ($field) use ($dateCustomFields) {
-                    if (! in_array(strtolower(trim((string) $field->name)), $dateCustomFields, true)) {
-                        return BaseHelper::clean($field->value);
-                    }
-
-                    try {
-                        $date = \Illuminate\Support\Carbon::parse($field->value);
-                    } catch (\Throwable) {
-                        return BaseHelper::clean($field->value);
-                    }
-
-                    $days = (int) abs($date->copy()->startOfDay()->diffInDays(\Illuminate\Support\Carbon::now()->startOfDay()));
-
-                    $relative = match (true) {
-                        $days === 0 => __('today'),
-                        $days === 1 => __('1 day ago'),
-                        default => __(':count days ago', ['count' => number_format($days)]),
-                    };
-
-                    return e($date->format('M j, Y'))
-                        . ' <span class="fw-normal text-muted">(' . e($relative) . ')</span>';
-                };
-            @endphp
             @foreach ($model->customFields as $customField)
                 @continue(! $customField->value)
+                @continue($isUnknown($customField->value))
                 @continue(! in_array(strtolower(trim($customField->name)), $overviewFields, true))
-                <div class="col d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <span class="fw-semibold text-muted">{!! BaseHelper::clean($customField->name) !!}:</span>
-                    <span class="fw-bold text-dark">{!! $renderCustomFieldValue($customField) !!}</span>
+                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                    <span class="fw-bold text-dark flex-shrink-0">{!! BaseHelper::clean($customField->name) !!}:</span>
+                    <span class="fw-normal text-dark">{!! $renderCustomFieldValue($customField) !!}</span>
                 </div>
             @endforeach
         </div>
