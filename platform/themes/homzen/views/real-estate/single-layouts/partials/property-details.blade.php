@@ -163,9 +163,11 @@
         }
     }
 
-    // Split sections for progressive disclosure if many sections exist
-    $visibleSections = array_slice($activeSections, 0, 4);
-    $hiddenSections  = array_slice($activeSections, 4);
+    // By default show 1st fact section (Property), others on "Load More"
+    $firstSection = $activeSections[0] ?? null;
+    $extraCol1    = array_slice($activeSections, 1, 2); // e.g. Inside, Building (left col)
+    $extraCol2    = array_slice($activeSections, 3);    // e.g. Parking, Financial, Land (right col)
+    $hasExtra     = count($activeSections) > 1;
 
     $hasRooms = $roomFields->isNotEmpty();
 @endphp
@@ -174,44 +176,63 @@
 <div @class(['single-property-element', 'property-details-reso', $class ?? null])>
     <div class="h7 title fw-7 mb-4">{{ __('Facts and Features') }}</div>
 
-    {{-- Always-visible sections in 2 columns --}}
-    <div class="row row-cols-1 row-cols-md-2">
-        @foreach ($visibleSections as $section)
-            <div class="col reso-section-block">
-                <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $section['title'] }}</h5>
-                <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
-                    @foreach ($section['rows'] as $row)
-                        <div class="reso-item d-flex align-items-baseline gap-2">
-                            <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
-                            <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
+    {{-- 2 Columns: 1st fact visible by default, other facts loaded on demand --}}
+    <div class="row g-4 reso-two-columns">
+        {{-- Left Column: 1st fact always visible, remaining left facts collapsible --}}
+        <div class="col-12 col-md-6 d-flex flex-column gap-4 reso-col-left">
+            @if ($firstSection)
+                <div class="reso-section-block">
+                    <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $firstSection['title'] }}</h5>
+                    <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
+                        @foreach ($firstSection['rows'] as $row)
+                            <div class="reso-item d-flex align-items-baseline gap-2">
+                                <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
+                                <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if (!empty($extraCol1))
+                <div id="reso-extra-left" class="d-flex flex-column gap-4" style="display: none !important;">
+                    @foreach ($extraCol1 as $section)
+                        <div class="reso-section-block">
+                            <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $section['title'] }}</h5>
+                            <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
+                                @foreach ($section['rows'] as $row)
+                                    <div class="reso-item d-flex align-items-baseline gap-2">
+                                        <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
+                                        <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @endforeach
                 </div>
-            </div>
-        @endforeach
-    </div>
-
-    {{-- Collapsible sections --}}
-    @if (!empty($hiddenSections))
-        <div class="reso-extra-sections mt-4" id="reso-extra" style="display:none;">
-            <div class="row row-cols-1 row-cols-md-2">
-                @foreach ($hiddenSections as $section)
-                    <div class="col reso-section-block">
-                        <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $section['title'] }}</h5>
-                        <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
-                            @foreach ($section['rows'] as $row)
-                                <div class="reso-item d-flex align-items-baseline gap-2">
-                                    <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
-                                    <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endforeach
-            </div>
+            @endif
         </div>
 
-        {{-- Load more button --}}
+        {{-- Right Column: Collapsible extra right facts --}}
+        <div class="col-12 col-md-6 d-flex flex-column gap-4 reso-col-right" id="reso-col-right" style="display: none !important;">
+            @foreach ($extraCol2 as $section)
+                <div class="reso-section-block">
+                    <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $section['title'] }}</h5>
+                    <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
+                        @foreach ($section['rows'] as $row)
+                            <div class="reso-item d-flex align-items-baseline gap-2">
+                                <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
+                                <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- Load more button --}}
+    @if ($hasExtra)
         <div class="reso-toggle-wrap mt-3 pt-3" id="reso-toggle-wrap">
             <button type="button" class="reso-toggle-btn" id="reso-load-more" onclick="resoToggle()">
                 <x-core::icon name="ti ti-chevron-down" class="reso-toggle-icon" />
@@ -226,7 +247,7 @@
 
     {{-- Rooms section (if present) --}}
     @if ($hasRooms)
-        <div class="reso-section-block mt-4">
+        <div class="reso-rooms-block mt-4">
             <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ __('Rooms') }}</h5>
             <div class="reso-rooms-header d-flex justify-content-between border-bottom pb-2 mb-2 fw-bold text-dark" style="font-size: 0.9rem;">
                 <span style="flex: 2;">{{ __('Room') }}</span>
@@ -253,9 +274,9 @@
 
 <style>
 .property-details-reso { font-size: 0.95rem; }
-.reso-section-block { margin-top: 1.5rem; }
 .reso-item { line-height: 1.5; }
-.reso-toggle-wrap { text-align: center; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; }
+.reso-section-block { width: 100%; }
+.reso-toggle-wrap { text-align: center; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; }
 .reso-toggle-btn {
     background: none;
     border: none;
@@ -276,20 +297,25 @@
 
 <script>
 function resoToggle() {
-    var extra    = document.getElementById('reso-extra');
-    var btnMore  = document.getElementById('reso-load-more');
-    var btnLess  = document.getElementById('reso-see-less');
-    var expanded = extra.style.display !== 'none';
+    var extraLeft = document.getElementById('reso-extra-left');
+    var colRight  = document.getElementById('reso-col-right');
+    var btnMore   = document.getElementById('reso-load-more');
+    var btnLess   = document.getElementById('reso-see-less');
 
-    if (expanded) {
-        extra.style.display   = 'none';
-        btnMore.style.display = '';
-        btnLess.style.display = 'none';
-        document.querySelector('.property-details-reso').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var isHidden = (colRight && (colRight.style.display === 'none' || colRight.style.getPropertyValue('display') === 'none')) ||
+                   (extraLeft && (extraLeft.style.display === 'none' || extraLeft.style.getPropertyValue('display') === 'none'));
+
+    if (isHidden) {
+        if (extraLeft) extraLeft.style.setProperty('display', 'flex', 'important');
+        if (colRight)  colRight.style.setProperty('display', 'flex', 'important');
+        if (btnMore)   btnMore.style.display = 'none';
+        if (btnLess)   btnLess.style.display = 'inline-flex';
     } else {
-        extra.style.display   = '';
-        btnMore.style.display = 'none';
-        btnLess.style.display = '';
+        if (extraLeft) extraLeft.style.setProperty('display', 'none', 'important');
+        if (colRight)  colRight.style.setProperty('display', 'none', 'important');
+        if (btnMore)   btnMore.style.display = 'inline-flex';
+        if (btnLess)   btnLess.style.display = 'none';
+        document.querySelector('.property-details-reso').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 </script>

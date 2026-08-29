@@ -4073,7 +4073,22 @@ h6, .h6 {
     color: #9299a0;
 }
 
-.reso-section-block {
-    margin-top: 1.5rem !important;
+.reso-sections-grid {
+    column-count: 1;
+    column-gap: 2.5rem;
 }
+@media (min-width: 768px) {
+    .reso-sections-grid {
+        column-count: 2;
+    }
+}
+.reso-section-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    margin-bottom: 1.75rem !important;
+    display: inline-block !important;
+    width: 100% !important;
+}
+
 
