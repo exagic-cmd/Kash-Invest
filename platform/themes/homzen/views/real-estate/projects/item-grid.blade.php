@@ -38,9 +38,11 @@
         
         <div class="content modern-content">
             <div class="price-row mb-2">
-                @if (!setting('real_estate_hide_price', false))
-                    <div class="modern-price">{{ $project->formatted_price }}</div>
-                @endif
+                <div class="modern-price">
+                    <a href="{{ $project->url }}" class="line-clamp-1" title="{{ $project->name }}">
+                        {!! BaseHelper::clean($project->name) !!}
+                    </a>
+                </div>
                 
                 @if (RealEstateHelper::isEnabledWishlist())
                     <button type="button" class="modern-wishlist-btn"
@@ -74,13 +76,13 @@
                 @endif
             </div>
 
-            <div class="modern-address mb-1">
-                <a href="{{ $project->url }}" class="line-clamp-1" title="{{ $project->name }}">
-                    {!! BaseHelper::clean($project->name) !!}
-                </a>
-            </div>
+            @if (!setting('real_estate_hide_price', false))
+                <div class="modern-address mb-1">
+                    {{ $project->formatted_price }}
+                </div>
+            @endif
 
-            @php($cardLocation = $project->short_address ?: trim(implode(', ', array_filter([$project->city_name ?? null, $project->state_name ?? null]))))
+            @php($cardLocation = $project->location ?: ($project->short_address ?: trim(implode(', ', array_filter([$project->city_name ?? null, $project->state_name ?? null])))))
             @if ($cardLocation)
                 <div class="modern-location">
                     <i class="icon icon-mapPin"></i>
