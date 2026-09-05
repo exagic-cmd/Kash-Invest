@@ -132,8 +132,8 @@
     }
 @endphp
 
-<div @class(['property-item homeya-box modern-card', $class]) @if ($property->latitude && $property->longitude) data-lat="{{ $property->latitude }}" data-lng="{{ $property->longitude }}" @endif>
-    <div class="archive-top">
+<div @class(['property-item homeya-box modern-card w-100', $class]) @if ($property->latitude && $property->longitude) data-lat="{{ $property->latitude }}" data-lng="{{ $property->longitude }}" @endif>
+    <div class="archive-top h-100">
         <a href="{{ $property->url }}" class="images-group">
             <div class="images-style">
                 @include(Theme::getThemeNamespace('partials.real-estate.card-image-slider'), [
@@ -250,10 +250,49 @@
 </div>
 
 <style>
+.property-item.modern-card,
+.homeya-box.modern-card,
+.modern-card {
+    height: 100% !important;
+    min-height: 410px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+    margin-bottom: 0 !important;
+}
+.modern-card .archive-top {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+}
 .modern-card .images-group {
     position: relative;
     display: block;
     overflow: hidden;
+    flex: 0 0 215px !important;
+    height: 215px !important;
+    max-height: 215px !important;
+    min-height: 0 !important;
+}
+.modern-card .images-style {
+    aspect-ratio: auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+}
+.modern-card .images-style img {
+    height: 100% !important;
+    width: 100% !important;
+    object-fit: cover !important;
+}
+.modern-card .modern-content {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+    padding: 12px 14px !important;
+    min-height: 185px !important;
 }
 .modern-card .modern-overlays {
     position: absolute;
@@ -299,16 +338,25 @@
     color: #ffffff;
     font-weight: 700;
 }
+.modern-card .modern-content .price-row {
+    margin-bottom: 4px !important;
+}
+.modern-card .modern-content .modern-price {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+}
 .modern-card .modern-specs-container {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    margin-bottom: 6px !important;
 }
 .modern-card .modern-specs-row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 5px;
     font-size: 13px;
     line-height: 1.35;
 }
@@ -325,8 +373,27 @@
     color: #cbd5e1;
     font-size: 10px;
 }
+.modern-card .modern-address {
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
+    margin-bottom: 6px !important;
+}
+.modern-card .modern-address a {
+    color: #4b5563;
+    display: block;
+}
 .modern-card .modern-meta {
-    padding-bottom: 2px;
+    margin-top: auto !important;
+    padding-top: 4px !important;
+    font-size: 11px !important;
+    color: #9ca3af !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>
 

@@ -185,7 +185,7 @@
                     <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $firstSection['title'] }}</h5>
                     <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
                         @foreach ($firstSection['rows'] as $row)
-                            <div class="reso-item d-flex align-items-baseline gap-2">
+                            <div class="reso-item align-items-baseline gap-2">
                                 <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
                                 <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
                             </div>
@@ -201,7 +201,7 @@
                             <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $section['title'] }}</h5>
                             <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
                                 @foreach ($section['rows'] as $row)
-                                    <div class="reso-item d-flex align-items-baseline gap-2">
+                                    <div class="reso-item align-items-baseline gap-2">
                                         <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
                                         <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
                                     </div>
@@ -220,7 +220,7 @@
                     <h5 class="fw-bold text-dark mb-3" style="font-size: 1.15rem;">{{ $section['title'] }}</h5>
                     <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
                         @foreach ($section['rows'] as $row)
-                            <div class="reso-item d-flex align-items-baseline gap-2">
+                            <div class="reso-item align-items-baseline gap-2">
                                 <span class="fw-bold text-dark flex-shrink-0">{{ $row['label'] }}:</span>
                                 <span class="fw-normal text-dark text-break">{{ $row['value'] }}</span>
                             </div>

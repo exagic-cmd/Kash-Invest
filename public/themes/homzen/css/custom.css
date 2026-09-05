@@ -164,8 +164,8 @@
  * After editing run:  php artisan cms:theme:assets:publish
  * ------------------------------------------------------------------------- */
 :root {
-    --kash-card-height: 380px;       /* total card height  */
-    --kash-card-image-height: 219px; /* photo area height  */
+    --kash-card-height: 410px;       /* total card height  */
+    --kash-card-image-height: 215px; /* photo area height  */
 }
 
 .property-item.modern-card,
