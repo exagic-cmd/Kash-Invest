@@ -138,12 +138,13 @@
                 @endif
             </div>
 
-            @if (!setting('real_estate_hide_price', false) && $project->formatted_price)
+            @if (!setting('real_estate_hide_price', false))
                 <div class="modern-address mb-1">
                     {{ $project->formatted_price }}
                 </div>
             @endif
 
+            @php($cardLocation = $project->location ?: ($project->short_address ?: trim(implode(', ', array_filter([$project->city_name ?? null, $project->state_name ?? null])))))
             @if ($cardLocation)
                 <div class="modern-location">
                     <i class="icon icon-mapPin"></i>
