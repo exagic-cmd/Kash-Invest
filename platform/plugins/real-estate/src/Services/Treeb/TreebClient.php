@@ -124,6 +124,48 @@ class TreebClient
     }
 
     /**
+     * Active open houses for one listing, ordered chronologically.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function openHousesFor(string $listingKey): array
+    {
+        $filter = sprintf(
+            "ListingKey eq '%s' and OpenHouseStatus eq 'Active'",
+            $this->escape($listingKey)
+        );
+
+        $body = $this->request($this->baseUrl . '/OpenHouse', [
+            '$filter' => $filter,
+            '$orderby' => 'OpenHouseDate asc,OpenHouseStartTime asc',
+            '$top' => 20,
+        ]);
+
+        return Arr::get($body, 'value', []);
+    }
+
+    /**
+     * Feed-wide open house page.
+     *
+     * @return array<string, mixed>
+     */
+    public function openHouses(int $top = 100, int $skip = 0, ?string $filter = null): array
+    {
+        $query = [
+            '$top' => $top,
+            '$skip' => $skip,
+            '$orderby' => 'OpenHouseDate asc,OpenHouseStartTime asc',
+        ];
+
+        if ($filter) {
+            $query['$filter'] = $filter;
+        }
+
+        return $this->request($this->baseUrl . '/OpenHouse', $query);
+    }
+
+
+    /**
      * Cheapest possible credential check — asks for zero rows, just the count.
      * Used by the sync job so a bad token fails in one call instead of mid-run.
      */

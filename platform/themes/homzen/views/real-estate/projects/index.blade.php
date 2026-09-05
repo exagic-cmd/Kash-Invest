@@ -16,7 +16,7 @@
     @include(Theme::getThemeNamespace("views.real-estate.projects.$itemLayout"), compact('itemsPerRow'))
 @else
     <div class="alert alert-warning" role="alert">
-        {{ __('No projects found.') }}
+        {{ __('No new homes found.') }}
     </div>
 @endif
 

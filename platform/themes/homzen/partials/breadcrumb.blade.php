@@ -25,7 +25,18 @@
                 @endforeach
             </ul>
             @if ($breadcrumbStyle !== 'without-title')
-                <h1 class="text-center page-title mt-3 mb-0" @style(["color: $textColor" => $textColor && $textColor != 'transparent'])>{!! BaseHelper::clean(Theme::get('pageTitle') ? Theme::get('pageTitle') : SeoHelper::getTitleOnly()) !!}</h1>
+                @php
+                    $crumbs = Theme::breadcrumb()->getCrumbs();
+                    $lastCrumb = end($crumbs);
+                    $pageTitle = Theme::get('pageTitle');
+                    if (! $pageTitle || in_array($pageTitle, ['Projects', __('Projects'), trans('plugins/real-estate::real-estate.projects')])) {
+                        if ($lastCrumb && ! empty($lastCrumb['label']) && $lastCrumb['label'] !== 'Home') {
+                            $pageTitle = $lastCrumb['label'];
+                        }
+                    }
+                    $pageTitle = $pageTitle ?: (Theme::get('pageTitle') ?: SeoHelper::getTitleOnly());
+                @endphp
+                <h1 class="text-center page-title mt-3 mb-0" @style(["color: $textColor" => $textColor && $textColor != 'transparent'])>{!! BaseHelper::clean($pageTitle) !!}</h1>
             @endif
         </div>
     </section>

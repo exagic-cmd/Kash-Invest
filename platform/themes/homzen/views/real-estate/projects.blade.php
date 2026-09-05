@@ -1,10 +1,22 @@
 @php
     Theme::layout('full-width');
-    Theme::set('pageTitle', __('Projects'));
+
+    $crumbs = Theme::breadcrumb()->getCrumbs();
+    $lastCrumb = end($crumbs);
+    $pageTitle = ($lastCrumb && ! empty($lastCrumb['label']) && $lastCrumb['label'] !== 'Home') ? $lastCrumb['label'] : null;
+    if (! $pageTitle) {
+        $pageTitle = SeoHelper::getTitleOnly();
+    }
+    if (! $pageTitle || in_array($pageTitle, ['Projects', __('Projects'), trans('plugins/real-estate::real-estate.projects')])) {
+        $pageTitle = __('New Homes');
+    }
+
+    Theme::set('pageTitle', $pageTitle);
+    SeoHelper::setTitle($pageTitle);
 @endphp
 
 @if (Theme::get('breadcrumbEnabled', 'yes') !== 'yes' || Theme::get('breadcrumbStyle', 'default') === 'without-title')
-    <h1 class="d-none">{{ __('Projects') }}</h1>
+    <h1 class="d-none">{{ $pageTitle }}</h1>
 @endif
 
 @include(Theme::getThemeNamespace('views.real-estate.partials.listing'), [

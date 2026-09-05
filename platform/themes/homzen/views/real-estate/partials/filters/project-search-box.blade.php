@@ -23,7 +23,7 @@
                     @include(Theme::getThemeNamespace('views.real-estate.partials.filters.features'))
 
                     <div class="form-style mt-5">
-                        <button type="submit" class="tf-btn primary">{{ __('Find Projects') }}</button>
+                        <button type="submit" class="tf-btn primary">{{ __('Find New Homes') }}</button>
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                     </div>
                     @include(Theme::getThemeNamespace('views.real-estate.partials.filters.features'))
                 </div>
-                <button type="submit" class="tf-btn primary form-search-box-offcanvas-button mt-5">{{ __('Find Projects') }}</button>
+                <button type="submit" class="tf-btn primary form-search-box-offcanvas-button mt-5">{{ __('Find New Homes') }}</button>
             </div>
         </div>
     </div>

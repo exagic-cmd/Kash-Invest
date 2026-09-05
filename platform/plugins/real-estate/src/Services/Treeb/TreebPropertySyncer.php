@@ -19,12 +19,14 @@ use Botble\RealEstate\Models\Category;
 use Botble\RealEstate\Models\Currency;
 use Botble\RealEstate\Models\Feature;
 use Botble\RealEstate\Models\Property;
+use Botble\RealEstate\Models\PropertyOpenHouse;
 use Botble\RealEstate\Models\ProjectSyncLog;
 use Botble\Slug\Facades\SlugHelper;
 use Botble\Slug\Models\Slug;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -256,6 +258,31 @@ class TreebPropertySyncer
     }
 
     /**
+     * Import or refresh a single listing directly by its ListingKey from TRREB API.
+     */
+    public function syncSingleListing(string $listingKey): ?Property
+    {
+        $listingKey = trim($listingKey);
+        if ($listingKey === '') {
+            return null;
+        }
+
+        $response = $this->client->properties(top: 1, filter: sprintf("ListingKey eq '%s'", str_replace("'", "''", $listingKey)));
+        $listing = Arr::get($response, 'value.0');
+
+        if (! $listing) {
+            return null;
+        }
+
+        $this->importListing($listing);
+
+        return Property::query()
+            ->where('source', self::SOURCE)
+            ->where('unique_id', $listingKey)
+            ->first();
+    }
+
+    /**
      * @param  array<string, mixed>  $listing
      */
     protected function importListing(array $listing): void
@@ -314,9 +341,15 @@ class TreebPropertySyncer
             $property->customFields()->create($field);
         }
 
+        try {
+            $this->syncOpenHousesForProperty($property);
+        } catch (\Throwable) {
+            // Non-fatal: open house sync failure shouldn't abort listing save
+        }
+
         $customFieldChanges = $isNew ? [] : $this->diffCustomFields($oldCustomFields, $newCustomFields);
 
-        if ($isNew && SlugHelper::isSupportedModel(Property::class)) {
+        if (($isNew || ! $property->slugable()->exists()) && SlugHelper::isSupportedModel(Property::class)) {
             $this->createSlug($property, $name, $listingKey);
         }
 
@@ -1026,6 +1059,8 @@ class TreebPropertySyncer
 
             // ── Interior ─────────────────────────────────────────────────────
             $this->customField('Bedrooms', Arr::get($listing, 'BedroomsTotal')),
+            $this->customField('Bedrooms Above Grade', Arr::get($listing, 'BedroomsAboveGrade')),
+            $this->customField('Bedrooms Below Grade', Arr::get($listing, 'BedroomsBelowGrade')),
             $this->customField('Total Bathrooms', Arr::get($listing, 'BathroomsTotalInteger')),
             $this->customField('Cooling', Arr::get($listing, 'Cooling')),
             $this->customField('Heating', $this->resolveHeating($listing)),
@@ -1069,6 +1104,7 @@ class TreebPropertySyncer
             $this->customField('Lot Width', Arr::get($listing, 'LotWidth')),
             $this->customField('Lot Depth', Arr::get($listing, 'LotDepth')),
             $this->customField('Lot Size', Arr::get($listing, 'LotSizeArea')),
+            $this->customField('Lot Size Units', Arr::get($listing, 'LotSizeUnits') ?: Arr::get($listing, 'LotSizeAreaUnits')),
             $this->customField('Lot Size Source', Arr::get($listing, 'LotSizeSource')),
             $this->customField('Lot Features', Arr::get($listing, 'LotFeatures')),
             $this->customField('Direction Faces', Arr::get($listing, 'DirectionFaces')),
@@ -1448,5 +1484,78 @@ class TreebPropertySyncer
     protected function defaultAuthorId(): ?int
     {
         return $this->defaultAuthorId ??= User::query()->orderBy('id')->value('id');
+    }
+
+    /**
+     * Fetch active open houses from TRREB API for a property and sync into re_property_open_houses.
+     * Can be called during full sync or on-demand when viewing a property.
+     *
+     * @param  Property  $property
+     * @param  array<int, array<string, mixed>>|null  $openHouses
+     * @return Collection<int, PropertyOpenHouse>
+     */
+    public function syncOpenHousesForProperty(Property $property, ?array $openHouses = null): Collection
+    {
+        $listingKey = $property->unique_id;
+        if (! $listingKey) {
+            return collect();
+        }
+
+        if ($openHouses === null) {
+            try {
+                $openHouses = $this->client->openHousesFor($listingKey);
+            } catch (\Throwable) {
+                $openHouses = [];
+            }
+        }
+
+        // Clear existing open houses for this property before refreshing
+        $property->openHouses()->delete();
+
+        $today = Carbon::now('America/Toronto')->toDateString();
+
+        foreach ($openHouses as $oh) {
+            $date = Arr::get($oh, 'OpenHouseDate');
+            if (! $date) {
+                continue;
+            }
+
+            $startTime = Arr::get($oh, 'OpenHouseStartTime');
+            $endTime = Arr::get($oh, 'OpenHouseEndTime');
+            $timeRange = null;
+
+            if ($startTime && $endTime) {
+                try {
+                    $start = Carbon::parse($startTime)->timezone('America/Toronto');
+                    $end = Carbon::parse($endTime)->timezone('America/Toronto');
+                    $startFmt = $start->minute === 0 ? $start->format('g') : $start->format('g:i');
+                    $endFmt = $end->minute === 0 ? $end->format('g a') : $end->format('g:i a');
+                    $timeRange = sprintf('%s-%s', $startFmt, $endFmt);
+                } catch (\Throwable) {
+                    $timeRange = null;
+                }
+            }
+
+            PropertyOpenHouse::query()->create([
+                'property_id' => $property->getKey(),
+                'listing_key' => $listingKey,
+                'open_house_key' => Arr::get($oh, 'OpenHouseKey'),
+                'open_house_date' => $date,
+                'start_time' => $startTime ? Carbon::parse($startTime) : null,
+                'end_time' => $endTime ? Carbon::parse($endTime) : null,
+                'time_range' => $timeRange,
+                'format' => Arr::get($oh, 'OpenHouseFormat', 'In Person'),
+                'type' => Arr::get($oh, 'OpenHouseType', 'Public'),
+                'status' => Arr::get($oh, 'OpenHouseStatus', 'Active'),
+                'url' => Arr::get($oh, 'OpenHouseURL'),
+            ]);
+        }
+
+        return $property->openHouses()
+            ->where('open_house_date', '>=', $today)
+            ->where('status', 'Active')
+            ->orderBy('open_house_date')
+            ->orderBy('start_time')
+            ->get();
     }
 }

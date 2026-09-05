@@ -15,6 +15,23 @@ class SyncTreebPropertiesCommand extends Command
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
 
+        $listingKey = $this->option('listing-key');
+        if ($listingKey) {
+            $this->components->info(sprintf('Fetching listing %s directly from TRREB API...', $listingKey));
+            $syncer = app(\Botble\RealEstate\Services\Treeb\TreebPropertySyncer::class);
+            $property = $syncer->syncSingleListing($listingKey);
+
+            if ($property) {
+                $this->components->success(sprintf('Listing %s (%s) imported successfully!', $listingKey, $property->name));
+
+                return self::SUCCESS;
+            }
+
+            $this->components->error(sprintf('Listing %s could not be found or imported from TRREB API.', $listingKey));
+
+            return self::FAILURE;
+        }
+
         $trigger = $this->option('trigger') === 'cron' ? 'cron' : 'manual';
         $job = new SyncTreebPropertiesJob($trigger);
 
@@ -44,6 +61,13 @@ class SyncTreebPropertiesCommand extends Command
 
     protected function configure(): void
     {
+        $this->addOption(
+            'listing-key',
+            'k',
+            InputOption::VALUE_REQUIRED,
+            'Sync a specific listing by its ListingKey (e.g. E13060676).'
+        );
+
         $this->addOption(
             'trigger',
             null,

@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
@@ -63,6 +64,7 @@ class Property extends BaseModel
         'longitude',
         'zip_code',
         'unique_id',
+        'source',
         'private_notes',
         'floor_plans',
         'reject_reason',
@@ -92,11 +94,54 @@ class Property extends BaseModel
         static::deleting(function (Property $property): void {
             $property->categories()->detach();
             $property->customFields()->delete();
+            $property->openHouses()->delete();
             $property->reviews()->delete();
             $property->features()->detach();
             $property->facilities()->detach();
             $property->metadata()->delete();
         });
+    }
+
+    public function openHouses(): HasMany
+    {
+        return $this->hasMany(PropertyOpenHouse::class, 'property_id');
+    }
+
+    /**
+     * Retrieve upcoming active open houses for this property.
+     * If this property is from TRREB (source = treeb) and has no open house records
+     * yet in the database, it queries TRREB API on-demand to fetch and cache them.
+     */
+    protected function upcomingOpenHouses(): Attribute
+    {
+        return Attribute::get(function () {
+            $today = Carbon::now('America/Toronto')->toDateString();
+
+            $cached = $this->openHouses()
+                ->where('open_house_date', '>=', $today)
+                ->where('status', 'Active')
+                ->orderBy('open_house_date')
+                ->orderBy('start_time')
+                ->get();
+
+            // If records already exist or this property is not a TRREB listing, return them
+            if ($cached->isNotEmpty() || $this->source !== 'treeb' || ! $this->unique_id) {
+                return $cached;
+            }
+
+            // On-demand fetch fallback: check TRREB API if not available in existed data
+            try {
+                $syncer = app(\Botble\RealEstate\Services\Treeb\TreebPropertySyncer::class);
+                return $syncer->syncOpenHousesForProperty($this);
+            } catch (\Throwable) {
+                return collect();
+            }
+        });
+    }
+
+    protected function hasUpcomingOpenHouse(): Attribute
+    {
+        return Attribute::get(fn () => $this->upcoming_open_houses->isNotEmpty());
     }
 
     public function project(): BelongsTo

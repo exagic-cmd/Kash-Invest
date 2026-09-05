@@ -66,6 +66,7 @@
                     <div class="widget-box-header-single">
                         @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.header'), ['model' => $model])
                         @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.description'), ['model' => $model])
+                        @include(Theme::getThemeNamespace('views.real-estate.single-layouts.partials.open-houses'), ['class' => 'widget-box-single mt-4', 'model' => $model])
                     </div>
                 </div>
                 {!! apply_filters('before_single_content_detail', null, $model) !!}
