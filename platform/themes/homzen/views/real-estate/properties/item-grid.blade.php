@@ -254,7 +254,7 @@
 .homeya-box.modern-card,
 .modern-card {
     height: 100% !important;
-    min-height: 410px !important;
+    min-height: 365px !important;
     display: flex !important;
     flex-direction: column !important;
     border-radius: 12px;
@@ -272,9 +272,9 @@
     position: relative;
     display: block;
     overflow: hidden;
-    flex: 0 0 215px !important;
-    height: 215px !important;
-    max-height: 215px !important;
+    flex: 0 0 210px !important;
+    height: 210px !important;
+    max-height: 210px !important;
     min-height: 0 !important;
 }
 .modern-card .images-style {
@@ -291,8 +291,8 @@
     display: flex !important;
     flex-direction: column !important;
     flex-grow: 1 !important;
-    padding: 12px 14px !important;
-    min-height: 185px !important;
+    padding: 12px 14px 12px 14px !important;
+    min-height: auto !important;
 }
 .modern-card .modern-overlays {
     position: absolute;
@@ -339,7 +339,7 @@
     font-weight: 700;
 }
 .modern-card .modern-content .price-row {
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
 }
 .modern-card .modern-content .modern-price {
     font-size: 18px !important;
@@ -349,16 +349,16 @@
 .modern-card .modern-specs-container {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-bottom: 6px !important;
+    gap: 2px;
+    margin-bottom: 4px !important;
 }
 .modern-card .modern-specs-row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 5px;
-    font-size: 13px;
-    line-height: 1.35;
+    font-size: 12.5px;
+    line-height: 1.3;
 }
 .modern-card .modern-specs-row-1 {
     font-weight: 600;
@@ -367,7 +367,7 @@
 .modern-card .modern-specs-row-2 {
     font-weight: 500;
     color: #64748b;
-    font-size: 12px;
+    font-size: 11.5px;
 }
 .modern-card .spec-dot {
     color: #cbd5e1;
@@ -376,8 +376,8 @@
 .modern-card .modern-address {
     font-size: 12px !important;
     font-weight: 400 !important;
-    line-height: 1.35 !important;
-    margin-bottom: 6px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
 }
 .modern-card .modern-address a {
     color: #4b5563;
@@ -385,7 +385,8 @@
 }
 .modern-card .modern-meta {
     margin-top: auto !important;
-    padding-top: 4px !important;
+    margin-bottom: 0 !important;
+    padding-top: 2px !important;
     font-size: 11px !important;
     color: #9ca3af !important;
     display: flex;

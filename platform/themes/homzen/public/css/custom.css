@@ -164,8 +164,8 @@
  * After editing run:  php artisan cms:theme:assets:publish
  * ------------------------------------------------------------------------- */
 :root {
-    --kash-card-height: 410px;       /* total card height  */
-    --kash-card-image-height: 215px; /* photo area height  */
+    --kash-card-height: 365px;       /* total card height  */
+    --kash-card-image-height: 210px; /* photo area height  */
 }
 
 .property-item.modern-card,
@@ -232,6 +232,9 @@
    clipped, raise --kash-card-height rather than removing this. */
 .modern-card .modern-content {
     flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px 14px 12px 14px !important;
     height: auto !important;
     overflow: hidden;
 }
@@ -425,7 +428,9 @@
 
 .modern-card .modern-content .modern-meta {
     font-size: 11px !important;
-    padding-top: 3px !important;
+    padding-top: 2px !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
 }
 
 /* --- Mobile Search Bar Fix --- */
