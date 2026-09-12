@@ -230,7 +230,7 @@
                 </a>
             </div>
 
-            <div class="modern-meta mt-auto">
+            <div class="modern-meta">
                 @if($property->unique_id)
                     <span>MLS® {{ $property->unique_id }}</span>
                 @endif

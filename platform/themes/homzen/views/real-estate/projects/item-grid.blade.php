@@ -154,11 +154,10 @@
 
             @if ($neighbourhood)
                 <div class="modern-neighbourhood text-muted mt-1" style="font-size: 12px; line-height: 1.3;">
-                    <i class="icon icon-mapPin" style="visibility: hidden; font-size: 14px;"></i>
+                    <!-- <i class="icon icon-mapPin" style="visibility: hidden; font-size: 14px;"></i> -->
                     <span class="fw-medium text-dark">{{ __('Neighbourhood:') }}</span> {{ $neighbourhood }}
                 </div>
             @endif
-
         </div>
     </div>
 </div>
