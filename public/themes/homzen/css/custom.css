@@ -103,7 +103,7 @@
  * ------------------------------------------------------------------------- */
 [class*="flat-section"] .row.g-3[class*="row-cols-"] {
     --bs-gutter-x: 1.875rem; /* 30px */
-    --bs-gutter-y: 0.3rem; /* 30px */
+    --bs-gutter-y: 1.875rem; /* 30px */
 }
 
 /* ---------------------------------------------------------------------------
@@ -141,6 +141,9 @@
     [class*="flat-section"] .row.g-3[class*="row-cols-"] > * {
         width: 100%;
     }
+    [class*="flat-section"] .row.g-3[class*="row-cols-"] {
+    --bs-gutter-y: 0.3rem; /* 30px */
+}
 }
 
 /* ---------------------------------------------------------------------------
@@ -429,7 +432,7 @@
 .modern-card .modern-content .modern-meta {
     font-size: 11px !important;
     padding-top: 2px !important;
-    margin-top: auto !important;
+    margin-top: 6px !important;
     margin-bottom: 0 !important;
 }
 
