@@ -161,24 +161,6 @@
     @endphp
 
     <style>
-        .box-project-card {
-            background: #ffffff;
-            border: 1px solid #eaedf1;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        .box-project-card .project-section-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 0;
-        }
-        .box-project-card hr.project-section-divider {
-            border-color: #eaedf1;
-            opacity: 1;
-            margin: 16px 0 24px 0;
-        }
         .spec-icon-wrap {
             width: 44px;
             height: 44px;
@@ -213,10 +195,8 @@
         $storiesUnitsText = !empty($storiesUnitsList) ? implode(' / ', $storiesUnitsList) : '';
     @endphp
 
-    <div class="box-project-card">
-        <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Project Description') }}</h3>
-        <hr class="project-section-divider">
-        
+    <div class="mb-4">
+        <h4 class="h5 fw-bold mb-3 text-dark">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Project Description') }}</h4>
         <div class="body-2 text-variant-1">
             <div class="mb-3 ck-content single-detail" >
                 Project Name is <strong>{{ $model->name }}</strong>@if ($storiesUnitsText), {{ $storiesUnitsText }}@endif.@if ($developerName) Developed By: <strong>{{ $developerName }}</strong>@endif @if ($address)and is located at <strong>{{ $address }}</strong>@endif.
@@ -246,9 +226,8 @@
             $leftCol = array_slice($unitItems, 0, $half);
             $rightCol = array_slice($unitItems, $half);
         @endphp
-        <div class="box-project-card">
-            <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Total Units') }}</h3>
-            <hr class="project-section-divider">
+        <div class="mb-4">
+            <h4 class="h5 fw-bold mb-3 text-dark">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Total Units') }}</h4>
             <div class="row style-project-specs-grid">
                 <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
                     @foreach ($leftCol as $item)
@@ -295,9 +274,8 @@
             $leftCol = array_slice($attributeItems, 0, $half);
             $rightCol = array_slice($attributeItems, $half);
         @endphp
-        <div class="box-project-card">
-            <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Building Attributes') }}</h3>
-            <hr class="project-section-divider">
+        <div class="mb-4">
+            <h4 class="h5 fw-bold mb-3 text-dark">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Building Attributes') }}</h4>
             <div class="row style-project-specs-grid">
                 <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
                     @foreach ($leftCol as $item)
@@ -344,9 +322,8 @@
             $leftCol = array_slice($parkingItems, 0, $half);
             $rightCol = array_slice($parkingItems, $half);
         @endphp
-        <div class="box-project-card">
-            <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Parking & Access') }}</h3>
-            <hr class="project-section-divider">
+        <div class="mb-4">
+            <h4 class="h5 fw-bold mb-3 text-dark">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Parking & Access') }}</h4>
             @if (!empty($parkingItems))
                 <div class="row style-project-specs-grid">
                     <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
@@ -404,9 +381,8 @@
             $leftCol = array_slice($serviceItems, 0, $half);
             $rightCol = array_slice($serviceItems, $half);
         @endphp
-        <div class="box-project-card">
-            <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Services & Policies') }}</h3>
-            <hr class="project-section-divider">
+        <div class="mb-4">
+            <h4 class="h5 fw-bold mb-3 text-dark">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Services & Policies') }}</h4>
             @if (!empty($serviceItems))
                 <div class="row style-project-specs-grid">
                     <div class="col-md-6 d-flex flex-column gap-4 pe-md-4 border-end-md">
@@ -693,7 +669,7 @@
 
             {{-- Dynamic Summary Paragraph --}}
             <div class="dynamic-property-summary mt-4 pt-3">
-                <p class="body-2 text-variant-1 mb-0" style="line-height: 1.7; font-size: 0.95rem; color: #475569;">
+                <p class="body-2 text-variant-1 mb-0">
                     This {{ $propType }} located at {{ $propAddress }} is currently for {{ $forStatus }} and has been available at Kash Invest for {{ $daysVal }} days. This property, in the city of {{ $propCity ?: 'the area' }} and {{ $propNeighbourhood ?: 'local' }} neighborhood, is listed at {{ $formattedPrice }} with an estimated mortgage of {{ $estMortgageStr }}* per month. It has an area of {{ $areaDimStr }} sqft with {{ $bedsOutput }} and {{ $bathsOutput }}. {{ $nearbyStr }} are nearby neighbourhoods.
                 </p>
             </div>

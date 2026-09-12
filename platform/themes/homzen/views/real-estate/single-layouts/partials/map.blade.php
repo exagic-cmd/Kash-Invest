@@ -6,7 +6,7 @@
 @if (theme_option('real_estate_show_location_on_detail_page', 'yes') === 'yes')
     <div @class([$isProject ? 'box-project-card' : 'single-property-map', $class ?? null])>
         @if ($isProject)
-            <h3 class="h5 fw-bold text-dark project-section-title">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Location') }}</h3>
+            <h3 class="h5 fw-bold text-dark project-section-title mt-3">{{ $model->name ? $model->name . ' - ' : '' }}{{ __('Location') }}</h3>
             <hr class="project-section-divider">
         @else
             <div class="h7 title fw-7">{{ __('Location') }}</div>

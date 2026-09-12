@@ -51,7 +51,7 @@
     </div>
 
     <!-- Second Row: Huge Price and Core Specs -->
-    <div class="d-flex justify-content-between align-items-end mb-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-3 gap-2">
         @if (!setting('real_estate_hide_price', false) && (($model->price_html ?? null) || ($model->formatted_price ?? null)))
             <div class="box-price">
                 <span class="fw-bold text-dark" style="font-size: 1.4rem;">{{ $model->price_html ?? $model->formatted_price }}</span>
