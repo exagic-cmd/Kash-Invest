@@ -5,18 +5,18 @@
             <x-core::icon name="ti ti-refresh" />
             {{ __('Reset') }}
         </a>
-        <ul class="nav-tab-filter w-auto" role="tablist">
+        <!-- <ul class="nav-tab-filter w-auto" role="tablist">
             <li class="nav-tab-item" role="presentation">
                 <button @class(['nav-link-item', 'active' => $itemLayout === 'grid']) data-bs-toggle="tab" data-bb-toggle="change-layout" data-value="grid">
                     <x-core::icon name="ti ti-layout-grid" />
                 </button>
             </li>
-            <!-- <li class="nav-tab-item" role="presentation">
+            <li class="nav-tab-item" role="presentation">
                 <button @class(['nav-link-item', 'active' => $itemLayout === 'list']) data-bs-toggle="tab" data-bb-toggle="change-layout" data-value="list">
                     <x-core::icon name="ti ti-layout-list" />
                 </button>
-            </li> -->
-        </ul>
+            </li>
+        </ul> -->
         <div class="d-flex gap-2">
             <button type="button" class="btn-filter-mobile" title="{{ __('Filter') }}" data-bb-toggle="toggle-filter-offcanvas">
                 <x-core::icon name="ti ti-filter" />

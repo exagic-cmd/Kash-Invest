@@ -138,7 +138,7 @@
     }
     @media (max-width: 768px) {
         .max-width-md {
-            max-width: 150px;
+            max-width: 250px;
         }
         .gallery-header-bar {
             padding-left: 12px !important;

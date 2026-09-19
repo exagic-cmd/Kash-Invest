@@ -482,12 +482,12 @@
     <div @class(['single-property-overview', $class ?? null])>
         <div class="h7 title fw-7 mb-3">{{ __('Overview') }}</div>
         <div class="row row-cols-1 row-cols-md-2" style="font-size: 0.95rem;">
-            @if ($model->unique_id && !$isUnknown($model->unique_id))
+            <!-- @if ($model->unique_id && !$isUnknown($model->unique_id))
                 <div class="col d-flex align-items-baseline gap-2 mb-2">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Property ID:') }}</span>
                     <span class="fw-normal text-dark">{{ $model->unique_id }}</span>
                 </div>
-            @endif
+            @endif -->
             @if ($model->categories->isNotEmpty())
                 <div class="col d-flex align-items-baseline gap-2 mb-2">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Type:') }}</span>
