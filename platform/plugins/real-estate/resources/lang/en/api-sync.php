@@ -41,7 +41,7 @@ return [
     'no_changes_recorded' => 'This run made no changes, so there is nothing to show.',
     'details_title' => 'Sync details',
     // Generic wording: a run's items are projects for Buildify but properties
-    // for Treeb, and both share this modal.
+    // for TRREB, and both share this modal.
     'details_empty' => 'No record-level changes were recorded for this run.',
     'details_project' => 'Record',
     'details_changes' => 'What changed',

@@ -6,7 +6,7 @@ use Botble\Media\Facades\RvMedia;
 use Botble\Media\Models\MediaFile;
 use Botble\RealEstate\Models\ProjectSyncLog;
 use Botble\RealEstate\Models\Property;
-use Botble\RealEstate\Services\Treeb\TreebPropertySyncer;
+use Botble\RealEstate\Services\Trreb\TrrebPropertySyncer;
 use Botble\Slug\Models\Slug;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -18,23 +18,26 @@ use Symfony\Component\Console\Input\InputOption;
  * Honours the PROPTX/TRREB IDX Agreement's termination clause: on request, every
  * copy, extract and cache of IDX data must be permanently deleted immediately.
  *
- * Removes, for source = "treeb" only:
+ * Removes, for source in ['trreb', 'treeb'] only:
  *  - re_properties rows, with their custom fields, features and translations
  *  - imported listing photos from the media library
  *  - sync log rows and their per-listing items
  *
  * Manual and Excel-sourced properties are matched on source and are never touched.
  */
-#[AsCommand('cms:treeb:purge', 'Permanently delete all TRREB/PROPTX IDX data (termination clause)')]
-class PurgeTreebDataCommand extends Command
+#[AsCommand('cms:trreb:purge', 'Permanently delete all TRREB/PROPTX IDX data (termination clause)', aliases: ['cms:treeb:purge'])]
+class PurgeTrrebDataCommand extends Command
 {
     public function handle(): int
     {
-        $source = TreebPropertySyncer::SOURCE;
+        $sources = TrrebPropertySyncer::SOURCES;
 
-        $propertyIds = Property::query()->where('source', $source)->pluck('id');
-        $logIds = ProjectSyncLog::query()->where('source', $source)->pluck('id');
-        $mediaQuery = MediaFile::query()->where('name', 'like', 'treeb-%');
+        $propertyIds = Property::query()->whereIn('source', $sources)->pluck('id');
+        $logIds = ProjectSyncLog::query()->whereIn('source', $sources)->pluck('id');
+        $mediaQuery = MediaFile::query()->where(function ($q) {
+            $q->where('name', 'like', 'trreb-%')
+              ->orWhere('name', 'like', 'treeb-%');
+        });
 
         $this->components->info(sprintf(
             'About to permanently delete: %d properties, %d media files, %d sync log runs.',
@@ -109,6 +112,11 @@ class PurgeTreebDataCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('force', null, InputOption::VALUE_NONE, 'Skip the confirmation prompt.');
+        $this->addOption(
+            'force',
+            'f',
+            InputOption::VALUE_NONE,
+            'Do not ask for confirmation before purging.'
+        );
     }
 }

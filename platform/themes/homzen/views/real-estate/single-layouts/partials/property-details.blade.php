@@ -1,7 +1,7 @@
 @php
     $model = $model ?? $property ?? null;
 
-    if (!$model || $model->source !== 'treeb') {
+    if (!$model || !in_array($model->source, ['trreb', 'treeb'], true)) {
         return;
     }
 

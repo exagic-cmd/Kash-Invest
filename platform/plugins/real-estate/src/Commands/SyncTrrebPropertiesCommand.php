@@ -2,13 +2,14 @@
 
 namespace Botble\RealEstate\Commands;
 
-use Botble\RealEstate\Jobs\SyncTreebPropertiesJob;
+use Botble\RealEstate\Jobs\SyncTrrebPropertiesJob;
+use Botble\RealEstate\Services\Trreb\TrrebPropertySyncer;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputOption;
 
-#[AsCommand('cms:treeb:sync-properties', 'Sync properties from the TRREB/PROPTX IDX feed')]
-class SyncTreebPropertiesCommand extends Command
+#[AsCommand('cms:trreb:sync-properties', 'Sync properties from the TRREB/PROPTX IDX feed', aliases: ['cms:treeb:sync-properties'])]
+class SyncTrrebPropertiesCommand extends Command
 {
     public function handle(): int
     {
@@ -18,7 +19,7 @@ class SyncTreebPropertiesCommand extends Command
         $listingKey = $this->option('listing-key');
         if ($listingKey) {
             $this->components->info(sprintf('Fetching listing %s directly from TRREB API...', $listingKey));
-            $syncer = app(\Botble\RealEstate\Services\Treeb\TreebPropertySyncer::class);
+            $syncer = app(TrrebPropertySyncer::class);
             $property = $syncer->syncSingleListing($listingKey);
 
             if ($property) {
@@ -33,14 +34,14 @@ class SyncTreebPropertiesCommand extends Command
         }
 
         $trigger = $this->option('trigger') === 'cron' ? 'cron' : 'manual';
-        $job = new SyncTreebPropertiesJob($trigger);
+        $job = new SyncTrrebPropertiesJob($trigger);
 
         if ($this->option('now')) {
             // Run inline. Useful from the CLI when there is no worker up; the
             // admin page never uses this path.
-            $this->components->info('Running the Treeb sync inline...');
+            $this->components->info('Running the TRREB sync inline...');
             dispatch_sync($job);
-            $this->components->success('Treeb sync finished. See Admin -> API Sync for the result.');
+            $this->components->success('TRREB sync finished. See Admin -> API Sync for the result.');
 
             return self::SUCCESS;
         }
@@ -53,7 +54,7 @@ class SyncTreebPropertiesCommand extends Command
                 . 'Set QUEUE_CONNECTION=database and run "php artisan queue:work" for real background syncs.'
             );
         } else {
-            $this->components->info('Treeb sync queued. See Admin -> API Sync for progress.');
+            $this->components->info('TRREB sync queued. See Admin -> API Sync for progress.');
         }
 
         return self::SUCCESS;

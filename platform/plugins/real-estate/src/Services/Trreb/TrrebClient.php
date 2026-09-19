@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\RealEstate\Services\Treeb;
+namespace Botble\RealEstate\Services\Trreb;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Http;
  * IDX COMPLIANCE: nothing in here may log a response body. Listing payloads are
  * licensed data — only counts, status codes and ListingKeys are safe to record.
  */
-class TreebClient
+class TrrebClient
 {
     protected string $apiKey;
 
@@ -26,8 +26,8 @@ class TreebClient
 
     public function __construct(?string $apiKey = null, ?string $baseUrl = null)
     {
-        $this->apiKey = (string) ($apiKey ?? config('plugins.real-estate.treeb.api_key'));
-        $this->baseUrl = rtrim((string) ($baseUrl ?? config('plugins.real-estate.treeb.base_url')), '/');
+        $this->apiKey = (string) ($apiKey ?? config('plugins.real-estate.trreb.api_key', config('plugins.real-estate.treeb.api_key')));
+        $this->baseUrl = rtrim((string) ($baseUrl ?? config('plugins.real-estate.trreb.base_url', config('plugins.real-estate.treeb.base_url', 'https://query.ampre.ca/odata'))), '/');
     }
 
     public function hasCredentials(): bool
@@ -164,7 +164,6 @@ class TreebClient
         return $this->request($this->baseUrl . '/OpenHouse', $query);
     }
 
-
     /**
      * Cheapest possible credential check — asks for zero rows, just the count.
      * Used by the sync job so a bad token fails in one call instead of mid-run.
@@ -193,7 +192,7 @@ class TreebClient
             // Deliberately does NOT include the body: an OData error payload can
             // echo listing fields back, and this message ends up in logs and in
             // the sync-log row. Status + resource is enough to diagnose.
-            throw new TreebApiException(sprintf(
+            throw new TrrebApiException(sprintf(
                 'PROPTX API returned HTTP %d for %s',
                 $response->status(),
                 parse_url($url, PHP_URL_PATH) ?: 'the requested resource'

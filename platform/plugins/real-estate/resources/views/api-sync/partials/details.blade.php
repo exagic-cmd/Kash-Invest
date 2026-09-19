@@ -39,7 +39,7 @@
                             <tr>
                                 <td>
                                     {{-- A run writes either project_id (Buildify) or
-                                         property_id (Treeb), never both. --}}
+                                         property_id (TRREB), never both. --}}
                                     @if ($item->project_id && Route::has('project.edit'))
                                         <a href="{{ route('project.edit', $item->project_id) }}" target="_blank" rel="noopener">
                                             {{ $item->name ?: '#' . $item->project_id }}

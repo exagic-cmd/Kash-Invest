@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\RealEstate\Services\Treeb;
+namespace Botble\RealEstate\Services\Trreb;
 
 use RuntimeException;
 
@@ -10,7 +10,7 @@ use RuntimeException;
  * The message is intentionally payload-free (status + resource only) so it is
  * safe to store on the sync log and in application logs under the IDX agreement.
  */
-class TreebApiException extends RuntimeException
+class TrrebApiException extends RuntimeException
 {
     public function __construct(string $message, protected int $status = 0)
     {

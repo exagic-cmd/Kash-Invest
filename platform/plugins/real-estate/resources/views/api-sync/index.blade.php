@@ -42,7 +42,7 @@
                                 ) !!}
                             </div>
                             {{-- Sources registered through the filter can override
-                                 the label — Treeb counts properties, not projects. --}}
+                                 the label — TRREB counts properties, not projects. --}}
                             <a href="{{ $source['projects_url'] }}" class="btn btn-sm btn-outline-secondary">
                                 {{ $source['view_label']
                                     ?? trans('plugins/real-estate::api-sync.view_projects', ['count' => number_format($source['projects_count'])]) }}

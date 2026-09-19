@@ -125,13 +125,13 @@ class Property extends BaseModel
                 ->get();
 
             // If records already exist or this property is not a TRREB listing, return them
-            if ($cached->isNotEmpty() || $this->source !== 'treeb' || ! $this->unique_id) {
+            if ($cached->isNotEmpty() || ! in_array($this->source, ['trreb', 'treeb'], true) || ! $this->unique_id) {
                 return $cached;
             }
 
             // On-demand fetch fallback: check TRREB API if not available in existed data
             try {
-                $syncer = app(\Botble\RealEstate\Services\Treeb\TreebPropertySyncer::class);
+                $syncer = app(\Botble\RealEstate\Services\Trreb\TrrebPropertySyncer::class);
                 return $syncer->syncOpenHousesForProperty($this);
             } catch (\Throwable) {
                 return collect();
@@ -341,7 +341,7 @@ class Property extends BaseModel
      */
     protected function isIdxListing(): Attribute
     {
-        return Attribute::get(fn (): bool => $this->source === 'treeb');
+        return Attribute::get(fn (): bool => in_array($this->source, ['trreb', 'treeb'], true));
     }
 
     public function reviews(): MorphMany

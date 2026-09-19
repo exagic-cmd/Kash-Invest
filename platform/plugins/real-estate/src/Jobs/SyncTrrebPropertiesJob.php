@@ -3,8 +3,8 @@
 namespace Botble\RealEstate\Jobs;
 
 use Botble\RealEstate\Models\ProjectSyncLog;
-use Botble\RealEstate\Services\Treeb\TreebApiException;
-use Botble\RealEstate\Services\Treeb\TreebPropertySyncer;
+use Botble\RealEstate\Services\Trreb\TrrebApiException;
+use Botble\RealEstate\Services\Trreb\TrrebPropertySyncer;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Log;
  * IDX COMPLIANCE: never log a listing payload. Counts, ListingKeys and status
  * codes only.
  */
-class SyncTreebPropertiesJob implements ShouldQueue
+class SyncTrrebPropertiesJob implements ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -45,37 +45,37 @@ class SyncTreebPropertiesJob implements ShouldQueue
     {
     }
 
-    public function handle(TreebPropertySyncer $syncer): void
+    public function handle(TrrebPropertySyncer $syncer): void
     {
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
 
         $log = ProjectSyncLog::query()->create([
-            'source' => TreebPropertySyncer::SOURCE,
+            'source' => TrrebPropertySyncer::SOURCE,
             'status' => 'running',
             'triggered_by' => $this->triggeredBy === 'cron' ? 'cron' : 'manual',
             'started_at' => Carbon::now(),
         ]);
 
-        Log::info('[Treeb Sync] Started', ['log_id' => $log->id, 'trigger' => $log->triggered_by]);
+        Log::info('[TRREB Sync] Started', ['log_id' => $log->id, 'trigger' => $log->triggered_by]);
 
-        if (! config('plugins.real-estate.treeb.enabled')) {
-            $this->fail($log, 'Treeb sync is disabled (TREEB_SYNC_ENABLED=false).');
+        if (! config('plugins.real-estate.trreb.enabled', config('plugins.real-estate.treeb.enabled'))) {
+            $this->fail($log, 'TRREB sync is disabled (TRREB_SYNC_ENABLED=false).');
 
             return;
         }
 
-        if (! config('plugins.real-estate.treeb.api_key')) {
-            $this->fail($log, 'No PROPTX API token configured. Set TREEB_API_KEY in .env.');
+        if (! config('plugins.real-estate.trreb.api_key', config('plugins.real-estate.treeb.api_key'))) {
+            $this->fail($log, 'No PROPTX API token configured. Set TRREB_API_KEY in .env.');
 
             return;
         }
 
         try {
             $result = $syncer->sync();
-        } catch (TreebApiException $e) {
+        } catch (TrrebApiException $e) {
             $this->fail($log, $e->isAuthFailure()
-                ? 'PROPTX rejected the API token (HTTP ' . $e->getStatus() . '). Check TREEB_API_KEY.'
+                ? 'PROPTX rejected the API token (HTTP ' . $e->getStatus() . '). Check TRREB_API_KEY.'
                 : $e->getMessage());
 
             return;
@@ -99,7 +99,7 @@ class SyncTreebPropertiesJob implements ShouldQueue
             $messages[] = sprintf(
                 '%d listing(s) left the market and were %s.',
                 $result['delisted'],
-                config('plugins.real-estate.treeb.delisted_action') === 'delete' ? 'deleted' : 'hidden'
+                config('plugins.real-estate.trreb.delisted_action', config('plugins.real-estate.treeb.delisted_action')) === 'delete' ? 'deleted' : 'hidden'
             );
         }
 
@@ -112,8 +112,8 @@ class SyncTreebPropertiesJob implements ShouldQueue
 
         if ($result['cap_reached']) {
             $messages[] = sprintf(
-                'Test cap: stopped after %d records (TREEB_MAX_RECORDS). Set it to 0 for a full sync.',
-                (int) config('plugins.real-estate.treeb.max_records')
+                'Test cap: stopped after %d records (TRREB_MAX_RECORDS). Set it to 0 for a full sync.',
+                (int) config('plugins.real-estate.trreb.max_records', config('plugins.real-estate.treeb.max_records'))
             );
         }
 
@@ -132,7 +132,7 @@ class SyncTreebPropertiesJob implements ShouldQueue
             $log->items()->create($item);
         }
 
-        Log::info('[Treeb Sync] Completed', [
+        Log::info('[TRREB Sync] Completed', [
             'log_id' => $log->id,
             'created' => $result['created'],
             'updated' => $result['updated'],
@@ -149,7 +149,7 @@ class SyncTreebPropertiesJob implements ShouldQueue
     public function failed(\Throwable $e): void
     {
         $log = ProjectSyncLog::query()
-            ->where('source', TreebPropertySyncer::SOURCE)
+            ->whereIn('source', TrrebPropertySyncer::SOURCES)
             ->where('status', 'running')
             ->latest('id')
             ->first();
@@ -167,6 +167,6 @@ class SyncTreebPropertiesJob implements ShouldQueue
             'finished_at' => Carbon::now(),
         ]);
 
-        Log::error('[Treeb Sync] Failed', ['log_id' => $log->id, 'message' => $message]);
+        Log::error('[TRREB Sync] Failed', ['log_id' => $log->id, 'message' => $message]);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\RealEstate\Services\Treeb;
+namespace Botble\RealEstate\Services\Trreb;
 
 use Botble\ACL\Models\User;
 use Botble\Base\Enums\BaseStatusEnum;
@@ -54,12 +54,14 @@ use Symfony\Component\Mime\MimeTypes;
  *  - Brokerage attribution (ListOfficeName / ListAgentFullName) is carried into
  *    custom fields so the theme can display it distinctly from listing content.
  *  - Every row is tagged source="treeb" so the termination clause can be honoured
- *    in one command (see PurgeTreebDataCommand).
+ *    in one command (see PurgeTrrebDataCommand).
  */
-class TreebPropertySyncer
+class TrrebPropertySyncer
 {
     /** Value written to re_properties.source for every property this syncer owns. */
-    public const SOURCE = 'treeb';
+    public const SOURCE = 'trreb';
+    public const OLD_SOURCE = 'treeb';
+    public const SOURCES = ['trreb', 'treeb'];
 
     /** Columns whose changes are noise/too bulky to surface in the detail modal. */
     protected const DIFF_IGNORE_COLUMNS = ['updated_at', 'created_at', 'content', 'images'];
@@ -93,7 +95,7 @@ class TreebPropertySyncer
     /** Set when the run stopped early because of the testing cap. */
     protected bool $capReached = false;
 
-    public function __construct(protected TreebClient $client)
+    public function __construct(protected TrrebClient $client)
     {
     }
 
@@ -105,8 +107,8 @@ class TreebPropertySyncer
      */
     public function sync(?callable $onProgress = null): array
     {
-        $perPage = max((int) config('plugins.real-estate.treeb.per_page', 100), 1);
-        $maxRecords = max((int) config('plugins.real-estate.treeb.max_records', 0), 0);
+        $perPage = max((int) config('plugins.real-estate.trreb.per_page', 100), 1);
+        $maxRecords = max((int) config('plugins.real-estate.trreb.max_records', 0), 0);
 
         // A testing run should not ask the feed for more than it intends to keep.
         if ($maxRecords > 0) {
@@ -182,7 +184,7 @@ class TreebPropertySyncer
 
         // Incremental: only what changed since the last successful run.
         $since = ProjectSyncLog::query()
-            ->where('source', self::SOURCE)
+            ->whereIn('source', self::SOURCES)
             ->where('status', 'success')
             ->latest('finished_at')
             ->value('finished_at');
@@ -196,14 +198,14 @@ class TreebPropertySyncer
         }
 
         // Status filter on the SEED run only. On incremental runs we must also
-        // receive listings that just went Sold/Leased/Expired — that transition is
+        // receive listings that just went Sold/Leased/Expired â€” that transition is
         // the only signal the feed gives us that something has left the market,
         // and missing it means displaying a stale listing as available.
         if (! $since && $statuses = $this->standardStatusClause()) {
             $clauses[] = $statuses;
         }
 
-        if ($extra = trim((string) config('plugins.real-estate.treeb.extra_filter'))) {
+        if ($extra = trim((string) config('plugins.real-estate.trreb.extra_filter'))) {
             $clauses[] = '(' . $extra . ')';
         }
 
@@ -214,7 +216,7 @@ class TreebPropertySyncer
     {
         $configured = array_filter(array_map(
             'trim',
-            explode(',', (string) config('plugins.real-estate.treeb.transaction_types', 'sale,lease'))
+            explode(',', (string) config('plugins.real-estate.trreb.transaction_types', 'sale,lease'))
         ));
 
         if ($configured === []) {
@@ -242,7 +244,7 @@ class TreebPropertySyncer
     {
         $statuses = array_filter(array_map(
             'trim',
-            explode(',', (string) config('plugins.real-estate.treeb.standard_statuses', 'Active'))
+            explode(',', (string) config('plugins.real-estate.trreb.standard_statuses', 'Active'))
         ));
 
         if ($statuses === []) {
@@ -277,7 +279,7 @@ class TreebPropertySyncer
         $this->importListing($listing);
 
         return Property::query()
-            ->where('source', self::SOURCE)
+            ->whereIn('source', self::SOURCES)
             ->where('unique_id', $listingKey)
             ->first();
     }
@@ -291,19 +293,19 @@ class TreebPropertySyncer
         $name = $this->resolveName($listing);
 
         if ($listingKey === '' || $name === '') {
-            // Nothing safe to key on / display — skip quietly.
+            // Nothing safe to key on / display â€” skip quietly.
             return;
         }
 
         // Match ONLY our own PROPTX rows. Manual and imported properties have a
         // different source, so they are never matched or overwritten.
         $property = Property::query()
-            ->where('source', self::SOURCE)
+            ->whereIn('source', self::SOURCES)
             ->where('unique_id', $listingKey)
             ->first();
 
         // A listing that is no longer Active must come off the site. If we never
-        // held it, there is nothing to do — we don't import off-market listings.
+        // held it, there is nothing to do â€” we don't import off-market listings.
         if (! $this->isActive($listing)) {
             if ($property) {
                 $this->delist($property, $listing, $listingKey, $name);
@@ -369,7 +371,7 @@ class TreebPropertySyncer
      *
      * SlugHelper::createSlug() keys its firstOrNew on (reference_type,
      * reference_id, prefix) and does NOT check whether the slug *key* is already
-     * taken — so two listings at the same address, or a re-import after a purge,
+     * taken â€” so two listings at the same address, or a re-import after a purge,
      * happily create duplicate keys. SlugHelper::getSlug() then resolves the
      * lowest-id match, which may point at a property that no longer exists, and
      * the detail page 404s.
@@ -427,12 +429,12 @@ class TreebPropertySyncer
      * Take a listing off the site once it leaves Active status.
      *
      * This is what stops a sold or leased property from being advertised as
-     * available indefinitely — the feed stops returning it under the Active
+     * available indefinitely â€” the feed stops returning it under the Active
      * filter, so the status transition is the only notice we ever get.
      */
     protected function delist(Property $property, array $listing, string $listingKey, string $name): void
     {
-        $action = strtolower((string) config('plugins.real-estate.treeb.delisted_action', 'hide'));
+        $action = strtolower((string) config('plugins.real-estate.trreb.delisted_action', 'hide'));
         $newStatus = $this->resolveStatus($listing, $this->isLease($listing));
         $wasStatus = $this->formatDiffValue($property->getRawOriginal('status'));
 
@@ -465,7 +467,7 @@ class TreebPropertySyncer
 
     /**
      * Hard-delete a property and everything the syncer attached to it. Mirrors
-     * PurgeTreebDataCommand so both paths clean up the same way.
+     * PurgeTrrebDataCommand so both paths clean up the same way.
      */
     protected function deleteProperty(Property $property): void
     {
@@ -510,7 +512,7 @@ class TreebPropertySyncer
 
             // Full remarks live in `content` (longtext) so nothing supplied by
             // PROPTX is lost; `description` is a varchar(400) excerpt of the same
-            // text — a permitted formatting change, not an edit.
+            // text â€” a permitted formatting change, not an edit.
             'description' => $remarks !== '' ? $this->fitToColumn($remarks, 400) : null,
             'content' => $remarks ?: null,
 
@@ -526,7 +528,7 @@ class TreebPropertySyncer
             'moderation_status' => ModerationStatusEnum::APPROVED,
 
             // PropertyBuilder::active() (the front-end scope) requires
-            // "expire_date >= now OR never_expired" — with both unset the listing
+            // "expire_date >= now OR never_expired" â€” with both unset the listing
             // is silently filtered off the site. IDX listings must not expire on a
             // local timer anyway: the board decides when one leaves the market and
             // delist() acts on that, so they never expire locally.
@@ -561,7 +563,7 @@ class TreebPropertySyncer
     }
 
     /**
-     * Listings have no "name" in RESO — build a display title from the address,
+     * Listings have no "name" in RESO â€” build a display title from the address,
      * falling back to the MLS number so a row is never nameless.
      */
     protected function resolveName(array $listing): string
@@ -717,7 +719,7 @@ class TreebPropertySyncer
      */
     protected function resolveImages(string $listingKey, ?Property $existing = null): array
     {
-        if (! config('plugins.real-estate.treeb.sync_images', true)) {
+        if (! config('plugins.real-estate.trreb.sync_images', true)) {
             return $existing?->images ?? [];
         }
 
@@ -725,7 +727,7 @@ class TreebPropertySyncer
             return $existing->images ?? [];
         }
 
-        $maxImages = max((int) config('plugins.real-estate.treeb.max_images_per_property', 5), 1);
+        $maxImages = max((int) config('plugins.real-estate.trreb.max_images_per_property', 5), 1);
 
         $media = $this->client->mediaFor($listingKey, $maxImages);
 
@@ -785,7 +787,7 @@ class TreebPropertySyncer
             $extension = 'jpg';
         }
 
-        $imageFileName = sprintf('treeb-%s-%d.%s', Str::slug($listingKey), $index, $extension);
+        $imageFileName = sprintf('trreb-%s-%d.%s', Str::slug($listingKey), $index, $extension);
         $imageBaseName = pathinfo($imageFileName, PATHINFO_FILENAME);
 
         $existingMedia = MediaFile::query()
@@ -811,7 +813,7 @@ class TreebPropertySyncer
             return null;
         }
 
-        $tempPath = tempnam(sys_get_temp_dir(), 'treeb_');
+        $tempPath = tempnam(sys_get_temp_dir(), 'trreb_');
 
         if ($tempPath === false) {
             return null;
@@ -875,7 +877,7 @@ class TreebPropertySyncer
      */
     protected function resolveCategoryIds(array $listing): array
     {
-        if (! config('plugins.real-estate.treeb.sync_categories', true)) {
+        if (! config('plugins.real-estate.trreb.sync_categories', true)) {
             return [];
         }
 
@@ -911,7 +913,7 @@ class TreebPropertySyncer
      * Look up a lookup-table row by name, creating it once if missing.
      *
      * Why not firstOrCreate(): these models cast `name` through SafeContent, which
-     * runs HTMLPurifier on save — so "Residential Condo & Other" is STORED as
+     * runs HTMLPurifier on save â€” so "Residential Condo & Other" is STORED as
      * "Residential Condo &amp; Other". A where() clause is not cast, so matching on
      * the raw name never finds the stored row and firstOrCreate() would insert a
      * fresh duplicate on every single sync. Matching on the cleaned form (and the
@@ -944,7 +946,7 @@ class TreebPropertySyncer
 
     /**
      * TRREB quotes in CAD. There is no currency in the feed, so this resolves the
-     * configured code against re_currencies and falls back to the site default —
+     * configured code against re_currencies and falls back to the site default â€”
      * which is why the sync warns when CAD is missing rather than silently
      * labelling Canadian prices as USD.
      */
@@ -954,7 +956,7 @@ class TreebPropertySyncer
             return $this->currencyId ?: null;
         }
 
-        $code = trim((string) config('plugins.real-estate.treeb.currency', 'CAD'));
+        $code = trim((string) config('plugins.real-estate.trreb.currency', 'CAD'));
 
         $id = $code !== ''
             ? Currency::query()->whereRaw('UPPER(title) = ?', [strtoupper($code)])->value('id')
@@ -1030,12 +1032,12 @@ class TreebPropertySyncer
     protected function buildCustomFields(array $listing, array $rooms = []): array
     {
         $fields = [
-            // ── Attribution (IDX mandatory) ──────────────────────────────────
+            // â”€â”€ Attribution (IDX mandatory) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('MLS Number', Arr::get($listing, 'ListingKey')),
             $this->customField('Listing Brokerage', Arr::get($listing, 'ListOfficeName')),
             $this->customField('Co-Listing Brokerage', Arr::get($listing, 'CoListOfficeName')),
 
-            // ── Property (overview) ──────────────────────────────────────────
+            // â”€â”€ Property (overview) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Property Type', Arr::get($listing, 'PropertyType')),
             $this->customField('Property Sub Type', Arr::get($listing, 'PropertySubType')),
             $this->customField('Transaction Type', Arr::get($listing, 'TransactionType')),
@@ -1057,7 +1059,7 @@ class TreebPropertySyncer
             $this->customField('Listed On', $this->normalizeDate(Arr::get($listing, 'OriginalEntryTimestamp'))),
             $this->customField('Last Updated', $this->normalizeDate(Arr::get($listing, 'ModificationTimestamp'))),
 
-            // ── Interior ─────────────────────────────────────────────────────
+            // â”€â”€ Interior â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Bedrooms', Arr::get($listing, 'BedroomsTotal')),
             $this->customField('Bedrooms Above Grade', Arr::get($listing, 'BedroomsAboveGrade')),
             $this->customField('Bedrooms Below Grade', Arr::get($listing, 'BedroomsBelowGrade')),
@@ -1073,7 +1075,7 @@ class TreebPropertySyncer
             $this->customField('Exclusions', Arr::get($listing, 'Exclusions')),
             $this->customField('Kitchen Appliances', Arr::get($listing, 'Appliances')),
 
-            // ── Building ─────────────────────────────────────────────────────
+            // â”€â”€ Building â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Kitchens Total', Arr::get($listing, 'KitchensTotal')),
             $this->customField('Basement', Arr::get($listing, 'Basement')),
             $this->customField('Foundation', Arr::get($listing, 'FoundationDetails')),
@@ -1086,21 +1088,21 @@ class TreebPropertySyncer
             $this->customField('Living Area Range', Arr::get($listing, 'LivingAreaRange')),
             $this->customField('HST Application', Arr::get($listing, 'HSTApplication')),
 
-            // ── Parking ──────────────────────────────────────────────────────
+            // â”€â”€ Parking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Garage Type', Arr::get($listing, 'GarageType')),
             $this->customField('Parking Features', Arr::get($listing, 'ParkingFeatures')),
             $this->customField('Parking Spaces', Arr::get($listing, 'ParkingSpaces')),
             $this->customField('Parking Total', Arr::get($listing, 'ParkingTotal')),
             $this->customField('Covered Spaces', Arr::get($listing, 'CoveredSpaces')),
 
-            // ── Financial ────────────────────────────────────────────────────
+            // â”€â”€ Financial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Tax Annual Amount', Arr::get($listing, 'TaxAnnualAmount')),
             $this->customField('Tax Year', Arr::get($listing, 'TaxYear')),
             $this->customField('Tax Legal Description', Arr::get($listing, 'TaxLegalDescription')),
             $this->customField('Association Fee', Arr::get($listing, 'AssociationFee')),
             $this->customField('Association Fee Frequency', Arr::get($listing, 'AssociationFeeFrequency')),
 
-            // ── Land ─────────────────────────────────────────────────────────
+            // â”€â”€ Land â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Lot Width', Arr::get($listing, 'LotWidth')),
             $this->customField('Lot Depth', Arr::get($listing, 'LotDepth')),
             $this->customField('Lot Size', Arr::get($listing, 'LotSizeArea')),
@@ -1116,11 +1118,11 @@ class TreebPropertySyncer
             $this->customField('Roll Number', Arr::get($listing, 'RollNumber')),
             $this->customField('Community Features', Arr::get($listing, 'CommunityFeatures')),
 
-            // ── Extra ────────────────────────────────────────────────────────
+            // â”€â”€ Extra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Virtual Tour', Arr::get($listing, 'VirtualTourURLBranded')),
         ];
 
-        // ── Rooms (from PropertyRooms sub-resource) ───────────────────────────
+        // â”€â”€ Rooms (from PropertyRooms sub-resource) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $roomIndex = 1;
         foreach ($rooms as $room) {
             $type = trim((string) Arr::get($room, 'RoomType'));
@@ -1275,7 +1277,7 @@ class TreebPropertySyncer
         $this->items[] = [
             'property_id' => null,
             'external_id' => $listingKey,
-            // Deliberately not the address — that is licensed listing content and
+            // Deliberately not the address â€” that is licensed listing content and
             // failure rows outlive the listing itself.
             'name' => $listingKey ? 'ListingKey ' . $listingKey : null,
             'action' => 'failed',
@@ -1559,3 +1561,4 @@ class TreebPropertySyncer
             ->get();
     }
 }
+
