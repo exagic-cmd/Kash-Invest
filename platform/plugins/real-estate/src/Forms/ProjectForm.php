@@ -601,6 +601,19 @@ class ProjectForm extends FormAbstract
                         ],
                     ])
             )
+            ->when(
+                // Only synced projects have a payload; a manually created one has
+                // nothing to show and should not carry an empty panel.
+                $this->getModel() instanceof Project
+                    && $this->getModel()->exists
+                    && ! empty($this->getModel()->raw_payload),
+                fn ($form) => $form->add('redbricks_payload_viewer', 'html', [
+                    'html' => view(
+                        'plugins/real-estate::forms.redbricks-payload',
+                        ['project' => $this->getModel()]
+                    )->render(),
+                ])
+            )
             ->addMetaBoxes([
                 'features' => [
                     'title' => trans('plugins/real-estate::property.form.features'),

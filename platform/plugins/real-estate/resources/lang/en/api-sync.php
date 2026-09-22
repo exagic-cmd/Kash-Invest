@@ -21,6 +21,7 @@ return [
     'feed' => 'Feed',
     'scope' => 'Scope',
     'test_cap' => 'Test cap',
+    'all_cities' => 'All cities',
     'first_n_records' => 'First :count records only',
     'history' => 'Sync History',
     'result_summary' => ':created created, :updated updated, :failed failed',
