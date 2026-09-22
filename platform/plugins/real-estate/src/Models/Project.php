@@ -60,6 +60,7 @@ class Project extends BaseModel
         'zip_code',
         'unique_id',
         'source',
+        'raw_payload',
         'landing_template',
         'private_notes',
         'floor_plans',
@@ -100,6 +101,8 @@ class Project extends BaseModel
         'private_notes' => SafeContent::class,
         'images' => 'json',
         'floor_plans' => 'array',
+        // Complete API response for synced projects — see the raw_payload migration.
+        'raw_payload' => 'array',
         'suites_starting_floor' => 'int',
         'number_of_suites_per_floor' => 'int',
         'suite_size_from' => 'float',
@@ -188,6 +191,16 @@ class Project extends BaseModel
     public function features(): BelongsToMany
     {
         return $this->belongsToMany(Feature::class, 're_project_features', 'project_id', 'feature_id');
+    }
+
+    public function floorPlanRows(): HasMany
+    {
+        return $this->hasMany(ProjectFloorPlan::class, 'project_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ProjectDocument::class, 'project_id');
     }
 
     public function facilities(): BelongsToMany

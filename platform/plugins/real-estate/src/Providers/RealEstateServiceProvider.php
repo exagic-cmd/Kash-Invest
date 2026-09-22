@@ -21,7 +21,9 @@ use Botble\Location\Models\City;
 use Botble\Location\Models\State;
 use Botble\RealEstate\Commands\RenewPropertiesCommand;
 use Botble\RealEstate\Commands\SyncBuildifyProjectsCommand;
+use Botble\RealEstate\Commands\SyncRedbricksProjectsCommand;
 use Botble\RealEstate\Commands\SyncTrrebPropertiesCommand;
+use Botble\RealEstate\Services\Redbricks\RedbricksProjectSyncer;
 use Botble\RealEstate\Services\Trreb\TrrebPropertySyncer;
 use Botble\RealEstate\Facades\RealEstateHelper;
 use Botble\RealEstate\Forms\Fronts\Auth\ForgotPasswordForm;
@@ -200,7 +202,7 @@ class RealEstateServiceProvider extends ServiceProvider
         add_filter(IS_IN_ADMIN_FILTER, [$this, 'setInAdmin'], 128);
 
         $this->setNamespace('plugins/real-estate')
-            ->loadAndPublishConfigurations(['permissions', 'email', 'real-estate', 'general', 'buildify', 'trreb'])
+            ->loadAndPublishConfigurations(['permissions', 'email', 'real-estate', 'general', 'buildify', 'trreb', 'redbricks'])
             ->loadMigrations()
             ->loadAndPublishViews()
             ->loadAndPublishTranslations()
@@ -857,9 +859,21 @@ class RealEstateServiceProvider extends ServiceProvider
                     ->dailyAt((string) config('plugins.real-estate.trreb.schedule_at', config('plugins.real-estate.treeb.schedule_at', '03:00')))
                     ->withoutOverlapping();
             }
+
+            // Reconciliation sweep. Webhooks are the primary incremental
+            // mechanism for Redbricks, but they publish no retry or replay
+            // guarantee, so this nightly pass catches anything a missed
+            // delivery would otherwise leave permanently stale.
+            if (config('plugins.real-estate.redbricks.enabled')) {
+                $schedule
+                    ->command(SyncRedbricksProjectsCommand::class, ['--trigger=cron'])
+                    ->dailyAt((string) config('plugins.real-estate.redbricks.schedule_at', '04:00'))
+                    ->withoutOverlapping();
+            }
         });
 
         $this->registerTrrebApiSyncSource();
+        $this->registerRedbricksApiSyncSource();
 
         if (is_plugin_active('captcha')) {
             Captcha::registerFormSupport(LoginForm::class, LoginRequest::class, trans('plugins/real-estate::real-estate.login_form'));
@@ -925,6 +939,54 @@ class RealEstateServiceProvider extends ServiceProvider
                 'view_label' => trans('plugins/real-estate::api-sync.view_properties', [
                     'count' => number_format($count),
                 ]),
+            ];
+
+            return $sources;
+        }, 10, 1);
+    }
+
+    /**
+     * Puts the Redbricks card on the admin "API Sync" page, through the same
+     * filter Trreb uses. Counts projects, like Buildify, so it needs no custom
+     * view label.
+     */
+    protected function registerRedbricksApiSyncSource(): void
+    {
+        add_filter('real_estate_api_sync_sources', function (array $sources): array {
+            if (! Schema::hasColumn('re_projects', 'source')) {
+                return $sources;
+            }
+
+            $scheduleAt = (string) config('plugins.real-estate.redbricks.schedule_at', '04:00');
+            $timestamp = strtotime($scheduleAt);
+            $scheduleLabel = $timestamp === false ? $scheduleAt : date('g:i A', $timestamp);
+
+            $meta = [
+                trans('plugins/real-estate::api-sync.feed') => 'Redbricks (pre-construction)',
+                trans('plugins/real-estate::api-sync.scope') => (string) (
+                    config('plugins.real-estate.redbricks.cities') ?: trans('plugins/real-estate::api-sync.all_cities')
+                ),
+            ];
+
+            // Surfaced so a capped test run can never be mistaken for a full sync.
+            if ($cap = (int) config('plugins.real-estate.redbricks.max_records', 0)) {
+                $meta[trans('plugins/real-estate::api-sync.test_cap')] = trans(
+                    'plugins/real-estate::api-sync.first_n_records',
+                    ['count' => $cap]
+                );
+            }
+
+            $count = Project::query()->where('source', RedbricksProjectSyncer::SOURCE)->count();
+
+            $sources['redbricks'] = [
+                'key' => 'redbricks',
+                'label' => 'Redbricks',
+                'command' => 'cms:redbricks:sync-projects',
+                'enabled' => (bool) config('plugins.real-estate.redbricks.enabled'),
+                'schedule' => trans('plugins/real-estate::api-sync.daily_at', ['time' => $scheduleLabel]),
+                'meta' => $meta,
+                'projects_count' => $count,
+                'projects_url' => route('project.index'),
             ];
 
             return $sources;
