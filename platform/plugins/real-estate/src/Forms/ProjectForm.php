@@ -631,7 +631,22 @@ class ProjectForm extends FormAbstract
                     ),
                     'priority' => 0,
                 ],
-            ])
+            ]);
+
+        if ($this->getModel() instanceof Project && $this->getModel()->exists && $this->getModel()->documents()->exists()) {
+            $this->addMetaBoxes([
+                'documents_box' => [
+                    'title' => trans('plugins/real-estate::project.documents') ?: 'Project Documents & PDFs (' . $this->getModel()->documents()->count() . ')',
+                    'content' => view(
+                        'plugins/real-estate::partials.form-documents',
+                        ['project' => $this->getModel()]
+                    )->render(),
+                    'priority' => 1,
+                ],
+            ]);
+        }
+
+        $this
             ->add('status', SelectField::class, StatusFieldOption::make()->choices(ProjectStatusEnum::labels())->toArray())
             ->add('categories[]', 'categoryMulti', [
                 'label' => trans('plugins/real-estate::project.form.categories'),

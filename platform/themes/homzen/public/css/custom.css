@@ -497,4 +497,441 @@
     width: 100% !important;
 }
 
+/* ==========================================================================
+   Project Detail Tabs, Floor Plans & PDF Downloads
+   ========================================================================== */
+.project-detail-tabs-section {
+    position: relative;
+}
+
+.project-nav-tabs-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 24px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.project-nav-tabs-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.project-nav-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    list-style: none !important;
+    border: none !important;
+    width: 100% !important;
+}
+
+.project-nav-pills .nav-item {
+    margin: 0 !important;
+    padding: 0 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+}
+
+.project-nav-pills .nav-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    width: 100% !important;
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.15px !important;
+    color: #475569 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    line-height: 1.4 !important;
+}
+
+.project-nav-pills .nav-link svg,
+.project-nav-pills .nav-link i,
+.project-nav-pills .nav-link .icon {
+    font-size: 14px !important;
+    width: 14px !important;
+    height: 14px !important;
+    stroke-width: 1.8 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    flex-shrink: 0 !important;
+}
+
+.project-nav-pills .nav-link:hover {
+    color: #0f172a !important;
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+.project-nav-pills .nav-link.active {
+    color: #ffffff !important;
+    background: #0f172a !important;
+    border-color: #0f172a !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
+}
+
+.project-nav-pills .tab-count-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1px 5px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    border-radius: 9999px !important;
+    background: #e2e8f0 !important;
+    color: #334155 !important;
+    margin-left: 2px !important;
+    line-height: 1.2 !important;
+    transition: all 0.18s !important;
+}
+
+.project-nav-pills .nav-link.active .tab-count-badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+@media (max-width: 991.98px) {
+    .project-nav-pills {
+        width: max-content !important;
+        min-width: 100% !important;
+        gap: 6px !important;
+    }
+    .project-nav-pills .nav-item {
+        flex: 0 0 auto !important;
+    }
+    .project-nav-pills .nav-link {
+        padding: 8px 14px !important;
+    }
+}
+
+/* Quick Highlights Grid */
+.project-highlights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+}
+
+.highlight-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.highlight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+}
+
+.highlight-card .highlight-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.highlight-card .highlight-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #64748b;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.highlight-card .highlight-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+/* Spec Tile Cards */
+.spec-tile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    height: 100%;
+    transition: all 0.2s ease;
+}
+
+.spec-tile-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.spec-tile-card.highlight-border {
+    border-left: 4px solid var(--theme-primary-color, #1565c0);
+}
+
+.spec-tile-card .spec-tile-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.spec-tile-card .spec-tile-label {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.spec-tile-card .spec-tile-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+/* Floor Plans Item Card */
+.floor-plan-item-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.floor-plan-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+    border-color: #cbd5e1;
+}
+
+.floor-plan-thumb-wrap {
+    height: 200px;
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.floor-plan-thumb-wrap img {
+    max-height: 100%;
+    width: auto;
+    object-fit: contain;
+    padding: 12px;
+    transition: transform 0.3s;
+}
+
+.floor-plan-thumb-wrap:hover img {
+    transform: scale(1.05);
+}
+
+.floor-plan-thumb-wrap .zoom-overlay-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.75);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.floor-plan-item-card:hover .zoom-overlay-icon {
+    opacity: 1;
+    background: #0f172a;
+}
+
+.placeholder-plan-drawing {
+    width: 100%;
+    height: 100%;
+    color: #94a3b8;
+    font-size: 32px;
+}
+
+.btn-floor-filter {
+    border-radius: 9999px !important;
+    padding: 6px 14px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #334155 !important;
+}
+
+.btn-floor-filter:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+.btn-floor-filter.active {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+}
+
+.btn-floor-filter.active .badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+/* Documents & PDF Cards */
+.doc-download-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.doc-download-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07);
+    border-color: #cbd5e1;
+}
+
+.doc-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.doc-type-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.doc-badge-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.doc-badge-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.doc-badge-coral { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.doc-badge-purple { background: #faf5ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.doc-badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.doc-badge-teal { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+.doc-badge-slate { background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
+
+.doc-title {
+    font-size: 15px;
+    line-height: 1.4;
+    min-height: 42px;
+}
+
+/* Building Amenities & Lifestyle */
+.project-amenity-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+}
+.project-amenity-card:hover {
+    transform: translateY(-2px);
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    background: #f8fafc;
+}
+.amenity-icon-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #2563eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.amenity-icon-circle svg,
+.amenity-icon-circle i,
+.amenity-icon-circle .icon {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 18px !important;
+    stroke-width: 1.8 !important;
+}
+.amenity-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.35;
+}
+.amenity-pill-badge {
+    transition: all 0.15s ease-in-out;
+}
+.amenity-pill-badge:hover {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
 

@@ -1,6 +1,9 @@
 @php
     $model = $model ?? $property ?? null;
     $isProject = $model instanceof \Botble\RealEstate\Models\Project;
+    if ($isProject) {
+        return;
+    }
 @endphp
 
 @if ($model->features->isNotEmpty())

@@ -203,6 +203,16 @@ class Project extends BaseModel
         return $this->hasMany(ProjectDocument::class, 'project_id');
     }
 
+    public function activeDocuments(): HasMany
+    {
+        return $this->hasMany(ProjectDocument::class, 'project_id')->where('is_historical', false);
+    }
+
+    public function historicalDocuments(): HasMany
+    {
+        return $this->hasMany(ProjectDocument::class, 'project_id')->where('is_historical', true);
+    }
+
     public function facilities(): BelongsToMany
     {
         return $this->morphToMany(Facility::class, 'reference', 're_facilities_distances')->withPivot('distance');
@@ -463,6 +473,69 @@ class Project extends BaseModel
     protected function formattedFloorPlans(): Attribute
     {
         return Attribute::get(function () {
+            // If synced floorPlanRows exist, map them
+            $rows = $this->relationLoaded('floorPlanRows')
+                ? $this->floorPlanRows
+                : $this->floorPlanRows()->get();
+
+            if ($rows->isNotEmpty()) {
+                return $rows->map(function (ProjectFloorPlan $plan) {
+                    $beds = $plan->bedrooms;
+                    $baths = $plan->bathrooms;
+                    $image = $plan->image_full ?: ($plan->image_thumbnail ?: ($plan->image_medium ?: $plan->local_image));
+
+                    $bedLabel = null;
+                    if ($beds !== null) {
+                        if ((float) $beds === 0.0) {
+                            $bedLabel = __('Studio');
+                        } elseif ((float) $beds === 1.0) {
+                            $bedLabel = trans('plugins/real-estate::property.1_bedroom');
+                        } elseif ((float) $beds === 1.5) {
+                            $bedLabel = __('1 Bed + Den');
+                        } elseif ((float) $beds === 2.5) {
+                            $bedLabel = __('2 Bed + Den');
+                        } else {
+                            $bedLabel = trans('plugins/real-estate::property.bedrooms', ['count' => $beds]);
+                        }
+                    }
+
+                    $bathLabel = null;
+                    if ($baths !== null) {
+                        $bathLabel = (float) $baths === 1.0
+                            ? trans('plugins/real-estate::property.1_bathroom')
+                            : trans('plugins/real-estate::property.bathrooms', ['count' => $baths]);
+                    }
+
+                    $descParts = [];
+                    if ($plan->size) {
+                        $descParts[] = number_format($plan->size) . ' ' . setting('real_estate_square_unit', 'sqft');
+                    }
+                    if ($plan->current_price) {
+                        $descParts[] = format_price($plan->current_price);
+                    }
+                    if ($plan->exposure) {
+                        $descParts[] = __('Exp: :exp', ['exp' => $plan->exposure]);
+                    }
+                    if ($plan->availability) {
+                        $descParts[] = $plan->availability;
+                    }
+
+                    return [
+                        'name' => $plan->name,
+                        'description' => implode(' • ', $descParts),
+                        'image' => $image,
+                        'bedrooms' => $bedLabel,
+                        'bathrooms' => $bathLabel,
+                        'size' => $plan->size,
+                        'price' => $plan->current_price,
+                        'psf' => $plan->current_psf,
+                        'exposure' => $plan->exposure,
+                        'availability' => $plan->availability,
+                        'bedrooms_num' => (float) $beds,
+                    ];
+                });
+            }
+
             $floorPlan = $this->floor_plans;
 
             if (! is_array($floorPlan)) {
@@ -482,6 +555,7 @@ class Project extends BaseModel
                         'image' => Arr::get($floorPlan, 'image'),
                         'bedrooms' => $bedrooms === 1 ? trans('plugins/real-estate::property.1_bedroom') : trans('plugins/real-estate::property.bedrooms', ['count' => $bedrooms]),
                         'bathrooms' => $bathrooms === 1 ? trans('plugins/real-estate::property.1_bathroom') : trans('plugins/real-estate::property.bathrooms', ['count' => $bathrooms]),
+                        'bedrooms_num' => (float) $bedrooms,
                     ];
                 });
         });
