@@ -110,6 +110,8 @@ class RedbricksProjectSyncer
 
     protected int|string|null $documentsFolderId = null;
 
+    protected int|string|null $floorPlansFolderId = null;
+
     public function __construct(protected RedbricksClient $client)
     {
     }
@@ -507,7 +509,7 @@ class RedbricksProjectSyncer
 
             [$floorMin, $floorMax] = $this->floorRange($plan);
 
-            ProjectFloorPlan::query()->updateOrCreate(
+            $row = ProjectFloorPlan::query()->updateOrCreate(
                 ['project_id' => $project->getKey(), 'external_id' => (string) $externalId],
                 [
                     'floorplan_uuid' => Arr::get($plan, 'floorplan_uuid'),
@@ -528,12 +530,55 @@ class RedbricksProjectSyncer
                     'price_history' => Arr::get($plan, 'price_history', []),
                 ]
             );
+
+            // Download the best available image to S3 once; skip if already stored.
+            if (empty($row->local_image)) {
+                $imageUrl = Arr::get($plan, 'images.full')
+                    ?: Arr::get($plan, 'images.medium')
+                    ?: Arr::get($plan, 'images.thumbnail');
+
+                if ($imageUrl) {
+                    $localPath = $this->downloadFloorPlanImage($imageUrl);
+
+                    if ($localPath) {
+                        $row->local_image = $localPath;
+                        $row->saveQuietly();
+                    }
+                }
+            }
         }
 
         // A plan pulled from sale upstream should not linger on the site.
         $project->floorPlanRows()
             ->when($seen !== [], fn ($query) => $query->whereNotIn('external_id', $seen))
             ->delete();
+    }
+
+    protected function downloadFloorPlanImage(string $url): ?string
+    {
+        try {
+            $result = RvMedia::uploadFromUrl($url, $this->floorPlansFolderId(), 'floor-plans');
+
+            if (Arr::get($result, 'error')) {
+                return null;
+            }
+
+            return Arr::get($result, 'data')?->resource?->url;
+        } catch (Throwable $e) {
+            // One bad image must not abort the entire floor plan sync.
+            report($e);
+
+            return null;
+        }
+    }
+
+    protected function floorPlansFolderId(): int|string
+    {
+        if ($this->floorPlansFolderId === null) {
+            $this->floorPlansFolderId = RvMedia::createFolder('floor-plans', 0, true);
+        }
+
+        return $this->floorPlansFolderId;
     }
 
     /**

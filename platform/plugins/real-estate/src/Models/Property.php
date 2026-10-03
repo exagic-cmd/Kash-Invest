@@ -24,6 +24,9 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -92,6 +95,34 @@ class Property extends BaseModel
     protected static function booted(): void
     {
         static::deleting(function (Property $property): void {
+            // Collect S3 file paths before any records are removed.
+            $propertyImages = collect((array) $property->images)
+                ->filter()
+                ->values()
+                ->all();
+
+            // Floor plans are stored as a JSON repeater — extract the image key
+            // from each entry's key/value pairs.
+            $floorPlanImages = collect((array) $property->floor_plans)
+                ->filter(fn ($item) => is_array($item))
+                ->map(fn ($item) => collect($item)->pluck('value', 'key')->get('image'))
+                ->filter()
+                ->values()
+                ->all();
+
+            $allFiles = array_merge($propertyImages, $floorPlanImages);
+
+            if (! empty($allFiles)) {
+                Storage::delete($allFiles);
+            }
+
+            // Translations have no FK constraint — delete manually.
+            if (Schema::hasTable('re_properties_translations')) {
+                DB::table('re_properties_translations')
+                    ->where('re_properties_id', $property->getKey())
+                    ->delete();
+            }
+
             $property->categories()->detach();
             $property->customFields()->delete();
             $property->openHouses()->delete();

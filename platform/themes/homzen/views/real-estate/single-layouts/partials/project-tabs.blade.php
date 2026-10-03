@@ -1066,96 +1066,80 @@
                         @endforeach
                     </div>
 
-                    {{-- Floor Plans Table --}}
-                    <div class="table-responsive" id="floorPlansContainer">
-                        <table class="table table-bordered align-middle floor-plans-project-table">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>{{ __('Plan Name') }}</th>
-                                    <th>{{ __('Bedrooms') }}</th>
-                                    <th>{{ __('Bathrooms') }}</th>
-                                    <th>{{ __('Size') }}</th>
-                                    <th>{{ __('Price') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th class="text-center">{{ __('View') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($floorPlans as $plan)
-                                    @php
-                                        $bNum = $plan['bedrooms_num'] ?? null;
-                                        $filterCategory = 'other';
-                                        if ($bNum !== null) {
-                                            if ((float)$bNum == 0.0) $filterCategory = 'studio';
-                                            elseif ((float)$bNum == 1.0 || (float)$bNum == 1.5) $filterCategory = '1bed';
-                                            elseif ((float)$bNum == 2.0 || (float)$bNum == 2.5) $filterCategory = '2bed';
-                                            elseif ((float)$bNum >= 3.0) $filterCategory = '3bed';
-                                        }
-                                    @endphp
-                                    <tr class="floor-plan-card-col" data-category="{{ $filterCategory }}" data-name="{{ strtolower($plan['name']) }}" data-size="{{ $plan['size'] ?? '' }}">
-                                        <td class="fw-semibold text-dark">{{ $plan['name'] }}</td>
-                                        <td>
-                                            @if (!empty($plan['bedrooms']))
-                                                <span class="d-inline-flex align-items-center gap-1">
-                                                    <x-core::icon name="ti ti-bed" /> {{ $plan['bedrooms'] }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">&mdash;</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if (!empty($plan['bathrooms']))
-                                                <span class="d-inline-flex align-items-center gap-1">
-                                                    <x-core::icon name="ti ti-bath" /> {{ $plan['bathrooms'] }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">&mdash;</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if (!empty($plan['size']))
-                                                {{ number_format($plan['size']) }} {{ setting('real_estate_square_unit', 'sqft') }}
-                                            @else
-                                                <span class="text-muted">&mdash;</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if (!empty($plan['price']))
-                                                <span class="fw-bold text-primary">{{ format_price($plan['price']) }}</span>
-                                            @else
-                                                <span class="text-muted small">{{ __('On Request') }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
+                    {{-- Floor Plans Card Grid --}}
+                    <div class="row g-3" id="floorPlansContainer">
+                        @foreach ($floorPlans as $plan)
+                            @php
+                                $bNum = $plan['bedrooms_num'] ?? null;
+                                $filterCategory = 'other';
+                                if ($bNum !== null) {
+                                    if ((float)$bNum == 0.0) $filterCategory = 'studio';
+                                    elseif ((float)$bNum == 1.0 || (float)$bNum == 1.5) $filterCategory = '1bed';
+                                    elseif ((float)$bNum == 2.0 || (float)$bNum == 2.5) $filterCategory = '2bed';
+                                    elseif ((float)$bNum >= 3.0) $filterCategory = '3bed';
+                                }
+                                $avail = strtolower($plan['availability'] ?? '');
+                                $availBadge = str_contains($avail, 'sold') ? 'bg-danger-subtle text-danger border-danger-subtle' : 'bg-success-subtle text-success border-success-subtle';
+                            @endphp
+
+                            <div class="col-md-6 col-lg-4 floor-plan-card-col" data-category="{{ $filterCategory }}" data-name="{{ strtolower($plan['name']) }}" data-size="{{ $plan['size'] ?? '' }}">
+                                <div class="floor-plan-item-card">
+                                    <div class="floor-plan-thumb-wrap">
+                                        @if (!empty($plan['image']))
+                                            <a href="{{ RvMedia::getImageUrl($plan['image']) }}"
+                                               data-fancybox="project-floor-plans"
+                                               data-caption="{{ $plan['name'] }}{{ !empty($plan['bedrooms']) ? ' · ' . $plan['bedrooms'] : '' }}{{ !empty($plan['size']) ? ' · ' . number_format($plan['size']) . ' sqft' : '' }}">
+                                                {{ RvMedia::image($plan['image'], $plan['name'], 'medium') }}
+                                            </a>
+                                        @else
+                                            <div class="placeholder-plan-drawing d-flex align-items-center justify-content-center">
+                                                <x-core::icon name="ti ti-layout-2" />
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div class="floor-plan-card-body p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <h6 class="floor-plan-title mb-0 text-dark fw-bold">{{ $plan['name'] }}</h6>
                                             @if (!empty($plan['availability']))
-                                                @php
-                                                    $avail = strtolower($plan['availability']);
-                                                    $badgeCls = str_contains($avail, 'sold') ? 'bg-danger-subtle text-danger border-danger-subtle' : 'bg-success-subtle text-success border-success-subtle';
-                                                @endphp
-                                                <span class="badge border {{ $badgeCls }}">{{ $plan['availability'] }}</span>
-                                            @else
-                                                <span class="text-muted">&mdash;</span>
+                                                <span class="badge border {{ $availBadge }}">{{ $plan['availability'] }}</span>
                                             @endif
-                                        </td>
-                                        <td class="text-center">
+                                        </div>
+
+                                        <div class="floor-plan-specs-pills d-flex flex-wrap gap-2 mb-2">
+                                            @if (!empty($plan['bedrooms']))
+                                                <span class="badge bg-light text-dark border">{{ $plan['bedrooms'] }}</span>
+                                            @endif
+                                            @if (!empty($plan['bathrooms']))
+                                                <span class="badge bg-light text-dark border">{{ $plan['bathrooms'] }}</span>
+                                            @endif
+                                            @if (!empty($plan['size']))
+                                                <span class="badge bg-light text-dark border">{{ number_format($plan['size']) }} {{ setting('real_estate_square_unit', 'sqft') }}</span>
+                                            @endif
+                                        </div>
+
+                                        <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-2">
+                                            <div class="floor-plan-price">
+                                                @if (!empty($plan['price']))
+                                                    <span class="fw-bold text-primary">{{ format_price($plan['price']) }}</span>
+                                                @else
+                                                    <span class="text-muted small">{{ __('Price on Request') }}</span>
+                                                @endif
+                                            </div>
                                             @if (!empty($plan['image']))
                                                 <a href="{{ RvMedia::getImageUrl($plan['image']) }}"
                                                    data-fancybox="project-floor-plans"
-                                                   data-caption="{{ $plan['name'] }}{{ !empty($plan['bedrooms']) ? ' · ' . $plan['bedrooms'] : '' }}{{ !empty($plan['size']) ? ' · ' . number_format($plan['size']) . ' sqft' : '' }}"
+                                                   data-caption="{{ $plan['name'] }}"
                                                    class="btn btn-sm btn-outline-primary floor-plan-view-icon"
                                                    title="{{ __('View floor plan') }}">
                                                     <x-core::icon name="ti ti-eye" />
                                                 </a>
-                                            @else
-                                                <span class="text-muted" title="{{ __('No image available') }}">
-                                                    <x-core::icon name="ti ti-eye-off" />
-                                                </span>
                                             @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>

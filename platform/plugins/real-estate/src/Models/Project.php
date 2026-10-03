@@ -10,6 +10,7 @@ use Botble\Location\Models\State;
 use Botble\Media\Facades\RvMedia;
 use Botble\RealEstate\Enums\ProjectStatusEnum;
 use Botble\RealEstate\Models\Traits\UniqueId;
+use Botble\RealEstate\Models\ProjectSyncLogItem;
 use Botble\RealEstate\QueryBuilders\ProjectBuilder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -129,6 +131,36 @@ class Project extends BaseModel
         });
 
         static::deleting(function (Project $project): void {
+            // Collect S3 file paths BEFORE cascade deletes remove the rows.
+            $floorPlanImages = $project->floorPlanRows()
+                ->whereNotNull('local_image')
+                ->pluck('local_image')
+                ->filter()
+                ->values()
+                ->all();
+
+            $documentFiles = $project->documents()
+                ->whereNotNull('local_path')
+                ->pluck('local_path')
+                ->filter()
+                ->values()
+                ->all();
+
+            $projectImages = collect((array) $project->images)
+                ->filter()
+                ->values()
+                ->all();
+
+            // Delete all S3/storage files in one call.
+            $allFiles = array_merge($floorPlanImages, $documentFiles, $projectImages);
+
+            if (! empty($allFiles)) {
+                Storage::delete($allFiles);
+            }
+
+            // Orphaned sync log items (no FK constraint on project_id).
+            ProjectSyncLogItem::query()->where('project_id', $project->getKey())->delete();
+
             $project->categories()->detach();
             $project->customFields()->delete();
             $project->reviews()->delete();
@@ -482,7 +514,7 @@ class Project extends BaseModel
                 return $rows->map(function (ProjectFloorPlan $plan) {
                     $beds = $plan->bedrooms;
                     $baths = $plan->bathrooms;
-                    $image = $plan->image_full ?: ($plan->image_thumbnail ?: ($plan->image_medium ?: $plan->local_image));
+                    $image = $plan->local_image ?: ($plan->image_full ?: ($plan->image_medium ?: $plan->image_thumbnail));
 
                     $bedLabel = null;
                     if ($beds !== null) {
