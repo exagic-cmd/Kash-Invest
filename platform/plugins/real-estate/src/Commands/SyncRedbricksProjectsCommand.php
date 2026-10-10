@@ -16,8 +16,8 @@ class SyncRedbricksProjectsCommand extends Command
 {
     public function handle(RedbricksProjectSyncer $syncer): int
     {
-        // Image downloads plus the client's own rate pacing put a full run well
-        // past PHP's default 300s limit.
+        // Listing-only pass is fast (~40 requests, ~1 min), but the client's
+        // own pacing can still cross the default 300s limit on a slow link.
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
 
@@ -96,6 +96,21 @@ class SyncRedbricksProjectsCommand extends Command
             $unchanged,
             $result['failed'],
         ));
+
+        $queued = (int) ($result['queued_for_hydration'] ?? 0);
+
+        if ($queued > 0) {
+            $this->components->info(sprintf(
+                '%d project(s) queued for details + media hydration. Run the workers to drain them:',
+                $queued
+            ));
+            $this->components->bulletList([
+                'php artisan queue:work --queue=' . RedbricksProjectSyncer::DETAILS_QUEUE
+                    . ' --tries=3 --timeout=0 --sleep=1   (ONE process only — Redbricks rate limit is per team)',
+                'php artisan queue:work --queue=' . RedbricksProjectSyncer::MEDIA_QUEUE
+                    . ' --tries=3 --timeout=0 --sleep=1     (safe to run multiple of these in parallel)',
+            ]);
+        }
 
         $log->update([
             'status' => 'success',

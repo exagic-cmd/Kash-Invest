@@ -63,6 +63,8 @@ class Project extends BaseModel
         'unique_id',
         'source',
         'raw_payload',
+        'details_synced_at',
+        'media_synced_at',
         'landing_template',
         'private_notes',
         'floor_plans',
@@ -105,6 +107,9 @@ class Project extends BaseModel
         'floor_plans' => 'array',
         // Complete API response for synced projects — see the raw_payload migration.
         'raw_payload' => 'array',
+        // Staged-ingest timestamps — see the add_hydration_timestamps migration.
+        'details_synced_at' => 'datetime',
+        'media_synced_at' => 'datetime',
         'suites_starting_floor' => 'int',
         'number_of_suites_per_floor' => 'int',
         'suite_size_from' => 'float',

@@ -9,6 +9,8 @@ use Botble\Location\Models\Country;
 use Botble\Location\Models\State;
 use Botble\Media\Facades\RvMedia;
 use Botble\RealEstate\Enums\ProjectStatusEnum;
+use Botble\RealEstate\Jobs\HydrateRedbricksProjectDetailsJob;
+use Botble\RealEstate\Jobs\DownloadRedbricksProjectMediaJob;
 use Botble\RealEstate\Models\Project;
 use Botble\RealEstate\Models\ProjectDocument;
 use Botble\RealEstate\Models\ProjectFloorPlan;
@@ -24,27 +26,61 @@ use Throwable;
 /**
  * Pulls projects from the Redbricks Data API and mirrors them into re_projects.
  *
- * Ownership model, identical to the Buildify syncer it replaces:
- *  - every project this syncer creates carries unique_id = "redbricks-<id>";
- *  - each run matches ONLY on that tag, so manually added and Excel-imported
- *    projects are invisible here and never touched.
+ * STAGED INGEST
  *
- * Incremental strategy: Redbricks publishes no updated_since filter, so we walk
- * /projects ordered by updated_at descending and stop as soon as a page is
- * entirely older than the last successful run. Webhooks are the real mechanism
- * (see config/redbricks.php); this sweep exists to catch what they miss, since
- * their documentation states no retry or replay guarantee.
+ * The feed is 8k+ projects, each with its own floorplans + documents endpoints
+ * (two extra API requests per project) and 5+ images + several PDFs behind
+ * CDN URLs. A single-pass sync against Redbricks' 60 req/min team ceiling
+ * blocks the admin for ~5 hours, so the work is split into three independent
+ * passes:
  *
- * Every numeric read goes through intOrNull()/floatOrNull(). That is not
- * defensive habit: Redbricks documents transit_score, neighbourhood_id,
- * underground_levels, residential_parking and visitor_parking as integers on
- * the list endpoint and nullable strings on the single-project endpoint, so the
- * same field genuinely arrives as both.
+ *   1. sync()           — listing-only. Walks /projects pages, upserts rows
+ *                         from each page's embedded payload. No sub-resource
+ *                         fetches, no media downloads. 40 requests, ~1 min.
+ *                         Dispatches a HydrateRedbricksProjectDetailsJob for
+ *                         each project not yet hydrated.
+ *
+ *   2. hydrateDetails() — two API calls per project (floorplans + documents),
+ *                         merged into raw_payload. Writes the floor_plans
+ *                         repeater column and the re_project_floor_plans /
+ *                         re_project_documents child rows. No media downloads
+ *                         (image URLs + file URLs are stored verbatim). Capped
+ *                         by Redbricks' rate limit, so the queue runs on a
+ *                         single worker.
+ *
+ *   3. hydrateMedia()   — downloads project images, floor plan images, PDFs.
+ *                         Not against Redbricks' quota (CDN URLs), so the
+ *                         queue runs on many workers in parallel.
+ *
+ * Each pass stamps a dedicated timestamp (details_synced_at, media_synced_at)
+ * so the sweep knows what still owes work and the admin can see which rows
+ * are "basic only" vs. fully hydrated.
+ *
+ * OWNERSHIP MODEL (unchanged)
+ *
+ *   Every project this syncer creates carries source = 'redbricks' and
+ *   unique_id = the raw Redbricks id, and each run matches ONLY on that pair.
+ *   Manually added and Excel-imported projects are invisible here and never
+ *   touched.
+ *
+ * NUMERIC NORMALISATION (unchanged)
+ *
+ *   Every numeric read goes through intOrNull()/floatOrNull(). Redbricks
+ *   documents transit_score, neighbourhood_id, underground_levels,
+ *   residential_parking and visitor_parking as integers on the list endpoint
+ *   and nullable strings on the single-project endpoint, so the same field
+ *   genuinely arrives as both.
  */
 class RedbricksProjectSyncer
 {
     /** Value written to re_projects.source for every project this syncer owns. */
     public const SOURCE = 'redbricks';
+
+    /** Queue dedicated to the throttled per-project API hydration pass. */
+    public const DETAILS_QUEUE = 'redbricks-details';
+
+    /** Queue dedicated to media downloads (not rate-limited by Redbricks). */
+    public const MEDIA_QUEUE = 'redbricks-media';
 
     /**
      * API field => the re_projects column it lands in. Drives the "Redbricks API
@@ -86,6 +122,7 @@ class RedbricksProjectSyncer
     /** Columns whose changes are noise or too bulky for the detail modal. */
     protected const DIFF_IGNORE_COLUMNS = [
         'updated_at', 'created_at', 'content', 'images', 'raw_payload', 'floor_plans',
+        'details_synced_at', 'media_synced_at',
     ];
 
     protected int $created = 0;
@@ -103,6 +140,9 @@ class RedbricksProjectSyncer
 
     /** @var array<int, array<string, mixed>> */
     protected array $items = [];
+
+    /** Project IDs that need details hydration enqueued at the end of the run. */
+    protected array $pendingDetailsHydration = [];
 
     protected ?int $defaultAuthorId = null;
 
@@ -128,6 +168,9 @@ class RedbricksProjectSyncer
      * The request quota is capped per subscription period, so once a payload is
      * held locally every mapping change should be replayed from it rather than
      * re-crawled. This is also the only way to rebuild while the quota is spent.
+     *
+     * Media files already on local storage are left in place; the media timestamp
+     * is NOT touched here because a rebuild says nothing about download state.
      */
     public function rebuildFromPayload(Project $project): bool
     {
@@ -143,7 +186,8 @@ class RedbricksProjectSyncer
             300
         );
 
-        $data = $this->mapProject($listing, $name, (string) $project->unique_id, $project, $payload);
+        $data = $this->mapListingColumns($listing, $name, (string) $project->unique_id);
+        $data['raw_payload'] = $payload;
 
         $project->fill($data)->save();
 
@@ -151,17 +195,41 @@ class RedbricksProjectSyncer
             $this->createSlug($project, $name);
         }
 
-        $this->storeRelatedData($project, $listing, $payload);
+        $this->syncCustomFields($project, $listing);
+
+        // Replay stored sub-resources without touching the API or media.
+        $floorPlans = (array) Arr::get($payload, 'floor_plans', []);
+
+        if ($floorPlans !== []) {
+            $project->fill(['floor_plans' => $this->toRepeater($floorPlans)])->save();
+            $this->syncFloorPlanRows($project, $floorPlans, downloadImages: false);
+        }
+
+        $allDocuments = $this->collectDocuments($listing, $payload);
+
+        if ($allDocuments !== []) {
+            $this->syncDocumentRows($project, $allDocuments, downloadFiles: false);
+        }
+
+        if (($floorPlans !== [] || $allDocuments !== []) && ! $project->details_synced_at) {
+            $project->forceFill(['details_synced_at' => Carbon::now()])->saveQuietly();
+        }
 
         return true;
     }
 
     /**
+     * Fast listing-only pass. Writes the project row and its custom fields from
+     * each page's embedded payload, then enqueues a details hydration job for
+     * any project that is not yet hydrated. No sub-resource API calls and no
+     * media downloads happen here.
+     *
      * @param  callable|null  $onProgress  fn(int $page, int $pages, int $total): void
      * @param  bool  $full  ignore the incremental cutoff and walk the whole catalogue
+     * @param  bool  $enqueueHydration  dispatch details jobs for projects that need them
      * @return array<string, mixed>
      */
-    public function sync(?callable $onProgress = null, bool $full = false): array
+    public function sync(?callable $onProgress = null, bool $full = false, bool $enqueueHydration = true): array
     {
         $perPage = (int) config('plugins.real-estate.redbricks.per_page', 200);
         $cap = (int) config('plugins.real-estate.redbricks.max_records', 0);
@@ -175,6 +243,8 @@ class RedbricksProjectSyncer
             ->where('status', 'success')
             ->latest('finished_at')
             ->value('finished_at');
+
+        $this->pendingDetailsHydration = [];
 
         $page = 1;
         $pages = 1;
@@ -200,7 +270,7 @@ class RedbricksProjectSyncer
                     break 2;
                 }
 
-                @set_time_limit(300);
+                @set_time_limit(60);
 
                 try {
                     $this->importProject($project);
@@ -216,6 +286,10 @@ class RedbricksProjectSyncer
             $page++;
         } while ($page <= $pages);
 
+        if ($enqueueHydration) {
+            $this->enqueuePendingHydration();
+        }
+
         return [
             'created' => $this->created,
             'updated' => $this->updated,
@@ -224,7 +298,127 @@ class RedbricksProjectSyncer
             'errors' => $this->errors,
             'items' => $this->items,
             'cap_reached' => $this->capReached,
+            'queued_for_hydration' => count($this->pendingDetailsHydration),
         ];
+    }
+
+    /**
+     * Pass 2: fetch floorplans + documents for one project, merge them into
+     * raw_payload, write the floor_plans repeater and the child-table rows.
+     * No media downloads happen here — URLs are stored verbatim and the media
+     * pass pulls them down afterwards.
+     *
+     * Idempotent: a re-run against an already hydrated project refreshes its
+     * sub-resources in place.
+     */
+    public function hydrateDetails(Project $project, bool $enqueueMedia = true): bool
+    {
+        $externalId = $project->unique_id;
+
+        if (! $externalId) {
+            return false;
+        }
+
+        $payload = $project->raw_payload ?: [];
+        $listing = (array) Arr::get($payload, 'project', []);
+
+        $floorPlans = $this->wantsSubResource('sync_floor_plans')
+            ? $this->fetchSubResource(fn (): array => $this->client->floorPlansFor($externalId))
+            : [];
+
+        $documents = $this->wantsSubResource('sync_documents')
+            ? $this->fetchSubResource(fn (): array => $this->client->documentsFor($externalId))
+            : [];
+
+        if ($floorPlans !== []) {
+            $payload['floor_plans'] = $floorPlans;
+        }
+
+        if ($documents !== []) {
+            $payload['documents'] = $documents;
+        }
+
+        $updates = ['raw_payload' => $payload, 'details_synced_at' => Carbon::now()];
+
+        if ($floorPlans !== []) {
+            $updates['floor_plans'] = $this->toRepeater($floorPlans);
+        }
+
+        $project->fill($updates)->save();
+
+        if ($floorPlans !== []) {
+            $this->syncFloorPlanRows($project, $floorPlans, downloadImages: false);
+        }
+
+        $allDocuments = $this->collectDocuments($listing, $payload);
+
+        if ($allDocuments !== []) {
+            $this->syncDocumentRows($project, $allDocuments, downloadFiles: false);
+        }
+
+        if ($enqueueMedia) {
+            DownloadRedbricksProjectMediaJob::dispatch($project->getKey())
+                ->onQueue(self::MEDIA_QUEUE);
+        }
+
+        return true;
+    }
+
+    /**
+     * Pass 3: pull every CDN asset referenced by a hydrated project into the
+     * media library. Idempotent: already-downloaded files are left in place.
+     *
+     * Separated from hydrateDetails() because CDN downloads are not against
+     * Redbricks' 60/min team ceiling, so this queue can run many workers in
+     * parallel without breaching the API quota.
+     */
+    public function hydrateMedia(Project $project): bool
+    {
+        $listing = (array) Arr::get($project->raw_payload ?: [], 'project', []);
+
+        if (empty($project->images)) {
+            $images = $this->resolveImages($listing, null);
+
+            if ($images !== []) {
+                $project->fill(['images' => $images])->save();
+            }
+        }
+
+        foreach ($project->floorPlanRows()->whereNull('local_image')->get() as $row) {
+            $imageUrl = $row->image_full ?: $row->image_medium ?: $row->image_thumbnail;
+
+            if (! $imageUrl) {
+                continue;
+            }
+
+            $localPath = $this->downloadFloorPlanImage($imageUrl);
+
+            if ($localPath) {
+                $row->local_image = $localPath;
+                $row->saveQuietly();
+            }
+        }
+
+        // Only pull PDFs we do not already have a local copy for. Detecting a
+        // rotated remote URL is explicitly out of scope here — the details pass
+        // overwrites file_url with the fresh one, so by the time this runs the
+        // DB column is current and there is no older value to compare against.
+        foreach ($project->documents()->whereNull('local_path')->get() as $document) {
+            if (! $document->file_url) {
+                continue;
+            }
+
+            $localPath = $this->downloadDocument($document->file_url);
+
+            if ($localPath) {
+                $document->local_path = $localPath;
+                $document->saveQuietly();
+            }
+        }
+
+        $project->forceFill(['media_synced_at' => Carbon::now()])->saveQuietly();
+
+        return true;
     }
 
     /**
@@ -274,6 +468,9 @@ class RedbricksProjectSyncer
     }
 
     /**
+     * One project in the fast pass: upsert the row and its custom fields,
+     * record it as needing details hydration if it has not been hydrated yet.
+     *
      * @param  array<string, mixed>  $listing
      */
     protected function importProject(array $listing): void
@@ -289,11 +486,16 @@ class RedbricksProjectSyncer
 
         $existing = Project::query()->where('unique_id', $uniqueId)->first();
 
-        $data = $this->mapProject($listing, $name, $uniqueId, $existing);
+        $data = $this->mapListingColumns($listing, $name, $uniqueId);
 
-        // mapProject() already fetched these to build raw_payload; reuse them
-        // rather than paying for the same two requests a second time.
-        $payload = $data['raw_payload'] ?? [];
+        // Preserve sub-resources already present on raw_payload. The fast pass
+        // only ever writes the listing portion, so a rehydrated project keeps
+        // its floor_plans/documents blocks from the previous details run.
+        $existingPayload = $existing?->raw_payload ?: [];
+        $payload = ['project' => $listing]
+            + array_intersect_key($existingPayload, array_flip(['floor_plans', 'documents']));
+
+        $data['raw_payload'] = $payload;
 
         if (! $existing) {
             // Create and slug together: a failure between the two used to leave a
@@ -306,7 +508,8 @@ class RedbricksProjectSyncer
                 return $project;
             });
 
-            $this->storeRelatedData($project, $listing, $payload);
+            $this->syncCustomFields($project, $listing);
+            $this->pendingDetailsHydration[] = $project->getKey();
 
             $this->created++;
             $this->items[] = [
@@ -328,36 +531,29 @@ class RedbricksProjectSyncer
 
         $changes = $this->diff($existing, $data);
 
-        // raw_payload and floor_plans are excluded from the diff because they are
-        // far too bulky for the detail modal — but that means a project whose
-        // mapped columns are identical would never be written, and a row that has
-        // never been backfilled would stay empty forever. Treat "we have it and
-        // the row does not" as a reason to save, without listing it as a change.
-        $needsBackfill = false;
+        // raw_payload is excluded from the diff because it is too bulky for the
+        // detail modal — but that means a project whose mapped columns are
+        // identical would never be written, and a row never backfilled would
+        // stay empty. Treat "we have it, the row does not" as a reason to save.
+        $needsBackfill = ! empty($data['raw_payload']) && empty($existing->raw_payload);
 
-        foreach (['raw_payload', 'floor_plans'] as $column) {
-            if (! empty($data[$column]) && empty($existing->getAttribute($column))) {
-                $needsBackfill = true;
-
-                break;
-            }
+        // A project without a details timestamp still owes its sub-resource
+        // hydration, regardless of whether the listing columns moved.
+        if (! $existing->details_synced_at) {
+            $this->pendingDetailsHydration[] = $existing->getKey();
         }
 
         if ($changes === [] && ! $needsBackfill) {
-            // Columns are current, but the child tables may not be — a run that
-            // added floor plan or document storage still has to populate them.
-            $this->storeRelatedData($existing, $listing, $payload);
-
+            $this->syncCustomFields($existing, $listing);
             $this->unchanged++;
 
             return;
         }
 
         $existing->fill($data)->save();
+        $this->syncCustomFields($existing, $listing);
 
-        $this->storeRelatedData($existing, $listing, $payload);
-
-        // A save that only backfilled bulk columns is not a content change, and
+        // A save that only backfilled raw_payload is not a content change, and
         // counting it as one would overstate what the feed actually did.
         if ($changes === []) {
             $this->unchanged++;
@@ -376,24 +572,17 @@ class RedbricksProjectSyncer
     }
 
     /**
-     * Custom fields, floor plan rows and document rows for one project.
-     *
-     * Each is independently guarded: a project must not fail because its PDFs
-     * were unreachable, and a document failure must not cost us the floor plans.
-     *
-     * @param  array<string, mixed>  $listing
-     * @param  array<string, mixed>  $payload
+     * Dispatch details jobs for every project the current run flagged. Called
+     * once at the end so a cap-reached run only enqueues what it saved.
      */
-    protected function storeRelatedData(Project $project, array $listing, array $payload): void
+    protected function enqueuePendingHydration(): void
     {
-        foreach ([
-            fn () => $this->syncCustomFields($project, $listing),
-            fn () => $this->syncFloorPlanRows($project, Arr::get($payload, 'floor_plans', [])),
-            fn () => $this->syncDocumentRows($project, $this->collectDocuments($listing, $payload)),
-        ] as $step) {
+        foreach (array_unique($this->pendingDetailsHydration) as $projectId) {
             try {
-                $step();
+                HydrateRedbricksProjectDetailsJob::dispatch($projectId)
+                    ->onQueue(self::DETAILS_QUEUE);
             } catch (Throwable $e) {
+                // Dispatch failures must not blow up the whole sync run.
                 report($e);
             }
         }
@@ -496,7 +685,7 @@ class RedbricksProjectSyncer
      *
      * @param  array<int, array<string, mixed>>  $floorPlans
      */
-    protected function syncFloorPlanRows(Project $project, array $floorPlans): void
+    protected function syncFloorPlanRows(Project $project, array $floorPlans, bool $downloadImages = false): void
     {
         $seen = [];
 
@@ -531,19 +720,14 @@ class RedbricksProjectSyncer
                 ]
             );
 
-            // Download the best available image to S3 once; skip if already stored.
-            if (empty($row->local_image)) {
+            if ($downloadImages && empty($row->local_image)) {
                 $imageUrl = Arr::get($plan, 'images.full')
                     ?: Arr::get($plan, 'images.medium')
                     ?: Arr::get($plan, 'images.thumbnail');
 
-                if ($imageUrl) {
-                    $localPath = $this->downloadFloorPlanImage($imageUrl);
-
-                    if ($localPath) {
-                        $row->local_image = $localPath;
-                        $row->saveQuietly();
-                    }
+                if ($imageUrl && ($localPath = $this->downloadFloorPlanImage($imageUrl))) {
+                    $row->local_image = $localPath;
+                    $row->saveQuietly();
                 }
             }
         }
@@ -614,14 +798,13 @@ class RedbricksProjectSyncer
     }
 
     /**
-     * Documents as rows, with the PDF downloaded into the media library.
-     *
-     * The remote URL is kept alongside our copy: Redbricks' CDN links can rotate,
-     * and holding both means a broken local file is re-fetchable.
+     * Documents as rows. In the fast / details passes the PDF URL alone is
+     * stored; the media pass actually downloads the file. The remote URL is
+     * kept alongside our copy because Redbricks' CDN links can rotate.
      *
      * @param  array<int, array<string, mixed>>  $documents
      */
-    protected function syncDocumentRows(Project $project, array $documents): void
+    protected function syncDocumentRows(Project $project, array $documents, bool $downloadFiles = false): void
     {
         foreach ($documents as $document) {
             // Each entry declares its own "type" (latest | historical), which is
@@ -639,11 +822,9 @@ class RedbricksProjectSyncer
                 ->where('external_id', (string) $externalId)
                 ->first();
 
-            // Only download when we have nothing, or the remote link changed —
-            // re-fetching every PDF on every run would dominate the sync.
             $localPath = $existing?->local_path;
 
-            if ($fileUrl && (! $localPath || $existing?->file_url !== $fileUrl)) {
+            if ($downloadFiles && $fileUrl && (! $localPath || $existing?->file_url !== $fileUrl)) {
                 $localPath = $this->downloadDocument($fileUrl) ?? $localPath;
             }
 
@@ -706,16 +887,14 @@ class RedbricksProjectSyncer
     }
 
     /**
+     * Listing-only column mapping. No API calls, no media. Produces the data
+     * array that writes the project row.
+     *
      * @param  array<string, mixed>  $listing
      * @return array<string, mixed>
      */
-    protected function mapProject(
-        array $listing,
-        string $name,
-        string $uniqueId,
-        ?Project $existing,
-        ?array $prefetched = null
-    ): array {
+    protected function mapListingColumns(array $listing, string $name, string $uniqueId): array
+    {
         $description = trim(strip_tags((string) Arr::get($listing, 'description', '')));
 
         $data = [
@@ -761,76 +940,7 @@ class RedbricksProjectSyncer
 
         $this->resolveLocation($listing, $data);
 
-        if (config('plugins.real-estate.redbricks.sync_images', true)) {
-            $data['images'] = $this->resolveImages($listing, $existing);
-        }
-
-        // re_projects has a home for roughly a quarter of the 92 fields the API
-        // returns. Everything else — unit mix, GFA, walk/transit scores, parking
-        // detail, bedroom economics, incentives — is kept verbatim so a later
-        // feature can surface a field without re-syncing the whole catalogue.
-        $payload = ['project' => $listing];
-
-        $externalId = Arr::get($listing, 'id');
-
-        // $prefetched lets a rebuild reuse sub-resources already stored in
-        // raw_payload. Each of these endpoints costs one request per project
-        // against a quota that is capped per subscription period, so re-fetching
-        // what we already hold is the expensive mistake to avoid.
-        $floorPlans = $prefetched === null
-            ? ($this->wantsSubResource('sync_floor_plans')
-                ? $this->fetchSubResource(fn (): array => $this->client->floorPlansFor($externalId))
-                : [])
-            : Arr::get($prefetched, 'floor_plans', []);
-
-        $documents = $prefetched === null
-            ? ($this->wantsSubResource('sync_documents')
-                ? $this->fetchSubResource(fn (): array => $this->client->documentsFor($externalId))
-                : [])
-            : Arr::get($prefetched, 'documents', []);
-
-        if ($floorPlans !== []) {
-            $payload['floor_plans'] = $floorPlans;
-            $data['floor_plans'] = $this->toRepeater($floorPlans);
-        }
-
-        if ($documents !== []) {
-            $payload['documents'] = $documents;
-        }
-
-        // A rebuild must not blank a payload it is deriving from.
-        if ($prefetched === null || $payload !== ['project' => $listing]) {
-            $data['raw_payload'] = $payload;
-        }
-
         return array_filter($data, fn ($value): bool => $value !== null);
-    }
-
-    /**
-     * Floor plans and documents are separate per-project endpoints, so one bad
-     * or tier-gated call must not cost us the project itself.
-     *
-     * @param  callable(): array<int, array<string, mixed>>  $fetch
-     * @return array<int, array<string, mixed>>
-     */
-    protected function wantsSubResource(string $key): bool
-    {
-        return (bool) config('plugins.real-estate.redbricks.' . $key, false);
-    }
-
-    /**
-     * @param  callable(): array<int, array<string, mixed>>  $fetch
-     * @return array<int, array<string, mixed>>
-     */
-    protected function fetchSubResource(callable $fetch): array
-    {
-        try {
-            return $fetch();
-        } catch (Throwable $e) {
-            report($e);
-
-            return [];
-        }
     }
 
     /**
@@ -1255,5 +1365,29 @@ class RedbricksProjectSyncer
         } while ($cleanedLength > $maxLength && $limit > 0);
 
         return $candidate;
+    }
+
+    /**
+     * Floor plans and documents are separate per-project endpoints, so one bad
+     * or tier-gated call must not cost us the project itself.
+     */
+    protected function wantsSubResource(string $key): bool
+    {
+        return (bool) config('plugins.real-estate.redbricks.' . $key, false);
+    }
+
+    /**
+     * @param  callable(): array<int, array<string, mixed>>  $fetch
+     * @return array<int, array<string, mixed>>
+     */
+    protected function fetchSubResource(callable $fetch): array
+    {
+        try {
+            return $fetch();
+        } catch (Throwable $e) {
+            report($e);
+
+            return [];
+        }
     }
 }
