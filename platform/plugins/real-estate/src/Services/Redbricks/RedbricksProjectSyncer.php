@@ -615,7 +615,10 @@ class RedbricksProjectSyncer
 
             $fields[] = [
                 'name' => $this->humanise($key),
-                'value' => mb_substr($rendered, 0, 255, 'UTF-8'),
+                // Column is TEXT (65 535 bytes). Cap at 10 000 chars as a
+                // safety net against pathological inputs; the full content
+                // is always available in raw_payload.
+                'value' => mb_substr($rendered, 0, 10000, 'UTF-8'),
             ];
         }
 
