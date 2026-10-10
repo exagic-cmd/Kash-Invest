@@ -396,6 +396,28 @@ class Property extends BaseModel
         });
     }
 
+    /**
+     * Street-only portion of the display name. For TRREB listings the stored
+     * `name` is the full UnparsedAddress ("61 Cameron Avenue, Toronto, ON M6M
+     * 1R1"); the detail page title should show only the street line and drop
+     * the city/province/postal. For manual listings the name is user-chosen
+     * and returned verbatim.
+     */
+    protected function streetName(): Attribute
+    {
+        return Attribute::get(function () {
+            if (! in_array($this->source, ['trreb', 'treeb'], true)) {
+                return $this->name;
+            }
+
+            $firstComma = strpos((string) $this->name, ',');
+
+            return $firstComma === false
+                ? $this->name
+                : trim(substr($this->name, 0, $firstComma));
+        });
+    }
+
     protected function formattedFloorPlans(): Attribute
     {
         return Attribute::get(function () {

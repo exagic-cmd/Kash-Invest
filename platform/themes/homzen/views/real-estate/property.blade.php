@@ -12,7 +12,7 @@
 
     $style = theme_option('real_estate_property_detail_layout', 1);
     $style = in_array($style, range(1, 4)) ? $style : 1;
-    Theme::set('pageTitle', $property->name);
+    Theme::set('pageTitle', $property->street_name);
     Theme::set('currentProperty', $property);
 
     $firstImage = $property->images[0] ?? null;

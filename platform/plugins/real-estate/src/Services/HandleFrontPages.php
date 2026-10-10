@@ -79,7 +79,9 @@ class HandleFrontPages
                     return redirect()->to($property->url);
                 }
 
-                SeoHelper::setTitle($property->name)
+                $displayTitle = $property->street_name;
+
+                SeoHelper::setTitle($displayTitle)
                     ->setDescription(Str::words($property->description, 120));
 
                 SeoHelper::meta()->setUrl($property->url);
@@ -90,14 +92,14 @@ class HandleFrontPages
                 }
                 $meta->setDescription($property->description);
                 $meta->setUrl($property->url);
-                $meta->setTitle($property->name);
+                $meta->setTitle($displayTitle);
                 $meta->setType('article');
 
                 SeoHelper::setSeoOpenGraph($meta);
 
                 Theme::breadcrumb()
                     ->add(trans('plugins/real-estate::real-estate.properties'), route('public.properties'))
-                    ->add($property->name, $property->url);
+                    ->add($displayTitle, $property->url);
 
                 Helper::handleViewCount($property, 'viewed_property');
 

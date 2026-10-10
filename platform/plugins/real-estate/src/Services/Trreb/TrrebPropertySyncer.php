@@ -352,7 +352,7 @@ class TrrebPropertySyncer
         $customFieldChanges = $isNew ? [] : $this->diffCustomFields($oldCustomFields, $newCustomFields);
 
         if (($isNew || ! $property->slugable()->exists()) && SlugHelper::isSupportedModel(Property::class)) {
-            $this->createSlug($property, $name, $listingKey);
+            $this->createSlug($property, $listing, $name, $listingKey);
         }
 
         $this->ensureTranslation($property);
@@ -367,23 +367,28 @@ class TrrebPropertySyncer
     }
 
     /**
-     * Give a freshly imported property a unique, stable public URL.
+     * Give a freshly imported property a unique, stable public URL in the shape
+     * expected by the search-engine-friendly scheme:
+     *
+     *   /{city}-real-estate/{street-slug}
+     *
+     * City comes from the listing's City field. Street-only slug comes from
+     * StreetNumber/StreetName/StreetSuffix — the full UnparsedAddress is not
+     * used because it includes the city + province + postal, which would
+     * duplicate the prefix segment and bloat the URL.
      *
      * SlugHelper::createSlug() keys its firstOrNew on (reference_type,
      * reference_id, prefix) and does NOT check whether the slug *key* is already
-     * taken â€” so two listings at the same address, or a re-import after a purge,
-     * happily create duplicate keys. SlugHelper::getSlug() then resolves the
-     * lowest-id match, which may point at a property that no longer exists, and
-     * the detail page 404s.
-     *
-     * The MLS number makes the key unique by construction (addresses are not:
-     * unit numbers, relists and re-imports all collide), and any stale row
-     * holding the same key is cleared first so the URL is self-healing.
+     * taken, so collisions within the same city are resolved here with a numeric
+     * suffix (-2, -3, …). The slug route in packages/theme/routes/public.php
+     * only resolves prefixes registered via SlugHelper, so these city prefixes
+     * are intercepted by PublicController::getRealEstateByLocationAndCategory
+     * which routes them back through HandleFrontPages.
      */
-    protected function createSlug(Property $property, string $name, string $listingKey): void
+    protected function createSlug(Property $property, array $listing, string $name, string $listingKey): void
     {
-        $prefix = (string) SlugHelper::getPrefix(Property::class, 'properties');
-        $baseKey = Str::slug($name) ?: ('property-' . $property->getKey());
+        $prefix = $this->resolveSlugPrefix($listing);
+        $baseKey = $this->resolveSlugKey($listing, $name, $property);
         $key = $baseKey;
         $counter = 1;
 
@@ -405,10 +410,46 @@ class TrrebPropertySyncer
             [
                 'reference_type' => Property::class,
                 'reference_id' => $property->getKey(),
-                'prefix' => $prefix,
             ],
-            ['key' => $key]
+            ['key' => $key, 'prefix' => $prefix]
         );
+    }
+
+    /**
+     * {city}-real-estate when a city is known, otherwise the model's default
+     * prefix so the URL still resolves through the standard slug route.
+     */
+    protected function resolveSlugPrefix(array $listing): string
+    {
+        $city = Str::slug((string) Arr::get($listing, 'City'));
+
+        if ($city === '') {
+            return (string) SlugHelper::getPrefix(Property::class, 'properties');
+        }
+
+        return $city . '-real-estate';
+    }
+
+    /**
+     * Street-level portion of the address, without city/province/postal.
+     */
+    protected function resolveSlugKey(array $listing, string $name, Property $property): string
+    {
+        $street = trim(implode(' ', array_filter([
+            trim((string) Arr::get($listing, 'StreetNumber')),
+            trim((string) Arr::get($listing, 'StreetName')),
+            trim((string) Arr::get($listing, 'StreetSuffix')),
+            trim((string) Arr::get($listing, 'UnitNumber')),
+        ])));
+
+        if ($street === '') {
+            // Fall back to whatever comes before the first comma in the display
+            // name — covers listings that only ship UnparsedAddress.
+            $firstComma = strpos($name, ',');
+            $street = $firstComma === false ? $name : substr($name, 0, $firstComma);
+        }
+
+        return Str::slug($street) ?: ('property-' . $property->getKey());
     }
 
     /**

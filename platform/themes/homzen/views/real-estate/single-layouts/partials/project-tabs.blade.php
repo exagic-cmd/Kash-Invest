@@ -130,6 +130,8 @@
             || str_contains($cfNameLower, 'map')
             || str_contains($cfNameLower, 'drive')
             || str_contains($cfNameLower, 'amenit')
+            || $cfNameLower === 'id'
+            || str_ends_with($cfNameLower, ' id')
         ) {
             continue;
         }

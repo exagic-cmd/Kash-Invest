@@ -247,6 +247,29 @@ class RealEstateServiceProvider extends ServiceProvider
             SlugHelper::setPrefix(Property::class, 'properties', true);
             SlugHelper::setPrefix(Category::class, 'property-category', true);
 
+            // For TRREB properties the slug is stored under a city-based prefix
+            // (e.g. "oakville-real-estate") rather than the generic "properties".
+            // Override the prefix shown in the admin permalink widget so it matches
+            // the real public URL.
+            // $model is nullable because FILTER_SLUG_PREFIX is fired in several
+            // places where no model is passed (e.g. theme-options, language plugin).
+            add_filter(FILTER_SLUG_PREFIX, function ($prefix, $model = null) {
+                if (! $model instanceof Property) {
+                    return $prefix;
+                }
+
+                if ($model->source !== 'trreb') {
+                    return $prefix;
+                }
+
+                $model->loadMissing('slugable');
+                $storedPrefix = $model->slugable?->prefix;
+
+                return ($storedPrefix && $storedPrefix !== 'properties')
+                    ? $storedPrefix
+                    : $prefix;
+            }, 10, 2);
+
             if (! setting('real_estate_disabled_public_profile')) {
                 SlugHelper::registerModule(Account::class, fn () => trans('plugins/real-estate::account.agents'));
                 SlugHelper::setPrefix(Account::class, 'agents', true);

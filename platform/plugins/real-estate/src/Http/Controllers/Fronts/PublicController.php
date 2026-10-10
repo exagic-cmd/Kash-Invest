@@ -19,7 +19,9 @@ use Botble\RealEstate\Models\ConsultCustomField;
 use Botble\RealEstate\Models\Currency;
 use Botble\RealEstate\Models\Project;
 use Botble\RealEstate\Models\Property;
+use Botble\RealEstate\Services\HandleFrontPages;
 use Botble\SeoHelper\Facades\SeoHelper;
+use Botble\Slug\Models\Slug;
 use Botble\Theme\Facades\Theme;
 use Exception;
 use Illuminate\Http\Request;
@@ -509,6 +511,42 @@ class PublicController extends BaseController
 
     public function getRealEstateByLocationAndCategory(string $locationSlug, string $categorySlug, Request $request)
     {
+        // Property detail short-circuit: TRREB listings are stored under slug
+        // prefix "{city}-real-estate" with the street-only key. Laravel strips
+        // the trailing "-real-estate" from {location} before this method runs
+        // (because the route pattern is "{location}-real-estate/{category}"),
+        // so we rebuild it here when looking up the slug row. If we find one,
+        // we hand off to HandleFrontPages — the same pipeline the default slug
+        // route uses — so the detail page renders identically to a /properties
+        // URL would.
+        $propertySlug = Slug::query()
+            ->where('reference_type', Property::class)
+            ->where('prefix', $locationSlug . '-real-estate')
+            ->where('key', $categorySlug)
+            ->first();
+
+        if ($propertySlug) {
+            // HandleFrontPages returns ['view'=>..., 'data'=>..., 'default_view'=>...]
+            // (the shape expected by the BASE_FILTER_PUBLIC_SINGLE_DATA filter),
+            // not a Response. If we return the array as-is Laravel JSON-encodes
+            // it, so render it the way Theme\PublicController::getView() does.
+            $result = (new HandleFrontPages())->handle($propertySlug);
+
+            if ($result instanceof \Symfony\Component\HttpFoundation\Response) {
+                return $result;
+            }
+
+            if (is_array($result) && isset($result['view'])) {
+                return Theme::scope(
+                    $result['view'],
+                    $result['data'] ?? [],
+                    Arr::get($result, 'default_view')
+                )->render();
+            }
+
+            return $result;
+        }
+
         $cleanLocation = str_replace('-real-estate', '', $locationSlug);
         $cleanLocation = str_replace('-', ' ', $cleanLocation);
 

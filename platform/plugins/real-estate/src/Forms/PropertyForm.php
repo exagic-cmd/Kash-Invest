@@ -152,7 +152,20 @@ class PropertyForm extends FormAbstract
                     <a href="' . route('tools.data-synchronize.import.properties.index') . '" class="btn btn-primary btn-sm">Import Properties CSV</a>
                 </div>',
             ])
-            ->add('name', TextField::class, NameFieldOption::make()->required())
+            ->add('name', TextField::class, (function () {
+                $option = NameFieldOption::make()->required();
+
+                // For TRREB/IDX imports the stored `name` is the full
+                // UnparsedAddress ("690 Dorval Drive 500, Oakville, ON L6K 3V7").
+                // Display only the street portion — the existing `street_name`
+                // accessor strips everything from the first comma onward.
+                $model = $this->getModel();
+                if ($model instanceof Property && $model->source === 'trreb') {
+                    $option->value($model->street_name);
+                }
+
+                return $option;
+            })())
             ->add('type', SelectField::class, [
                 'label' => trans('plugins/real-estate::property.form.type'),
                 'required' => true,

@@ -6,23 +6,65 @@
 <div class="header-property-detail pb-4 mb-4" style="border-bottom: 1px solid #e0e0e0;">
     <!-- Top Row: Title, Location, Action Buttons -->
     <div class="d-flex justify-content-between align-items-start mb-3">
-        <div class="box-name">
+        <div class="box-name flex-grow-1">
             <h1 class="h5 title mb-1" style="font-size: 1.25rem;">
                 {!! BaseHelper::clean($model->name) !!}
             </h1>
+
+            {{-- Address line + buttons side-by-side (mobile only, d-md-none) --}}
+            <div class="d-flex justify-content-between align-items-center d-md-none">
+                @if ($model->short_address)
+                    <p class="text-muted mb-0" style="font-size: 0.875rem;">
+                        {{ $model->short_address }}
+                    </p>
+                @endif
+
+                <div class="action-buttons d-flex gap-2 ms-2">
+                    @if($socialSharing)
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Share') }}" style="padding: 0.25rem 0.5rem;">
+                                <x-core::icon name="ti ti-share" />
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end p-2">
+                                <li class="d-flex gap-2">
+                                    @foreach($socialSharing as $social)
+                                        <a title="{{ $social['name'] }}" href="{{ $social['url'] }}" class="btn btn-light btn-sm rounded-circle p-2 d-flex" target="_blank">
+                                            {!! $social['icon'] !!}
+                                        </a>
+                                    @endforeach
+                                </li>
+                            </ul>
+                        </div>
+                    @endif
+
+                    @if (RealEstateHelper::isEnabledWishlist())
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                                data-type="{{ $model instanceof \Botble\RealEstate\Models\Property ? 'property' : 'project' }}"
+                                data-bb-toggle="add-to-wishlist"
+                                data-id="{{ $model->getKey() }}"
+                                data-add-message="{{ __('Added \":name\" to wishlist successfully!', ['name' => $model->name]) }}"
+                                data-remove-message="{{ __('Removed \":name\" from wishlist successfully!', ['name' => $model->name]) }}"
+                                aria-label="{{ __('Save') }}" style="padding: 0.25rem 0.5rem;">
+                            <x-core::icon name="ti ti-heart" />
+                        </button>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Address line only (desktop, d-none d-md-block) --}}
             @if ($model->short_address)
-                <p class="text-muted mb-0" style="font-size: 0.875rem;">
+                <p class="text-muted mb-0 d-none d-md-block" style="font-size: 0.875rem;">
                     {{ $model->short_address }}
                 </p>
             @endif
         </div>
 
-        <div class="action-buttons d-flex gap-2">
+        {{-- Desktop-only buttons: right of title (d-none d-md-flex) --}}
+        <div class="action-buttons d-none d-md-flex gap-2 align-self-start ms-3">
             @if($socialSharing)
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Share') }}" style="padding: 0.25rem 0.5rem;">
                         <x-core::icon name="ti ti-share" />
-                        <!-- <span class="action-btn-text d-none d-md-inline">{{ __('Share') }}</span> -->
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end p-2">
                         <li class="d-flex gap-2">
@@ -37,14 +79,14 @@
             @endif
 
             @if (RealEstateHelper::isEnabledWishlist())
-                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" data-type="{{ $model instanceof \Botble\RealEstate\Models\Property ? 'property' : 'project' }}"
+                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                        data-type="{{ $model instanceof \Botble\RealEstate\Models\Property ? 'property' : 'project' }}"
                         data-bb-toggle="add-to-wishlist"
                         data-id="{{ $model->getKey() }}"
-                        data-add-message="{{ __('Added ":name" to wishlist successfully!', ['name' => $model->name]) }}"
-                        data-remove-message="{{ __('Removed ":name" from wishlist successfully!', ['name' => $model->name]) }}"
+                        data-add-message="{{ __('Added \":name\" to wishlist successfully!', ['name' => $model->name]) }}"
+                        data-remove-message="{{ __('Removed \":name\" from wishlist successfully!', ['name' => $model->name]) }}"
                         aria-label="{{ __('Save') }}" style="padding: 0.25rem 0.5rem;">
                     <x-core::icon name="ti ti-heart" />
-                    <!-- <span class="action-btn-text d-none d-md-inline">{{ __('Save') }}</span> -->
                 </button>
             @endif
         </div>
@@ -74,7 +116,7 @@
     <!-- Third Row: Badges, Dates, Views -->
     <div class="d-flex align-items-center flex-wrap gap-3 text-muted" style="font-size: 0.875rem;">
         <div>{!! BaseHelper::clean($model->status_html) !!}</div>
-        
+
         @if (theme_option('real_estate_show_listing_date_on_single_detail_page', 'yes') == 'yes')
             <div class="d-flex align-items-center gap-1">
                 <span>{{ __('Added') }} {{ $model->created_at ? $model->created_at->diffForHumans() : '' }}</span>
