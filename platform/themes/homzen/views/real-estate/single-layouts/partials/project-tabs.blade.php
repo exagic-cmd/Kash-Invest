@@ -157,6 +157,21 @@
         }
     }
 
+    // 3b. Highlights Extraction & Parsing. $getCustom() marks the field as used,
+    //     so the generic attributes loop above does not render it a second time.
+    $rawHighlights = $getCustom('highlights', 'project highlights', 'key highlights', 'building highlights');
+    $parsedHighlights = collect();
+
+    if ($rawHighlights) {
+        $rawItems = preg_split('/[\r\n]+|•|(?:\s+-\s*)|(?:^-\s*)/', $rawHighlights);
+        foreach ($rawItems as $item) {
+            $item = trim(ltrim(trim($item), '-•* '));
+            if (!empty($item) && strlen($item) > 2) {
+                $parsedHighlights->push($item);
+            }
+        }
+    }
+
     if ($model->features && $model->features->isNotEmpty()) {
         foreach ($model->features as $f) {
             if (!$parsedAmenities->contains($f->name)) {
@@ -721,7 +736,7 @@
                 </button>
             </li>
 
-            @if (!empty($unitItems) || !empty($attributeItems) || $parsedAmenities->isNotEmpty())
+            @if (!empty($unitItems) || !empty($attributeItems) || $parsedAmenities->isNotEmpty() || $parsedHighlights->isNotEmpty())
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pills-specs-tab" data-bs-toggle="pill" data-bs-target="#pills-specs" type="button" role="tab" aria-controls="pills-specs" aria-selected="false">
                         <x-core::icon name="ti ti-building-community" />
@@ -896,7 +911,7 @@
         </div>
 
         {{-- ==================== TAB 2: UNITS & SPECIFICATIONS ==================== --}}
-        @if (!empty($unitItems) || !empty($attributeItems) || $parsedAmenities->isNotEmpty())
+        @if (!empty($unitItems) || !empty($attributeItems) || $parsedAmenities->isNotEmpty() || $parsedHighlights->isNotEmpty())
             <div class="tab-pane fade" id="pills-specs" role="tabpanel" aria-labelledby="pills-specs-tab">
                 {{-- Total Units Specs --}}
                 @if (!empty($unitItems))
@@ -939,6 +954,23 @@
                                 </div>
                             @endforeach
                         </div>
+                    </div>
+                @endif
+
+                {{-- Highlights --}}
+                @if ($parsedHighlights->isNotEmpty())
+                    <div class="specs-group mt-5 pt-4 border-top">
+                        <h4 class="h5 fw-bold mb-3 text-dark d-flex align-items-center gap-2">
+                            <x-core::icon name="ti ti-star" class="text-primary" /> {{ __('Highlights') }}
+                        </h4>
+                        <ul class="project-highlights-list list-unstyled mb-0">
+                            @foreach ($parsedHighlights as $highlight)
+                                <li class="d-flex align-items-start gap-2 mb-2">
+                                    <x-core::icon name="ti ti-point-filled" class="text-primary mt-1 flex-shrink-0" />
+                                    <span class="text-dark" style="line-height: 1.6;">{{ $highlight }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                 @endif
 
