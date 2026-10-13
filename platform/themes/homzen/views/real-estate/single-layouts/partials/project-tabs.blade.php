@@ -112,12 +112,14 @@
 
     // Remaining custom fields (Excluding Google Map and Google Drive, which have dedicated presentation).
     // Sync metadata and the slug are also hidden — they are internal plumbing, not reader-facing content.
+    // Highlights is hidden here too so the dedicated bulleted "Highlights" section is the only place it renders.
     $ignoredFieldNames = [
         'website', 'official website', 'url', 'link',
         'google map', 'google map link', 'map link', 'google maps', 'map', 'location link',
         'google drive portal', 'drive portal', 'google drive', 'drive link', 'drive folder', 'google drive link',
         'google drive archive portal', 'drive archive portal', 'archive portal', 'google drive archive',
         'slug', 'updated at', 'tc source synced at', 'tc source sync version', 'latest documents',
+        'highlights', 'project highlights', 'key highlights', 'building highlights',
     ];
     foreach ($cfCollection as $cf) {
         $cfNameLower = strtolower(trim($cf->name));
