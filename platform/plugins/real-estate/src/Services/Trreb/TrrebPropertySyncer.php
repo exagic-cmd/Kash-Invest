@@ -121,14 +121,12 @@ class TrrebPropertySyncer
         $skip = 0;
         $processed = 0;
         $total = 0;
-        $nextLink = null;
 
         do {
-            $response = $this->client->properties($perPage, $skip, $filter, $nextLink);
+            $response = $this->client->properties($perPage, $skip, $filter);
 
             $results = Arr::get($response, 'value', []);
             $total = (int) Arr::get($response, '@odata.count', $total ?: count($results));
-            $nextLink = Arr::get($response, '@odata.nextLink');
 
             foreach ($results as $listing) {
                 if ($maxRecords > 0 && $processed >= $maxRecords) {
@@ -159,7 +157,7 @@ class TrrebPropertySyncer
             }
 
             // Stop when the server says there is no more, or a short page implies the end.
-            $hasMore = $nextLink !== null || count($results) === $perPage;
+            $hasMore = count($results) === $perPage;
         } while ($hasMore && $results !== []);
 
         return [
