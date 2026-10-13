@@ -346,10 +346,12 @@ class TrrebPropertySyncer
             $property->customFields()->create($field);
         }
 
-        try {
-            $this->syncOpenHousesForProperty($property);
-        } catch (\Throwable) {
-            // Non-fatal: open house sync failure shouldn't abort listing save
+        if (config('plugins.real-estate.trreb.sync_open_houses', false)) {
+            try {
+                $this->syncOpenHousesForProperty($property);
+            } catch (\Throwable) {
+                // Non-fatal: open house sync failure shouldn't abort listing save
+            }
         }
 
         $customFieldChanges = $isNew ? [] : $this->diffCustomFields($oldCustomFields, $newCustomFields);

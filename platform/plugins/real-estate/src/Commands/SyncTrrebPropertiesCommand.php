@@ -38,14 +38,25 @@ class SyncTrrebPropertiesCommand extends Command
         $job = new SyncTrrebPropertiesJob($trigger, $full);
 
         if ($this->option('now')) {
-            // Run inline. Useful from the CLI when there is no worker up; the
-            // admin page never uses this path.
             $this->components->info(sprintf(
                 'Running the TRREB sync inline (%s)...',
                 $full ? 'FULL feed' : 'incremental'
             ));
-            dispatch_sync($job);
-            $this->components->success('TRREB sync finished. See Admin -> API Sync for the result.');
+
+            $syncer = app(TrrebPropertySyncer::class);
+            $result = $syncer->sync(function (int $page, int $processed, int $total): void {
+                $this->components->task(
+                    sprintf('Page %d (%d/%d listings processed)', $page, $processed, $total)
+                );
+            }, full: $full);
+
+            $this->components->success(sprintf(
+                'TRREB sync finished: %d created, %d updated, %d unchanged, %d failed.',
+                $result['created'] ?? 0,
+                $result['updated'] ?? 0,
+                $result['unchanged'] ?? 0,
+                $result['failed'] ?? 0
+            ));
 
             return self::SUCCESS;
         }
