@@ -105,7 +105,7 @@ class TrrebPropertySyncer
      * @param  callable|null  $onProgress  fn(int $page, int $processed, int $total): void
      * @return array{created:int, updated:int, unchanged:int, failed:int, errors:array, items:array, cap_reached:bool}
      */
-    public function sync(?callable $onProgress = null): array
+    public function sync(?callable $onProgress = null, bool $full = false): array
     {
         $perPage = max((int) config('plugins.real-estate.trreb.per_page', 100), 1);
         $maxRecords = max((int) config('plugins.real-estate.trreb.max_records', 0), 0);
@@ -115,7 +115,7 @@ class TrrebPropertySyncer
             $perPage = min($perPage, $maxRecords);
         }
 
-        $filter = $this->buildFilter();
+        $filter = $this->buildFilter($full);
 
         $page = 0;
         $skip = 0;
@@ -178,27 +178,30 @@ class TrrebPropertySyncer
     /**
      * The OData $filter for this run: incremental watermark + scope from config.
      */
-    protected function buildFilter(): ?string
+    protected function buildFilter(bool $full = false): ?string
     {
         $clauses = [];
+        $since = null;
 
-        // Incremental: only what changed since the last successful run.
-        $since = ProjectSyncLog::query()
-            ->whereIn('source', self::SOURCES)
-            ->where('status', 'success')
-            ->latest('finished_at')
-            ->value('finished_at');
+        // Incremental: only what changed since the last successful run (unless full run requested).
+        if (! $full) {
+            $since = ProjectSyncLog::query()
+                ->whereIn('source', self::SOURCES)
+                ->where('status', 'success')
+                ->latest('finished_at')
+                ->value('finished_at');
 
-        if ($since) {
-            $clauses[] = sprintf('ModificationTimestamp gt %s', $since->clone()->utc()->format('Y-m-d\TH:i:s\Z'));
+            if ($since) {
+                $clauses[] = sprintf('ModificationTimestamp gt %s', $since->clone()->utc()->format('Y-m-d\TH:i:s\Z'));
+            }
         }
 
         if ($types = $this->transactionTypeClause()) {
             $clauses[] = $types;
         }
 
-        // Status filter on the SEED run only. On incremental runs we must also
-        // receive listings that just went Sold/Leased/Expired â€” that transition is
+        // Status filter on the SEED/full run only. On incremental runs we must also
+        // receive listings that just went Sold/Leased/Expired — that transition is
         // the only signal the feed gives us that something has left the market,
         // and missing it means displaying a stale listing as available.
         if (! $since && $statuses = $this->standardStatusClause()) {

@@ -34,12 +34,16 @@ class SyncTrrebPropertiesCommand extends Command
         }
 
         $trigger = $this->option('trigger') === 'cron' ? 'cron' : 'manual';
-        $job = new SyncTrrebPropertiesJob($trigger);
+        $full = (bool) $this->option('full');
+        $job = new SyncTrrebPropertiesJob($trigger, $full);
 
         if ($this->option('now')) {
             // Run inline. Useful from the CLI when there is no worker up; the
             // admin page never uses this path.
-            $this->components->info('Running the TRREB sync inline...');
+            $this->components->info(sprintf(
+                'Running the TRREB sync inline (%s)...',
+                $full ? 'FULL feed' : 'incremental'
+            ));
             dispatch_sync($job);
             $this->components->success('TRREB sync finished. See Admin -> API Sync for the result.');
 
@@ -82,6 +86,13 @@ class SyncTrrebPropertiesCommand extends Command
             null,
             InputOption::VALUE_NONE,
             'Run the sync inline instead of pushing it onto the queue.'
+        );
+
+        $this->addOption(
+            'full',
+            'f',
+            InputOption::VALUE_NONE,
+            'Walk the entire active feed rather than using the incremental cutoff.'
         );
     }
 }
