@@ -110,13 +110,14 @@
         $attributeItems[] = ['icon' => 'ti ti-arrow-autofit-height', 'label' => __('Ceiling Heights'), 'value' => e($val)];
     }
 
-    // Remaining custom fields (Excluding Google Map, Google Drive, and Amenities which have dedicated presentation)
+    // Remaining custom fields (Excluding Google Map and Google Drive, which have dedicated presentation).
+    // Sync metadata and the slug are also hidden — they are internal plumbing, not reader-facing content.
     $ignoredFieldNames = [
         'website', 'official website', 'url', 'link',
         'google map', 'google map link', 'map link', 'google maps', 'map', 'location link',
         'google drive portal', 'drive portal', 'google drive', 'drive link', 'drive folder', 'google drive link',
         'google drive archive portal', 'drive archive portal', 'archive portal', 'google drive archive',
-        'amenities', 'building amenities', 'project amenities', 'amenity', 'features',
+        'slug', 'updated at', 'tc source synced at', 'tc source sync version', 'latest documents',
     ];
     foreach ($cfCollection as $cf) {
         $cfNameLower = strtolower(trim($cf->name));
