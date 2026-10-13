@@ -4,6 +4,7 @@ namespace Botble\RealEstate\Providers;
 
 use Botble\RealEstate\Commands\BuildifyFieldReportCommand;
 use Botble\RealEstate\Commands\HydrateRedbricksProjectsCommand;
+use Botble\RealEstate\Commands\HydrateTrrebPropertiesCommand;
 use Botble\RealEstate\Commands\PurgeRedbricksDataCommand;
 use Botble\RealEstate\Commands\PurgeTrrebDataCommand;
 use Botble\RealEstate\Commands\RebuildRedbricksProjectsCommand;
@@ -22,6 +23,7 @@ class CommandServiceProvider extends ServiceProvider
         $this->commands([
             BuildifyFieldReportCommand::class,
             HydrateRedbricksProjectsCommand::class,
+            HydrateTrrebPropertiesCommand::class,
             PurgeRedbricksDataCommand::class,
             PurgeTrrebDataCommand::class,
             RebuildRedbricksProjectsCommand::class,

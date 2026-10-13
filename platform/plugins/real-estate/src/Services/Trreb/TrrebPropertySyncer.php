@@ -753,22 +753,23 @@ class TrrebPropertySyncer
     }
 
     /**
-     * Photos come from the separate Media resource, one request per listing.
-     * Re-runs short-circuit when the images are already in the media library.
+     * Download and save media for a specific property into S3 and media library.
      *
      * @return array<int, string>
      */
-    protected function resolveImages(string $listingKey, ?Property $existing = null): array
+    public function hydrateMedia(Property $property, ?int $limit = null): array
     {
-        if (! config('plugins.real-estate.trreb.sync_images', true)) {
-            return $existing?->images ?? [];
+        $listingKey = trim((string) $property->unique_id);
+
+        if ($listingKey === '') {
+            return [];
         }
 
-        if ($existing && $this->hasLocalImages($existing)) {
-            return $existing->images ?? [];
+        if ($this->hasLocalImages($property)) {
+            return (array) ($property->images ?? []);
         }
 
-        $maxImages = max((int) config('plugins.real-estate.trreb.max_images_per_property', 5), 1);
+        $maxImages = $limit ?: max((int) config('plugins.real-estate.trreb.max_images_per_property', 5), 1);
 
         $media = $this->client->mediaFor($listingKey, $maxImages);
 
@@ -786,10 +787,36 @@ class TrrebPropertySyncer
             }
         }
 
+        if ($images !== []) {
+            $property->images = $images;
+            $property->saveQuietly();
+        }
+
         return $images;
     }
 
-    protected function hasLocalImages(Property $property): bool
+    /**
+     * Photos come from the separate Media resource, one request per listing.
+     * Re-runs short-circuit when the images are already in the media library.
+     *
+     * @return array<int, string>
+     */
+    protected function resolveImages(string $listingKey, ?Property $existing = null): array
+    {
+        if (! config('plugins.real-estate.trreb.sync_images', true)) {
+            return $existing?->images ?? [];
+        }
+
+        if ($existing && $this->hasLocalImages($existing)) {
+            return $existing->images ?? [];
+        }
+
+        $property = $existing ?: new Property(['unique_id' => $listingKey]);
+
+        return $this->hydrateMedia($property);
+    }
+
+    public function hasLocalImages(Property $property): bool
     {
         $images = array_filter($property->images ?? []);
 
