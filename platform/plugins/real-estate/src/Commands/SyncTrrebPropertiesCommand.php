@@ -35,12 +35,34 @@ class SyncTrrebPropertiesCommand extends Command
 
         $trigger = $this->option('trigger') === 'cron' ? 'cron' : 'manual';
         $full = (bool) $this->option('full');
-        $job = new SyncTrrebPropertiesJob($trigger, $full);
+        $fresh = (bool) $this->option('fresh');
+        $skip = $this->option('skip') !== null ? (int) $this->option('skip') : null;
+
+        if ($fresh) {
+            TrrebPropertySyncer::clearCheckpoint();
+            $skip = 0;
+        } elseif ($skip === null && $full) {
+            $checkpoint = TrrebPropertySyncer::getCheckpoint();
+            if ($checkpoint && ! empty($checkpoint['skip'])) {
+                $skip = (int) $checkpoint['skip'];
+                $this->components->info(sprintf(
+                    'Resuming TRREB sync from checkpoint: skip offset %d (Page %d, %d/%d processed)...',
+                    $skip,
+                    $checkpoint['page'] ?? (int) floor($skip / 100),
+                    $checkpoint['processed'] ?? $skip,
+                    $checkpoint['total'] ?? 0
+                ));
+            }
+        }
+
+        $skip = $skip ?? 0;
+        $job = new SyncTrrebPropertiesJob($trigger, $full, $skip);
 
         if ($this->option('now')) {
             $this->components->info(sprintf(
-                'Running the TRREB sync inline (%s)...',
-                $full ? 'FULL feed' : 'incremental'
+                'Running the TRREB sync inline (%s, starting from skip offset %d)...',
+                $full ? 'FULL feed' : 'incremental',
+                $skip
             ));
 
             $syncer = app(TrrebPropertySyncer::class);
@@ -48,7 +70,7 @@ class SyncTrrebPropertiesCommand extends Command
                 $this->components->task(
                     sprintf('Page %d (%d/%d listings processed)', $page, $processed, $total)
                 );
-            }, full: $full);
+            }, full: $full, startSkip: $skip);
 
             $this->components->success(sprintf(
                 'TRREB sync finished: %d created, %d updated, %d unchanged, %d failed.',
@@ -104,6 +126,20 @@ class SyncTrrebPropertiesCommand extends Command
             'f',
             InputOption::VALUE_NONE,
             'Walk the entire active feed rather than using the incremental cutoff.'
+        );
+
+        $this->addOption(
+            'skip',
+            's',
+            InputOption::VALUE_REQUIRED,
+            'Start pagination from a specific offset (e.g. --skip=6300).'
+        );
+
+        $this->addOption(
+            'fresh',
+            null,
+            InputOption::VALUE_NONE,
+            'Start fresh from offset 0, ignoring any saved checkpoint.'
         );
     }
 }

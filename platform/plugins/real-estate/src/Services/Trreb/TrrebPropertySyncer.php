@@ -105,7 +105,7 @@ class TrrebPropertySyncer
      * @param  callable|null  $onProgress  fn(int $page, int $processed, int $total): void
      * @return array{created:int, updated:int, unchanged:int, failed:int, errors:array, items:array, cap_reached:bool}
      */
-    public function sync(?callable $onProgress = null, bool $full = false): array
+    public function sync(?callable $onProgress = null, bool $full = false, int $startSkip = 0): array
     {
         $perPage = max((int) config('plugins.real-estate.trreb.per_page', 100), 1);
         $maxRecords = max((int) config('plugins.real-estate.trreb.max_records', 0), 0);
@@ -117,9 +117,9 @@ class TrrebPropertySyncer
 
         $filter = $this->buildFilter($full);
 
-        $page = 0;
-        $skip = 0;
-        $processed = 0;
+        $page = (int) floor($startSkip / $perPage);
+        $skip = $startSkip;
+        $processed = $startSkip;
         $total = 0;
 
         do {
@@ -152,6 +152,8 @@ class TrrebPropertySyncer
             $page++;
             $skip += $perPage;
 
+            static::saveCheckpoint($skip, $page, $processed, $total);
+
             if ($onProgress) {
                 $onProgress($page, $processed, $total);
             }
@@ -159,6 +161,10 @@ class TrrebPropertySyncer
             // Stop when the server says there is no more, or a short page implies the end.
             $hasMore = count($results) === $perPage;
         } while ($hasMore && $results !== []);
+
+        if (! $hasMore && ! $this->capReached) {
+            static::clearCheckpoint();
+        }
 
         return [
             'created' => $this->created,
@@ -171,6 +177,48 @@ class TrrebPropertySyncer
             'cap_reached' => $this->capReached,
             'currency_warning' => $this->currencyWarning,
         ];
+    }
+
+    public static function getCheckpointPath(): string
+    {
+        return storage_path('app/trreb-sync-checkpoint.json');
+    }
+
+    public static function getCheckpoint(): ?array
+    {
+        $path = static::getCheckpointPath();
+        if (! file_exists($path)) {
+            return null;
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+
+        return is_array($data) && isset($data['skip']) ? $data : null;
+    }
+
+    public static function saveCheckpoint(int $skip, int $page, int $processed, int $total): void
+    {
+        $path = static::getCheckpointPath();
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        @file_put_contents($path, json_encode([
+            'skip' => $skip,
+            'page' => $page,
+            'processed' => $processed,
+            'total' => $total,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], JSON_PRETTY_PRINT));
+    }
+
+    public static function clearCheckpoint(): void
+    {
+        $path = static::getCheckpointPath();
+        if (file_exists($path)) {
+            @unlink($path);
+        }
     }
 
     /**

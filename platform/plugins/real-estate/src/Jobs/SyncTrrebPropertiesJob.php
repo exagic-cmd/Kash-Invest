@@ -41,8 +41,11 @@ class SyncTrrebPropertiesJob implements ShouldQueue
 
     public int $tries = 1;
 
-    public function __construct(public string $triggeredBy = 'manual', public bool $full = false)
-    {
+    public function __construct(
+        public string $triggeredBy = 'manual',
+        public bool $full = false,
+        public int $startSkip = 0
+    ) {
     }
 
     public function handle(TrrebPropertySyncer $syncer): void
@@ -72,7 +75,7 @@ class SyncTrrebPropertiesJob implements ShouldQueue
         }
 
         try {
-            $result = $syncer->sync(full: $this->full);
+            $result = $syncer->sync(full: $this->full, startSkip: $this->startSkip);
         } catch (TrrebApiException $e) {
             $this->fail($log, $e->isAuthFailure()
                 ? 'PROPTX rejected the API token (HTTP ' . $e->getStatus() . '). Check TRREB_API_KEY.'
