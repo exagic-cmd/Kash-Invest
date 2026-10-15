@@ -12,6 +12,7 @@ use Botble\RealEstate\Commands\RedbricksFieldReportCommand;
 use Botble\RealEstate\Commands\RenewPropertiesCommand;
 use Botble\RealEstate\Commands\SyncBuildifyProjectsCommand;
 use Botble\RealEstate\Commands\SyncRedbricksProjectsCommand;
+use Botble\RealEstate\Commands\SyncTrrebOpenHousesCommand;
 use Botble\RealEstate\Commands\SyncTrrebPropertiesCommand;
 use Botble\RealEstate\Commands\UpdateProjectSlugsCommand;
 use Illuminate\Support\ServiceProvider;
@@ -31,6 +32,7 @@ class CommandServiceProvider extends ServiceProvider
             RenewPropertiesCommand::class,
             SyncBuildifyProjectsCommand::class,
             SyncRedbricksProjectsCommand::class,
+            SyncTrrebOpenHousesCommand::class,
             SyncTrrebPropertiesCommand::class,
             UpdateProjectSlugsCommand::class,
         ]);
