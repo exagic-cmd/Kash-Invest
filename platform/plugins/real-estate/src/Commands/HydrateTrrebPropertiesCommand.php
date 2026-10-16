@@ -32,6 +32,15 @@ class HydrateTrrebPropertiesCommand extends Command
             $query->where('unique_id', $listingKey);
         }
 
+        $shards = max((int) $this->option('shards'), 1);
+        $shard = (int) $this->option('shard');
+
+        if ($shards > 1 && $shard >= 1 && $shard <= $shards) {
+            $remainder = $shard - 1;
+            $query->whereRaw('MOD(id, ?) = ?', [$shards, $remainder]);
+            $this->components->info(sprintf('Parallel Worker: Shard %d of %d active.', $shard, $shards));
+        }
+
         $total = $query->count();
 
         if ($total === 0) {
@@ -102,6 +111,21 @@ class HydrateTrrebPropertiesCommand extends Command
             'l',
             InputOption::VALUE_OPTIONAL,
             'Max number of images to download per property.'
+        );
+
+        $this->addOption(
+            'shard',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Shard number (1-based index) for parallel processing.'
+        );
+
+        $this->addOption(
+            'shards',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Total number of parallel shards/workers.',
+            1
         );
     }
 }
