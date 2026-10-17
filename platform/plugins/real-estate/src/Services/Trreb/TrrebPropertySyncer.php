@@ -824,8 +824,7 @@ class TrrebPropertySyncer
 
         $media = $this->client->mediaFor($listingKey, $maxImages);
 
-        $images = [];
-
+        $urlsByIndex = [];
         foreach (array_slice($media, 0, $maxImages) as $index => $item) {
             $url = trim((string) (Arr::get($item, 'MediaURL') ?: Arr::get($item, 'MediaUrl')));
 
@@ -833,10 +832,41 @@ class TrrebPropertySyncer
                 continue;
             }
 
-            if ($localPath = $this->syncImageFromUrl($url, $listingKey, $index)) {
-                $images[] = $localPath;
+            $urlsByIndex[$index] = $url;
+        }
+
+        $images = [];
+        $urlsToFetch = [];
+
+        foreach ($urlsByIndex as $index => $url) {
+            $existingPath = $this->lookupExistingImagePath($listingKey, $index, $url);
+
+            if ($existingPath !== null) {
+                $images[$index] = $existingPath;
+                continue;
+            }
+
+            $urlsToFetch[$index] = $url;
+        }
+
+        if ($urlsToFetch !== []) {
+            $bodies = $this->downloadImageBodiesInPool($urlsToFetch, 10);
+
+            foreach ($urlsToFetch as $index => $url) {
+                $body = $bodies[$index] ?? null;
+
+                if ($body === null) {
+                    continue;
+                }
+
+                if ($remotePath = $this->persistImageBody($body, $url, $listingKey, $index)) {
+                    $images[$index] = $remotePath;
+                }
             }
         }
+
+        ksort($images);
+        $images = array_values($images);
 
         if ($images !== []) {
             $property->images = $images;
@@ -899,27 +929,10 @@ class TrrebPropertySyncer
      */
     protected function syncImageFromUrl(string $imageUrl, string $listingKey, int $index): ?string
     {
-        $folderId = $this->getPropertiesFolderId();
+        $existingPath = $this->lookupExistingImagePath($listingKey, $index, $imageUrl);
 
-        $extension = strtolower(pathinfo(parse_url($imageUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
-        if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
-            $extension = 'jpg';
-        }
-
-        $imageFileName = sprintf('trreb-%s-%d.%s', Str::slug($listingKey), $index, $extension);
-        $imageBaseName = pathinfo($imageFileName, PATHINFO_FILENAME);
-
-        $existingMedia = MediaFile::query()
-            ->where('name', $imageBaseName)
-            ->where('folder_id', $folderId)
-            ->first();
-
-        if ($existingMedia) {
-            if (Storage::exists($existingMedia->url)) {
-                return $existingMedia->url;
-            }
-
-            $existingMedia->delete();
+        if ($existingPath !== null) {
+            return $existingPath;
         }
 
         try {
@@ -932,20 +945,130 @@ class TrrebPropertySyncer
             return null;
         }
 
+        return $this->persistImageBody($response->body(), $imageUrl, $listingKey, $index);
+    }
+
+    /**
+     * Normalise the extension/filename we use for a given listing image.
+     *
+     * @return array{folderId: int|string, imageFileName: string, imageBaseName: string, extension: string, mimeType: string}
+     */
+    protected function resolveImageMeta(string $imageUrl, string $listingKey, int $index): array
+    {
+        $folderId = $this->getPropertiesFolderId();
+
+        $extension = strtolower(pathinfo(parse_url($imageUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+        if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+            $extension = 'jpg';
+        }
+
+        $imageFileName = sprintf('trreb-%s-%d.%s', Str::slug($listingKey), $index, $extension);
+        $imageBaseName = pathinfo($imageFileName, PATHINFO_FILENAME);
+
+        $mimeType = Arr::first((new MimeTypes())->getMimeTypes($extension)) ?: 'image/jpeg';
+
+        return compact('folderId', 'imageFileName', 'imageBaseName', 'extension', 'mimeType');
+    }
+
+    /**
+     * Return the stored URL of an already-uploaded image for this listing/index,
+     * or null if nothing usable is present. Prunes dangling MediaFile rows whose
+     * underlying object is gone from storage.
+     */
+    protected function lookupExistingImagePath(string $listingKey, int $index, string $imageUrl): ?string
+    {
+        $meta = $this->resolveImageMeta($imageUrl, $listingKey, $index);
+
+        $existingMedia = MediaFile::query()
+            ->where('name', $meta['imageBaseName'])
+            ->where('folder_id', $meta['folderId'])
+            ->first();
+
+        if (! $existingMedia) {
+            return null;
+        }
+
+        if (Storage::exists($existingMedia->url)) {
+            return $existingMedia->url;
+        }
+
+        $existingMedia->delete();
+
+        return null;
+    }
+
+    /**
+     * Download image bodies concurrently via Http::pool. Returns [index => body]
+     * for successful fetches; failed/empty responses are dropped silently so the
+     * caller can decide what to do.
+     *
+     * @param  array<int, string>  $urlsByIndex
+     * @return array<int, string>
+     */
+    protected function downloadImageBodiesInPool(array $urlsByIndex, int $concurrency = 10): array
+    {
+        if ($urlsByIndex === []) {
+            return [];
+        }
+
+        $concurrency = max($concurrency, 1);
+        $result = [];
+
+        foreach (array_chunk($urlsByIndex, $concurrency, true) as $chunk) {
+            $indices = array_keys($chunk);
+            $urls = array_values($chunk);
+
+            try {
+                $responses = Http::pool(function ($pool) use ($urls) {
+                    $requests = [];
+                    foreach ($urls as $url) {
+                        $requests[] = $pool->withoutVerifying()->connectTimeout(10)->timeout(20)->get($url);
+                    }
+
+                    return $requests;
+                });
+            } catch (\Throwable) {
+                continue;
+            }
+
+            foreach ($responses as $i => $response) {
+                try {
+                    if ($response instanceof \Illuminate\Http\Client\Response
+                        && $response->successful()
+                        && $response->body() !== ''
+                    ) {
+                        $result[$indices[$i]] = $response->body();
+                    }
+                } catch (\Throwable) {
+                    continue;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Persist an already-downloaded image body into the S3-backed media library.
+     * Writes a short-lived temp file (deleted immediately after upload) because
+     * RvMedia::handleUpload expects an UploadedFile; the stored object itself
+     * lives on the default disk (S3).
+     */
+    protected function persistImageBody(string $body, string $imageUrl, string $listingKey, int $index): ?string
+    {
+        $meta = $this->resolveImageMeta($imageUrl, $listingKey, $index);
+
         $tempPath = tempnam(sys_get_temp_dir(), 'trreb_');
 
         if ($tempPath === false) {
             return null;
         }
 
-        file_put_contents($tempPath, $response->body());
-
-        $mimeTypes = (new MimeTypes())->getMimeTypes($extension);
-        $mimeType = Arr::first($mimeTypes) ?: 'image/jpeg';
+        file_put_contents($tempPath, $body);
 
         $uploadResult = RvMedia::handleUpload(
-            new UploadedFile($tempPath, $imageFileName, $mimeType, null, true),
-            $folderId
+            new UploadedFile($tempPath, $meta['imageFileName'], $meta['mimeType'], null, true),
+            $meta['folderId']
         );
 
         @unlink($tempPath);
