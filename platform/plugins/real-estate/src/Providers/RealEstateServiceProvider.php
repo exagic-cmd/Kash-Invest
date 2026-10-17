@@ -207,7 +207,7 @@ class RealEstateServiceProvider extends ServiceProvider
             ->loadAndPublishViews()
             ->loadAndPublishTranslations()
             ->loadHelpers()
-            ->loadRoutes(['web', 'fronts'])
+            ->loadRoutes(['web', 'fronts', 'webhooks'])
             ->publishAssets();
 
         if (class_exists('ApiHelper')) {

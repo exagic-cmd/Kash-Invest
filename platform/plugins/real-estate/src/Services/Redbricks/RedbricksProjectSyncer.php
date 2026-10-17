@@ -162,6 +162,69 @@ class RedbricksProjectSyncer
     }
 
     /**
+     * Refresh one project from the API. Used by the webhook pipeline: a
+     * delivery tells us something changed, we re-pull that single project
+     * authoritatively through the single-project endpoint rather than
+     * trusting the webhook envelope.
+     *
+     * The listing endpoint is scoped by the configured city filter, so a
+     * project outside that scope would be invisible to sync() but still
+     * routable here — hence /projects/{id}, which is unscoped.
+     *
+     * Returns the local Project on success, null when the remote id did not
+     * resolve. Details + media hydration are enqueued through the usual
+     * sync() path so a webhook-driven refresh follows the exact same staged
+     * ingest as a cron-driven one.
+     */
+    public function refreshOne(int|string $externalId, bool $enqueueHydration = true): ?Project
+    {
+        $this->pendingDetailsHydration = [];
+
+        $listing = $this->client->project($externalId);
+
+        if ($listing === []) {
+            return null;
+        }
+
+        $this->importProject($listing);
+
+        if ($enqueueHydration) {
+            $this->enqueuePendingHydration();
+        }
+
+        /** @var Project|null $project */
+        $project = Project::query()
+            ->where('source', self::SOURCE)
+            ->where('unique_id', self::SOURCE . '-' . $externalId)
+            ->first();
+
+        return $project;
+    }
+
+    /**
+     * Remove a project the feed has retracted. Through the Project model's
+     * delete-cascade this also clears floor plan + document rows and sync
+     * log items. The media library is left alone — files there are shared
+     * storage and may be referenced elsewhere.
+     */
+    public function deleteOne(int|string $externalId): bool
+    {
+        /** @var Project|null $project */
+        $project = Project::query()
+            ->where('source', self::SOURCE)
+            ->where('unique_id', self::SOURCE . '-' . $externalId)
+            ->first();
+
+        if (! $project) {
+            return false;
+        }
+
+        $project->delete();
+
+        return true;
+    }
+
+    /**
      * Re-derive one project entirely from the payload already stored on it,
      * without touching the API.
      *
