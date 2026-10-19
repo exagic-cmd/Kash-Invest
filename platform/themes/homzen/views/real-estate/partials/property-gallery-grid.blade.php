@@ -22,7 +22,7 @@
     </div>
 
     {{-- Compact 2-Column Image List --}}
-    <div class="container-fluid p-2">
+    <div class="gallery-grid-wrapper">
         @php
             $validImages = [];
             if ($model->images && is_array($model->images)) {
@@ -42,33 +42,29 @@
             }
             $images = count($validImages) > 0 ? $validImages : [null];
         @endphp
-        <div class="row row-cols-1 row-cols-md-2 g-2">
+        <div class="gallery-grid">
             @foreach ($images as $image)
-                    <div class="col">
-                        <div class="gallery-item-wrapper overflow-hidden">
-                            <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery-page" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="d-block w-100 h-100">
-                                <div class="ratio ratio-16x9">
-                                    {{ RvMedia::image($image, $model->name, 'large-rectangle', attributes: ['class' => 'img-fluid object-fit-cover w-100 h-100'], lazy: true) }}
-                                </div>
-                            </a>
+                <div class="gallery-item-wrapper overflow-hidden">
+                    <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery-page" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="d-block w-100 h-100">
+                        <div class="ratio ratio-16x9">
+                            {{ RvMedia::image($image, $model->name, 'large-rectangle', attributes: ['class' => 'img-fluid object-fit-cover w-100 h-100'], lazy: true) }}
+                        </div>
+                    </a>
+                </div>
+            @endforeach
+
+            {{-- CTA box at the very end of the images gallery --}}
+            <div class="gallery-item-wrapper overflow-hidden bg-dark rounded">
+                <a href="{{ $model->url . '#contact-form' }}" class="d-block w-100 h-100 text-decoration-none text-white text-center">
+                    <div class="ratio ratio-16x9">
+                        <div class="d-flex flex-column align-items-center justify-content-center w-100 h-100 p-4" style="background: linear-gradient(135deg, #555, #222);">
+                            <h3 class="fw-bold mb-3 text-white">{{ __('Ask About this Home') }}</h3>
+                            <span class="text-white fw-semibold" style="font-size: 16px; text-decoration: underline;">{{ __('Send Message') }} &raquo;</span>
                         </div>
                     </div>
-                @endforeach
-                
-                {{-- CTA box at the very end of the images gallery --}}
-                <div class="col">
-                    <div class="gallery-item-wrapper overflow-hidden bg-dark rounded">
-                        <a href="{{ $model->url . '#contact-form' }}" class="d-block w-100 h-100 text-decoration-none text-white text-center">
-                            <div class="ratio ratio-16x9">
-                                <div class="d-flex flex-column align-items-center justify-content-center w-100 h-100 p-4" style="background: linear-gradient(135deg, #555, #222);">
-                                    <h3 class="fw-bold mb-3 text-white">{{ __('Ask About this Home') }}</h3>
-                                    <span class="text-white fw-semibold" style="font-size: 16px; text-decoration: underline;">{{ __('Send Message') }} &raquo;</span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
+                </a>
             </div>
+        </div>
     </div>
 </div>
 
@@ -79,6 +75,20 @@
     .gallery-fullscreen-layout {
         background-color: #ffffff;
         min-height: 100vh;
+        overflow-x: hidden;
+    }
+    .gallery-grid-wrapper {
+        padding: 8px;
+    }
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    @media (min-width: 768px) {
+        .gallery-grid {
+            grid-template-columns: 1fr 1fr;
+        }
     }
     .gallery-header-bar {
         height: 60px;

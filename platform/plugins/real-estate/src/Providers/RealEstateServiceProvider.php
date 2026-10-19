@@ -235,7 +235,7 @@ class RealEstateServiceProvider extends ServiceProvider
             SlugHelper::registerModule(Project::class, fn () => trans('plugins/real-estate::project.projects'));
             SlugHelper::setPrefix(Project::class, 'projects', true);
 
-            add_filter(FILTER_SLUG_STRING, function ($slug, $model) {
+            add_filter(FILTER_SLUG_STRING, function ($slug, $model = null) {
                 if ($model instanceof Project) {
                     $model->loadMissing(['state', 'city']);
                     return $model->generateSlugKey($slug);
