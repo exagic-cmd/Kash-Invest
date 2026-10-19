@@ -47,7 +47,7 @@
                 <div class="gallery-item-wrapper overflow-hidden">
                     <a href="{{ RvMedia::getImageUrl($image) }}" data-fancybox="gallery-page" data-thumb="{{ RvMedia::getImageUrl($image, 'thumb') }}" class="d-block w-100 h-100">
                         <div class="ratio ratio-16x9">
-                            {{ RvMedia::image($image, $model->name, 'large-rectangle', attributes: ['class' => 'img-fluid object-fit-cover w-100 h-100'], lazy: true) }}
+                            {{ RvMedia::image($image, $model->name, 'large-rectangle', attributes: ['class' => 'img-fluid w-100 h-100'], lazy: true) }}
                         </div>
                     </a>
                 </div>

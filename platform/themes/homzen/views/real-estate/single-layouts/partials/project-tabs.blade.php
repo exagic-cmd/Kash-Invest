@@ -120,6 +120,8 @@
         'google drive archive portal', 'drive archive portal', 'archive portal', 'google drive archive',
         'slug', 'updated at', 'tc source synced at', 'tc source sync version', 'latest documents',
         'highlights', 'project highlights', 'key highlights', 'building highlights',
+        'finishes', 'project finishes', 'interior finishes', 'features and finishes',
+        'features & finishes', 'finishes & features', 'suite finishes', 'standard finishes',
     ];
     foreach ($cfCollection as $cf) {
         $cfNameLower = strtolower(trim($cf->name));
@@ -170,6 +172,22 @@
             $item = trim(ltrim(trim($item), '-•* '));
             if (!empty($item) && strlen($item) > 2) {
                 $parsedHighlights->push($item);
+            }
+        }
+    }
+
+    // 3c. Finishes Extraction & Parsing. Rendered as its own section above the
+    //     Highlights block so interior-finishes copy gets its own heading instead
+    //     of being flattened into the generic attribute grid.
+    $rawFinishes = $getCustom('finishes', 'project finishes', 'interior finishes', 'features and finishes', 'features & finishes', 'finishes & features', 'suite finishes', 'standard finishes');
+    $parsedFinishes = collect();
+
+    if ($rawFinishes) {
+        $rawItems = preg_split('/[\r\n]+|•|(?:\s+-\s*)|(?:^-\s*)/', $rawFinishes);
+        foreach ($rawItems as $item) {
+            $item = trim(ltrim(trim($item), '-•* '));
+            if (!empty($item) && strlen($item) > 2) {
+                $parsedFinishes->push($item);
             }
         }
     }
@@ -738,7 +756,7 @@
                 </button>
             </li>
 
-            @if (!empty($unitItems) || !empty($attributeItems) || $parsedAmenities->isNotEmpty() || $parsedHighlights->isNotEmpty())
+            @if (!empty($unitItems) || !empty($attributeItems) || $parsedAmenities->isNotEmpty() || $parsedHighlights->isNotEmpty() || $parsedFinishes->isNotEmpty())
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pills-specs-tab" data-bs-toggle="pill" data-bs-target="#pills-specs" type="button" role="tab" aria-controls="pills-specs" aria-selected="false">
                         <x-core::icon name="ti ti-building-community" />
@@ -956,6 +974,23 @@
                                 </div>
                             @endforeach
                         </div>
+                    </div>
+                @endif
+
+                {{-- Finishes (shown above Highlights per content priority) --}}
+                @if ($parsedFinishes->isNotEmpty())
+                    <div class="specs-group mt-5 pt-4 border-top">
+                        <h4 class="h5 fw-bold mb-3 text-dark d-flex align-items-center gap-2">
+                            <x-core::icon name="ti ti-brush" class="text-primary" /> {{ __('Finishes') }}
+                        </h4>
+                        <ul class="project-highlights-list list-unstyled mb-0">
+                            @foreach ($parsedFinishes as $finish)
+                                <li class="d-flex align-items-start gap-2 mb-2">
+                                    <x-core::icon name="ti ti-point-filled" class="text-primary mt-1 flex-shrink-0" />
+                                    <span class="text-dark" style="line-height: 1.6;">{{ $finish }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                 @endif
 

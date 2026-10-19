@@ -22,7 +22,7 @@
 
 @if ($projects instanceof \Illuminate\Pagination\LengthAwarePaginator && $projects->hasPages())
     <div class="justify-content-center wd-navigation">
-        {{ $projects->onEachSide(1)->withQueryString()->links(Theme::getThemeNamespace('partials.pagination')) }}
+        {{ $projects->onEachSide(2)->withQueryString()->links(Theme::getThemeNamespace('partials.pagination')) }}
     </div>
 @endif
 

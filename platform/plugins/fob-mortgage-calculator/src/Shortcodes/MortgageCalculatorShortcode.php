@@ -21,9 +21,6 @@ class MortgageCalculatorShortcode
 {
     public function render(Shortcode $shortcode): string
     {
-        // Temporarily disabled - uncomment the return below to re-enable the mortgage calculator
-        return '';
-
         $config = [
             'style' => $shortcode->style,
             'layout' => $shortcode->layout,
