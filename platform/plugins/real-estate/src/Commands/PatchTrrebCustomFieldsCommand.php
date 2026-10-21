@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Backfills / refreshes ONLY the re_custom_field_values rows for existing TRREB
  * properties. It does NOT touch images, does NOT dispatch any queued jobs, and
- * does NOT run a full sync — safe to execute alongside the media-hydration workers.
+ * does NOT run a full sync ï¿½ safe to execute alongside the media-hydration workers.
  *
  * Usage:
  *   php artisan cms:trreb:patch-custom-fields              # all TRREB properties
@@ -23,11 +23,12 @@ use Illuminate\Support\Facades\DB;
 class PatchTrrebCustomFieldsCommand extends Command
 {
     protected $signature = 'cms:trreb:patch-custom-fields
-                            {--limit=0       : Max properties to process (0 = all)}
-                            {--sleep=200     : Milliseconds to sleep between API calls (default 200)}
-                            {--subtype=      : Only patch properties whose stored Property Sub Type matches}
-                            {--type=         : Only patch properties of a given PropertyType (e.g. Commercial)}
-                            {--dry-run       : Show what would be updated without writing to DB}';
+                            {--limit=0          : Max properties to process (0 = all)}
+                            {--sleep=200        : Milliseconds to sleep between API calls (default 200)}
+                            {--subtype=         : Only patch properties whose stored Property Sub Type matches}
+                            {--type=            : Only patch properties of a given PropertyType (e.g. Commercial)}
+                            {--missing-only     : Only process properties that do not yet have the new patched fields}
+                            {--dry-run          : Show what would be updated without writing to DB}';
 
     protected $description = 'Refresh custom fields for existing TRREB properties without touching images or queued jobs.';
 
@@ -40,25 +41,36 @@ class PatchTrrebCustomFieldsCommand extends Command
 
     public function handle(): int
     {
-        $limit   = max(0, (int) $this->option('limit'));
-        $sleepMs = max(0, (int) $this->option('sleep'));
-        $subtype = trim((string) $this->option('subtype'));
-        $type    = trim((string) $this->option('type'));
-        $dry     = (bool) $this->option('dry-run');
+        $limit       = max(0, (int) $this->option('limit'));
+        $sleepMs     = max(0, (int) $this->option('sleep'));
+        $subtype     = trim((string) $this->option('subtype'));
+        $type        = trim((string) $this->option('type'));
+        $missingOnly = (bool) $this->option('missing-only');
+        $dry         = (bool) $this->option('dry-run');
 
         $this->info('TRREB Custom Fields Patch');
         $this->info('-----------------------------------------');
-        $this->info('Mode     : ' . ($dry ? 'DRY RUN (no writes)' : 'LIVE'));
-        $this->info('Limit    : ' . ($limit > 0 ? $limit : 'all'));
-        $this->info("Sleep    : {$sleepMs}ms between API calls");
-        $this->info('Subtype  : ' . ($subtype ?: 'all'));
-        $this->info('Type     : ' . ($type ?: 'all'));
+        $this->info('Mode        : ' . ($dry ? 'DRY RUN (no writes)' : 'LIVE'));
+        $this->info('Limit       : ' . ($limit > 0 ? $limit : 'all'));
+        $this->info("Sleep       : {$sleepMs}ms between API calls");
+        $this->info('Subtype     : ' . ($subtype ?: 'all'));
+        $this->info('Type        : ' . ($type ?: 'all'));
+        $this->info('Missing-only: ' . ($missingOnly ? 'YES (skipping already patched)' : 'no'));
         $this->newLine();
 
         // -- Build property query -----------------------------------------------
         $query = Property::query()
             ->whereIn('source', TrrebPropertySyncer::SOURCES)
             ->select(['id', 'unique_id', 'name']);
+
+        if ($missingOnly) {
+            $query->whereNotIn('id', function ($sub) {
+                $sub->select('reference_id')
+                    ->from('re_custom_field_values')
+                    ->where('reference_type', Property::class)
+                    ->where('name', 'Contract Status');
+            });
+        }
 
         if ($subtype !== '') {
             $query->whereHas('customFields', function ($q) use ($subtype) {
@@ -183,7 +195,7 @@ class PatchTrrebCustomFieldsCommand extends Command
 
         if ($dry) {
             $this->newLine();
-            $this->warn('DRY RUN — no changes were written to the database.');
+            $this->warn('DRY RUN ï¿½ no changes were written to the database.');
         }
 
         return self::SUCCESS;
