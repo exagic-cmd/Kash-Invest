@@ -131,6 +131,8 @@
                 ['Lot Size',                                __('Lot Size')],
                 ['Lot Size Source',                         __('Lot Size Source')],
                 ['Lot Features',                            __('Lot Features')],
+                ['Lot Type',                                __('Lot Type')],
+                ['Lot Irregularities',                      __('Lot Irregularities')],
                 ['Direction Faces',                         __('Frontage Type')],
                 ['Directions',                              __('Directions')],
                 ['Water Source',                            __('Water Source')],
@@ -141,6 +143,83 @@
                 ['Community Features',                      __('Community Features')],
                 ['Cross Street',                            __('Cross Street')],
                 ['Municipality District',                   __('Municipality District')],
+            ],
+        ],
+        [
+            'title' => __('Commercial General'),
+            'rows'  => [
+                // ── Identification ────────────────────────────────────
+                ['Property Use',                             __('Property Use')],
+                ['Business Type',                           __('Business Type')],
+                ['Contract Status',                         __('Contract Status')],
+                ['Property Management Company',             __('Property Mgmt Company')],
+
+                // ── Shipping / Access ─────────────────────────────────
+                ['Rail',                                    __('Rail')],
+                ['Free Standing',                           __('Free Standing')],
+                ['Sprinklers',                              __('Sprinklers')],
+
+                // ── Drive-In Doors ────────────────────────────────────
+                ['Shipping Doors Drive In Level',           __('Drive-In Doors')],
+                ['Drive In Door Height (ft)',               __('Drive-In Door H (ft)')],
+                ['Drive In Door Height (in)',               __('Drive-In Door H (in)')],
+                ['Drive In Door Width (ft)',                __('Drive-In Door W (ft)')],
+                ['Drive In Door Width (in)',                __('Drive-In Door W (in)')],
+
+                // ── Double-Man Doors ──────────────────────────────────
+                ['Shipping Doors Double Man',               __('Double-Man Doors')],
+                ['Double Man Door Height (ft)',             __('Double-Man Door H (ft)')],
+                ['Double Man Door Height (in)',             __('Double-Man Door H (in)')],
+                ['Double Man Door Width (ft)',              __('Double-Man Door W (ft)')],
+                ['Double Man Door Width (in)',              __('Double-Man Door W (in)')],
+
+                // ── Grade-Level Doors ─────────────────────────────────
+                ['Shipping Doors Grade Level',              __('Grade-Level Doors')],
+                ['Grade Door Height (ft)',                  __('Grade Door H (ft)')],
+                ['Grade Door Height (in)',                  __('Grade Door H (in)')],
+                ['Grade Door Width (ft)',                   __('Grade Door W (ft)')],
+                ['Grade Door Width (in)',                   __('Grade Door W (in)')],
+
+                // ── Truck-Level Doors ─────────────────────────────────
+                ['Shipping Doors Truck Level',              __('Truck-Level Doors')],
+                ['Truck Door Height (ft)',                  __('Truck Door H (ft)')],
+                ['Truck Door Height (in)',                  __('Truck Door H (in)')],
+                ['Truck Door Width (ft)',                   __('Truck Door W (ft)')],
+                ['Truck Door Width (in)',                   __('Truck Door W (in)')],
+
+                // ── Area / Height ─────────────────────────────────────
+                ['Clear Height (ft)',                       __('Clear Height (ft)')],
+                ['Clear Height (in)',                       __('Clear Height (in)')],
+                ['Total Area',                             __('Total Area')],
+                ['Total Area Units',                       __('Total Area Units')],
+                ['Industrial Area',                        __('Industrial Area')],
+                ['Industrial Area Units',                  __('Industrial Area Units')],
+                ['Retail Area',                            __('Retail Area')],
+                ['Retail Area Units',                      __('Retail Area Units')],
+                ['Office / Apartment Area',                __('Office / Apt Area')],
+                ['Office / Apartment Area Units',          __('Office / Apt Area Units')],
+
+                // ── Financial / Operational ───────────────────────────
+                ['Tax Type',                               __('Tax Type')],
+                ['Utilities',                              __('Utilities')],
+                ['Commercial Condo Fee',                   __('Commercial Condo Fee')],
+                ['Net Operating Income',                   __('Net Operating Income')],
+                ['Rural Utilities',                        __('Rural Utilities')],
+                ['Outside Storage',                        __('Outside Storage')],
+                ['Hours / Days Of Operation',              __('Hours / Days of Operation')],
+                ['Rent Includes',                          __('Rent Includes')],
+
+                // ── Lease Terms ───────────────────────────────────────
+                ['Price Unit',                             __('Price Unit')],
+                ['Min Rental Term (months)',               __('Min Rental Term')],
+                ['Max Rental Term (months)',               __('Max Rental Term')],
+
+                // ── People / Operations ───────────────────────────────
+                ['# Full-Time Employees',                  __('Full-Time Employees')],
+                ['Seating Capacity',                       __('Seating Capacity')],
+                ['List AOR',                               __('List AOR')],
+                ['Showing Requirements',                   __('Showing Requirements')],
+                ['New Construction',                       __('New Construction')],
             ],
         ],
     ];

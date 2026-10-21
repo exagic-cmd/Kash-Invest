@@ -53,15 +53,9 @@
     <!-- Original Property Overview (for Properties) -->
     <div @class(['single-property-overview', $class ?? null])>
         <div class="h7 title fw-7 mb-3">{{ __('Overview') }}</div>
-        <div class="row row-cols-1 row-cols-md-2" style="font-size: 0.95rem;">
-            <!-- @if ($model->unique_id && !$isUnknown($model->unique_id))
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
-                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Property ID:') }}</span>
-                    <span class="fw-normal text-dark">{{ $model->unique_id }}</span>
-                </div>
-            @endif -->
+        <div class="overview-grid" style="font-size: 0.95rem;">
             @if ($model->categories->isNotEmpty())
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                <div class="overview-item">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Type:') }}</span>
                     <span class="fw-normal text-dark">
                         @foreach ($model->categories as $category)
@@ -71,25 +65,25 @@
                 </div>
             @endif
             @if (($model->number_bedroom ?? null) && !$isUnknown($model->number_bedroom))
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                <div class="overview-item">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Bedrooms:') }}</span>
                     <span class="fw-normal text-dark">{{ fmod($model->number_bedroom, 1) == 0 ? number_format($model->number_bedroom) : $model->number_bedroom }}</span>
                 </div>
             @endif
             @if (($model->number_bathroom ?? null) && !$isUnknown($model->number_bathroom))
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                <div class="overview-item">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Bathrooms:') }}</span>
                     <span class="fw-normal text-dark">{{ fmod($model->number_bathroom, 1) == 0 ? number_format($model->number_bathroom) : $model->number_bathroom }}</span>
                 </div>
             @endif
             @if (($model->number_floor ?? null) && !$isUnknown($model->number_floor))
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                <div class="overview-item">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Floors:') }}</span>
                     <span class="fw-normal text-dark">{{ number_format($model->number_floor) }}</span>
                 </div>
             @endif
             @if (($model->square ?? null) && !$isUnknown($model->square))
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                <div class="overview-item">
                     <span class="fw-bold text-dark flex-shrink-0">{{ __('Square:') }}</span>
                     <span class="fw-normal text-dark">{{ $model->square_text }}</span>
                 </div>
@@ -98,13 +92,33 @@
                 @continue(! $customField->value)
                 @continue($isUnknown($customField->value))
                 @continue(! in_array(strtolower(trim($customField->name)), $overviewFields, true))
-                <div class="col d-flex align-items-baseline gap-2 mb-2">
+                <div class="overview-item">
                     <span class="fw-bold text-dark flex-shrink-0">{!! BaseHelper::clean($customField->name) !!}:</span>
                     <span class="fw-normal text-dark">{!! $renderCustomFieldValue($customField) !!}</span>
                 </div>
             @endforeach
         </div>
     </div>
+
+    <style>
+        .single-property-overview .overview-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .single-property-overview .overview-grid {
+                column-count: 2;
+            }
+        }
+        .single-property-overview .overview-item {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    </style>
 
     @if ($model->content || (($model->can_see_private_notes ?? false) && ($model->private_notes ?? null)))
         <div @class(['single-property-desc', $class ?? null])>

@@ -133,6 +133,7 @@
 @endphp
 
 <div @class(['property-item homeya-box modern-card w-100', $class]) @if ($property->latitude && $property->longitude) data-lat="{{ $property->latitude }}" data-lng="{{ $property->longitude }}" @endif>
+    <a href="{{ $property->url }}" class="card-click-overlay" aria-label="{{ __('View :name', ['name' => $property->name]) }}" tabindex="-1"></a>
     <div class="archive-top h-100">
         <a href="{{ $property->url }}" class="images-group">
             <div class="images-style">
@@ -249,6 +250,7 @@
     </div>
 </div>
 
+@once
 <style>
 .property-item.modern-card,
 .homeya-box.modern-card,
@@ -261,6 +263,24 @@
     overflow: hidden;
     background: #ffffff;
     margin-bottom: 0 !important;
+    position: relative;
+    cursor: pointer;
+}
+.modern-card .card-click-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: transparent;
+    text-indent: -9999px;
+    overflow: hidden;
+}
+/* Keep nested interactive elements above the overlay */
+.modern-card .images-group,
+.modern-card .modern-wishlist-btn,
+.modern-card .modern-content a,
+.modern-card .modern-content button {
+    position: relative;
+    z-index: 2;
 }
 .modern-card .archive-top {
     height: 100% !important;
@@ -397,6 +417,7 @@
     text-overflow: ellipsis;
 }
 </style>
+@endonce
 
 
 

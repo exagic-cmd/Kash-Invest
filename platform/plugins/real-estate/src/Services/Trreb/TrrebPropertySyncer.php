@@ -1271,6 +1271,11 @@ class TrrebPropertySyncer
      *
      * @return array<int, array{name: string, value: string}>
      */
+    public function buildCustomFieldsPublic(array $listing, array $rooms = []): array
+    {
+        return $this->buildCustomFields($listing, $rooms);
+    }
+
     protected function buildCustomFields(array $listing, array $rooms = []): array
     {
         $fields = [
@@ -1362,6 +1367,72 @@ class TrrebPropertySyncer
 
             // â”€â”€ Extra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $this->customField('Virtual Tour', Arr::get($listing, 'VirtualTourURLBranded')),
+            $this->customField('Virtual Tour (Unbranded)', Arr::get($listing, 'VirtualTourURLUnbranded')),
+            $this->customField('Additional Remarks', Arr::get($listing, 'PublicRemarksExtras')),
+
+            // ── Commercial General / Industrial ────────────────────────────────────────────
+            $this->customField('Rail',                           Arr::get($listing, 'Rail')),
+            $this->customField('Shipping Doors Drive In Level',  Arr::get($listing, 'DriveInLevelShippingDoors')),
+            $this->customField('Drive In Door Height (ft)',      Arr::get($listing, 'DriveInLevelShippingDoorsHeightFeet')),
+            $this->customField('Drive In Door Height (in)',      Arr::get($listing, 'DriveInLevelShippingDoorsHeightInches')),
+            $this->customField('Drive In Door Width (ft)',       Arr::get($listing, 'DriveInLevelShippingDoorsWidthFeet')),
+            $this->customField('Drive In Door Width (in)',       Arr::get($listing, 'DriveInLevelShippingDoorsWidthInches')),
+            $this->customField('Shipping Doors Double Man',      Arr::get($listing, 'DoubleManShippingDoors')),
+            $this->customField('Double Man Door Height (ft)',    Arr::get($listing, 'DoubleManShippingDoorsHeightFeet')),
+            $this->customField('Double Man Door Height (in)',    Arr::get($listing, 'DoubleManShippingDoorsHeightInches')),
+            $this->customField('Double Man Door Width (ft)',     Arr::get($listing, 'DoubleManShippingDoorsWidthFeet')),
+            $this->customField('Double Man Door Width (in)',     Arr::get($listing, 'DoubleManShippingDoorsWidthInches')),
+            $this->customField('Shipping Doors Grade Level',     Arr::get($listing, 'GradeLevelShippingDoors')),
+            $this->customField('Grade Door Height (ft)',         Arr::get($listing, 'GradeLevelShippingDoorsHeightFeet')),
+            $this->customField('Grade Door Height (in)',         Arr::get($listing, 'GradeLevelShippingDoorsHeightInches')),
+            $this->customField('Grade Door Width (ft)',          Arr::get($listing, 'GradeLevelShippingDoorsWidthFeet')),
+            $this->customField('Grade Door Width (in)',          Arr::get($listing, 'GradeLevelShippingDoorsWidthInches')),
+            $this->customField('Shipping Doors Truck Level',     Arr::get($listing, 'TruckLevelShippingDoors')),
+            $this->customField('Truck Door Height (ft)',         Arr::get($listing, 'TruckLevelShippingDoorsHeightFeet')),
+            $this->customField('Truck Door Height (in)',         Arr::get($listing, 'TruckLevelShippingDoorsHeightInches')),
+            $this->customField('Truck Door Width (ft)',          Arr::get($listing, 'TruckLevelShippingDoorsWidthFeet')),
+            $this->customField('Truck Door Width (in)',          Arr::get($listing, 'TruckLevelShippingDoorsWidthInches')),
+            $this->customField('Clear Height (ft)',              Arr::get($listing, 'ClearHeightFeet')),
+            $this->customField('Clear Height (in)',              Arr::get($listing, 'ClearHeightInches')),
+            $this->customField('Industrial Area',                Arr::get($listing, 'IndustrialArea')),
+            $this->customField('Industrial Area Units',          Arr::get($listing, 'IndustrialAreaCode')),
+            $this->customField('Free Standing',                  $this->resolveFreestanding($listing)),
+            $this->customField('Sprinklers',                     Arr::get($listing, 'Sprinklers')),
+            $this->customField('Tax Type',                       Arr::get($listing, 'TaxType')),
+            $this->customField('Utilities',                      Arr::get($listing, 'Utilities')),
+            $this->customField('Hours / Days Of Operation',      Arr::get($listing, 'HoursDaysOfOperation')),
+            $this->customField('Total Area',                     Arr::get($listing, 'TotalArea')),
+            $this->customField('Total Area Units',               Arr::get($listing, 'TotalAreaUnits')),
+
+            // ── Commercial Operations ───────────────────────────────────────────────────────
+            $this->customField('Business Type',                  Arr::get($listing, 'BusinessType')),
+            $this->customField('Property Use',                   Arr::get($listing, 'PropertyUse')),
+            $this->customField('Property Management Company',    Arr::get($listing, 'PropertyManagementCompany')),
+            $this->customField('Commercial Condo Fee',           Arr::get($listing, 'CommercialCondoFee')),
+            $this->customField('Retail Area',                    Arr::get($listing, 'RetailArea')),
+            $this->customField('Retail Area Units',              Arr::get($listing, 'RetailAreaCode')),
+            $this->customField('Office / Apartment Area',        Arr::get($listing, 'OfficeApartmentArea')),
+            $this->customField('Office / Apartment Area Units',  Arr::get($listing, 'OfficeApartmentAreaUnit')),
+            $this->customField('Net Operating Income',           Arr::get($listing, 'NetOperatingIncome')),
+            $this->customField('# Full-Time Employees',          Arr::get($listing, 'NumberOfFullTimeEmployees')),
+            $this->customField('Seating Capacity',               Arr::get($listing, 'SeatingCapacity')),
+            $this->customField('Rent Includes',                  Arr::get($listing, 'RentIncludes')),
+            $this->customField('Outside Storage',                Arr::get($listing, 'OutsideStorageYN') ? 'Yes' : null),
+            $this->customField('Rural Utilities',                Arr::get($listing, 'RuralUtilities')),
+
+            // ── Lease Terms ─────────────────────────────────────────────────────────────────
+            $this->customField('Price Unit',                     Arr::get($listing, 'ListPriceUnit')),
+            $this->customField('Min Rental Term (months)',       Arr::get($listing, 'MinimumRentalTermMonths')),
+            $this->customField('Max Rental Term (months)',       Arr::get($listing, 'MaximumRentalMonthsTerm')),
+            $this->customField('Contract Status',                Arr::get($listing, 'ContractStatus')),
+            $this->customField('Lot Type',                       Arr::get($listing, 'LotType')),
+            $this->customField('Lot Irregularities',             Arr::get($listing, 'LotIrregularities')),
+
+            // ── Showing / Operational ───────────────────────────────────────────────────────
+            $this->customField('Showing Requirements',           Arr::get($listing, 'ShowingRequirements')),
+            $this->customField('List AOR',                       Arr::get($listing, 'ListAOR')),
+            $this->customField('Possession Details',             Arr::get($listing, 'PossessionDetails')),
+            $this->customField('New Construction',               Arr::get($listing, 'NewConstructionYN') ? 'Yes' : null),
         ];
 
         // â”€â”€ Rooms (from PropertyRooms sub-resource) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1409,6 +1480,35 @@ class TrrebPropertySyncer
         }
 
         return $parts !== [] ? implode(' / ', $parts) : null;
+    }
+
+    /**
+     * FreestandingYN arrives as a boolean true/false, integer 1/0, or string "Y"/"N".
+     * Return a human-readable "Yes" / "No", or null when the field is absent.
+     */
+    protected function resolveFreestanding(array $listing): ?string
+    {
+        $raw = Arr::get($listing, 'FreestandingYN');
+
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (is_bool($raw)) {
+            return $raw ? 'Yes' : 'No';
+        }
+
+        $str = strtolower(trim((string) $raw));
+
+        if (in_array($str, ['1', 'true', 'y', 'yes'], true)) {
+            return 'Yes';
+        }
+
+        if (in_array($str, ['0', 'false', 'n', 'no'], true)) {
+            return 'No';
+        }
+
+        return null;
     }
 
     /**

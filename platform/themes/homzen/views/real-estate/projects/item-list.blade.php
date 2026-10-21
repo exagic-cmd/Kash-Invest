@@ -1,4 +1,5 @@
 <div class="homeya-box list-style-1" @if ($project->latitude && $project->longitude) data-lat="{{ $project->latitude }}" data-lng="{{ $project->longitude }}" @endif>
+    <a href="{{ $project->url }}" class="card-click-overlay" aria-label="{{ __('View :name', ['name' => $project->name]) }}" tabindex="-1"></a>
     <a href="{{ $project->url }}" class="images-group">
         <div class="images-style">
             @include(Theme::getThemeNamespace('partials.real-estate.card-image-slider'), [
@@ -74,3 +75,27 @@
         </div>
     </div>
 </div>
+
+@once
+    <style>
+        .homeya-box.list-style-1 {
+            position: relative;
+            cursor: pointer;
+        }
+        .homeya-box.list-style-1 .card-click-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: transparent;
+            text-indent: -9999px;
+            overflow: hidden;
+        }
+        .homeya-box.list-style-1 .images-group,
+        .homeya-box.list-style-1 .content a,
+        .homeya-box.list-style-1 .content button,
+        .homeya-box.list-style-1 .box-icon {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+@endonce
