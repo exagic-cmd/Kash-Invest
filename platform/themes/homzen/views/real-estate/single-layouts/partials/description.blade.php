@@ -254,10 +254,10 @@
             @endphp
 
             {{-- Dynamic Summary Paragraph --}}
-            <div class="dynamic-property-summary mt-4 pt-3">
-                <p class="body-2 text-variant-1 mb-0">
+            <div class="dynamic-property-summary mt-4 pt-3 body-2 text-variant-1 mb-0">
+                <div class=" ck-content single-detail">
                     This {{ $propType }} located at {{ $propAddress }} is currently for {{ $forStatus }} and has been available at Kash Invest for {{ $daysVal }} days. This property, in the city of {{ $propCity ?: 'the area' }} and {{ $propNeighbourhood ?: 'local' }} neighborhood, is listed at {{ $formattedPrice }} with an estimated mortgage of {{ $estMortgageStr }}* per month. It has an area of {{ $areaDimStr }} sqft with {{ $bedsOutput }} and {{ $bathsOutput }}. {{ $nearbyStr }} are nearby neighbourhoods.
-                </p>
+            </div>
             </div>
 
             @if(($model->can_see_private_notes ?? false) && ($model->private_notes ?? null))

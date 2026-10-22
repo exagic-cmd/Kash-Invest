@@ -24,12 +24,12 @@
                         </nav>
                     </div>
                     <div class="header-account">
-                        {{--
-                        @if (is_plugin_active('real-estate'))
+                        
+                        <!-- @if (is_plugin_active('real-estate'))
                             <div class="header-currency-switcher">
                                 {!! Theme::partial('currency-switcher') !!}
                             </div>
-                        @endif
+                        @endif -->
 
                         @if (is_plugin_active('real-estate') && RealEstateHelper::isLoginEnabled())
                             @auth('account')
@@ -72,12 +72,12 @@
                             @endauth
                         @endif
 
-                        @if (is_plugin_active('real-estate') && RealEstateHelper::isLoginEnabled())
+                        <!-- @if (is_plugin_active('real-estate') && RealEstateHelper::isLoginEnabled())
                             <div class="flat-bt-top">
                                 <a class="tf-btn primary" href="{{ route('public.account.properties.index') }}">{{ __('Submit Property') }}</a>
                             </div>
-                        @endif
-                        --}}
+                        @endif -->
+                        
                     </div>
                     <div class="mobile-nav-toggler mobile-button">
                         <x-core::icon name="ti ti-menu-2" />

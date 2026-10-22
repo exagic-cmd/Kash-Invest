@@ -756,37 +756,25 @@ class TrrebPropertySyncer
      * BuildingAreaTotal (a number, mostly on commercial) or LivingAreaRange (a
      * banded string, mostly on residential) in the forms "1500-2000" and "5000 +".
      */
-    protected function resolveArea(array $listing): int|float|null
-    {
-        if ($total = $this->num(Arr::get($listing, 'BuildingAreaTotal'))) {
-            return $total > 0 ? $total : null;
-        }
-
-        return $this->parseAreaRange((string) Arr::get($listing, 'LivingAreaRange'));
-    }
-
     /**
-     * "1500-2000" -> 1750 (midpoint), "5000 +" -> 5000 (floor of the band).
-     * A banded figure is an approximation either way; the exact band is preserved
-     * verbatim as a custom field so nothing PROPTX supplied is lost.
+     * TRREB floor area arrives either as LivingAreaRange (a banded string,
+     * e.g. "1100-1500", "1500-2000", "< 700") or BuildingAreaTotal (a number).
+     *
+     * Stored verbatim without lossy midpoint approximations.
      */
-    protected function parseAreaRange(string $range): int|float|null
+    protected function resolveArea(array $listing): ?string
     {
-        if (! preg_match_all('/\d+(?:\.\d+)?/', $range, $matches)) {
-            return null;
+        $livingRange = trim((string) Arr::get($listing, 'LivingAreaRange'));
+        if ($livingRange !== '') {
+            return $livingRange;
         }
 
-        $numbers = array_map('floatval', $matches[0]);
-
-        if ($numbers === []) {
-            return null;
+        $total = Arr::get($listing, 'BuildingAreaTotal');
+        if ($total !== null && $total !== '' && (float) $total > 0) {
+            return (string) $total;
         }
 
-        if (count($numbers) >= 2) {
-            return round(($numbers[0] + $numbers[1]) / 2, 2);
-        }
-
-        return $numbers[0] > 0 ? $numbers[0] : null;
+        return null;
     }
 
     /**

@@ -84,7 +84,7 @@ class Property extends BaseModel
         'private_notes' => SafeContent::class,
         'expire_date' => 'datetime',
         'images' => 'json',
-        'square' => 'float',
+        'square' => 'string',
         'number_bedroom' => 'float',
         'number_bathroom' => 'float',
         'number_floor' => 'int',
