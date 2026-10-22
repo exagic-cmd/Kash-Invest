@@ -622,18 +622,26 @@ class RealEstateHelper
     public function getMinSquare(): int
     {
         return Cache::remember('real_estate_min_square', 3600, function () {
-            $square = Property::query()->min('square');
+            $val = Property::query()
+                ->whereNotNull('square')
+                ->where('square', '!=', '')
+                ->selectRaw('MIN(CAST(square AS UNSIGNED)) as val')
+                ->value('val');
 
-            return $square ? (int) ceil($square) : 0;
+            return (int) ($val ?: 0);
         });
     }
 
     public function getMaxSquare(): int
     {
         return Cache::remember('real_estate_max_square', 3600, function () {
-            $square = Property::query()->max('square');
+            $val = Property::query()
+                ->whereNotNull('square')
+                ->where('square', '!=', '')
+                ->selectRaw('MAX(CAST(square AS UNSIGNED)) as val')
+                ->value('val');
 
-            return $square ? (int) ceil($square) : 0;
+            return (int) ($val ?: 0);
         });
     }
 

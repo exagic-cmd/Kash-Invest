@@ -185,11 +185,11 @@ class PropertyRepository extends RepositoriesAbstract implements PropertyInterfa
                     $maxSquare = Arr::get($filters, 'max_square');
 
                     if ($minSquare !== null) {
-                        $query = $query->where('square', '>=', $minSquare);
+                        $query = $query->whereRaw('CAST(square AS UNSIGNED) >= ?', [(int) $minSquare]);
                     }
 
                     if ($maxSquare !== null) {
-                        $query = $query->where('square', '<=', $maxSquare);
+                        $query = $query->whereRaw('CAST(square AS UNSIGNED) <= ?', [(int) $maxSquare]);
                     }
 
                     return $query;
