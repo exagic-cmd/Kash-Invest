@@ -200,11 +200,18 @@ class Property extends BaseModel
         return Attribute::get(function () {
             $square = $this->square;
 
-            $unit = setting('real_estate_square_unit', 'm²');
+            if ($square === null || $square === '') {
+                return null;
+            }
 
-            $squareFormatted = fmod($square, 1) == 0 ? number_format($square) : number_format($square, 2);
+            $unit = setting('real_estate_square_unit', 'sqft');
 
-            return apply_filters('real_estate_property_square_text', sprintf('%s %s', $squareFormatted, trans($unit)), $square);
+            if (is_numeric($square)) {
+                $squareFormatted = fmod((float) $square, 1) == 0 ? number_format((float) $square) : number_format((float) $square, 2);
+                return apply_filters('real_estate_property_square_text', sprintf('%s %s', $squareFormatted, trans($unit)), $square);
+            }
+
+            return apply_filters('real_estate_property_square_text', sprintf('%s %s', $square, trans($unit)), $square);
         });
     }
 
