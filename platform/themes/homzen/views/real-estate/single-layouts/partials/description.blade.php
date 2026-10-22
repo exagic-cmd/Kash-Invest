@@ -15,11 +15,10 @@
             return in_array($str, ['unknown', 'n/a', 'na', 'null', 'none', '-'], true);
         };
 
-        // Only these fields belong in the overview strip.
-        // All RESO detail fields (Style, Heating, Basement, Parking …) live
-        // in the Property Details section below.
-        $overviewFields = [
-            'mls number', 'listing brokerage', 'co-listing brokerage',
+        // Overview fields split into left column (specs) and right column (brokerage & dates)
+        $overviewLeftFields = ['mls number'];
+        $overviewRightFields = [
+            'listing brokerage', 'co-listing brokerage',
             'listed on', 'last updated',
         ];
 
@@ -54,69 +53,99 @@
     <div @class(['single-property-overview', $class ?? null])>
         <div class="h7 title fw-7 mb-3">{{ __('Overview') }}</div>
         <div class="overview-grid" style="font-size: 0.95rem;">
-            @if ($model->categories->isNotEmpty())
-                <div class="overview-item">
-                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Type:') }}</span>
-                    <span class="fw-normal text-dark">
-                        @foreach ($model->categories as $category)
-                            <a href="{{ $category->url }}" class="text-dark">{!! BaseHelper::clean($category->name) !!}</a>@if (!$loop->last),&nbsp;@endif
-                        @endforeach
-                    </span>
-                </div>
-            @endif
-            @if (($model->number_bedroom ?? null) && !$isUnknown($model->number_bedroom))
-                <div class="overview-item">
-                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Bedrooms:') }}</span>
-                    <span class="fw-normal text-dark">{{ fmod($model->number_bedroom, 1) == 0 ? number_format($model->number_bedroom) : $model->number_bedroom }}</span>
-                </div>
-            @endif
-            @if (($model->number_bathroom ?? null) && !$isUnknown($model->number_bathroom))
-                <div class="overview-item">
-                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Bathrooms:') }}</span>
-                    <span class="fw-normal text-dark">{{ fmod($model->number_bathroom, 1) == 0 ? number_format($model->number_bathroom) : $model->number_bathroom }}</span>
-                </div>
-            @endif
-            @if (($model->number_floor ?? null) && !$isUnknown($model->number_floor))
-                <div class="overview-item">
-                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Floors:') }}</span>
-                    <span class="fw-normal text-dark">{{ number_format($model->number_floor) }}</span>
-                </div>
-            @endif
-            @if (($model->square ?? null) && !$isUnknown($model->square))
-                <div class="overview-item">
-                    <span class="fw-bold text-dark flex-shrink-0">{{ __('Square:') }}</span>
-                    <span class="fw-normal text-dark">{{ $model->square_text }}</span>
-                </div>
-            @endif
-            @foreach ($model->customFields as $customField)
-                @continue(! $customField->value)
-                @continue($isUnknown($customField->value))
-                @continue(! in_array(strtolower(trim($customField->name)), $overviewFields, true))
-                <div class="overview-item">
-                    <span class="fw-bold text-dark flex-shrink-0">{!! BaseHelper::clean($customField->name) !!}:</span>
-                    <span class="fw-normal text-dark">{!! $renderCustomFieldValue($customField) !!}</span>
-                </div>
-            @endforeach
+            <div class="overview-col overview-col-left">
+                @if ($model->categories->isNotEmpty())
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{{ __('Type:') }}</span>
+                        <span class="fw-normal text-dark item-value">
+                            @foreach ($model->categories as $category)
+                                <a href="{{ $category->url }}" class="text-dark">{!! BaseHelper::clean($category->name) !!}</a>@if (!$loop->last),&nbsp;@endif
+                            @endforeach
+                        </span>
+                    </div>
+                @endif
+                @if (($model->number_bedroom ?? null) && !$isUnknown($model->number_bedroom))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{{ __('Bedrooms:') }}</span>
+                        <span class="fw-normal text-dark item-value">{{ fmod($model->number_bedroom, 1) == 0 ? number_format($model->number_bedroom) : $model->number_bedroom }}</span>
+                    </div>
+                @endif
+                @if (($model->number_bathroom ?? null) && !$isUnknown($model->number_bathroom))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{{ __('Bathrooms:') }}</span>
+                        <span class="fw-normal text-dark item-value">{{ fmod($model->number_bathroom, 1) == 0 ? number_format($model->number_bathroom) : $model->number_bathroom }}</span>
+                    </div>
+                @endif
+                @if (($model->number_floor ?? null) && !$isUnknown($model->number_floor))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{{ __('Floors:') }}</span>
+                        <span class="fw-normal text-dark item-value">{{ number_format($model->number_floor) }}</span>
+                    </div>
+                @endif
+                @if (($model->square ?? null) && !$isUnknown($model->square))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{{ __('Square:') }}</span>
+                        <span class="fw-normal text-dark item-value">{{ $model->square_text }}</span>
+                    </div>
+                @endif
+                @foreach ($model->customFields as $customField)
+                    @continue(! $customField->value)
+                    @continue($isUnknown($customField->value))
+                    @continue(! in_array(strtolower(trim($customField->name)), $overviewLeftFields, true))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{!! BaseHelper::clean($customField->name) !!}:</span>
+                        <span class="fw-normal text-dark item-value">{!! $renderCustomFieldValue($customField) !!}</span>
+                    </div>
+                @endforeach
+                @if ($model->unique_id && !$model->customFields->contains(fn($cf) => strtolower(trim($cf->name)) === 'mls number'))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{{ __('MLS Number:') }}</span>
+                        <span class="fw-normal text-dark item-value">{{ $model->unique_id }}</span>
+                    </div>
+                @endif
+            </div>
+
+            <div class="overview-col overview-col-right">
+                @foreach ($model->customFields as $customField)
+                    @continue(! $customField->value)
+                    @continue($isUnknown($customField->value))
+                    @continue(! in_array(strtolower(trim($customField->name)), $overviewRightFields, true))
+                    <div class="overview-item">
+                        <span class="fw-bold text-dark flex-shrink-0 item-label">{!! BaseHelper::clean($customField->name) !!}:</span>
+                        <span class="fw-normal text-dark item-value">{!! $renderCustomFieldValue($customField) !!}</span>
+                    </div>
+                @endforeach
+            </div>
         </div>
     </div>
 
     <style>
         .single-property-overview .overview-grid {
-            column-count: 1;
-            column-gap: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
         }
         @media (min-width: 768px) {
             .single-property-overview .overview-grid {
-                column-count: 2;
+                grid-template-columns: minmax(180px, max-content) 1fr;
+                gap: 2.5rem;
             }
+        }
+        .single-property-overview .overview-col {
+            display: flex;
+            flex-direction: column;
         }
         .single-property-overview .overview-item {
             display: flex;
             align-items: baseline;
             gap: 0.5rem;
             margin-bottom: 0.5rem;
-            break-inside: avoid;
-            page-break-inside: avoid;
+        }
+        .single-property-overview .overview-item .item-label {
+            white-space: nowrap;
+        }
+        .single-property-overview .overview-item .item-value {
+            word-break: normal;
         }
     </style>
 
