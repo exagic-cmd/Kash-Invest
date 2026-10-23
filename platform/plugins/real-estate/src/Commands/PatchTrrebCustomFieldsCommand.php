@@ -132,6 +132,19 @@ class PatchTrrebCustomFieldsCommand extends Command
 
                     if (! $listing) {
                         $bar->setMessage("Not found in API: {$listingKey}");
+                        if (! $dry) {
+                            // Mark as checked so --missing-only does not re-query obsolete listings in an infinite loop
+                            DB::table('re_custom_field_values')->updateOrInsert(
+                                [
+                                    'reference_type' => Property::class,
+                                    'reference_id'   => $property->id,
+                                    'name'           => 'Contract Status',
+                                ],
+                                [
+                                    'value'          => 'Unavailable',
+                                ]
+                            );
+                        }
                         $bar->advance();
                         $unchanged++;
                         continue;
