@@ -2,6 +2,8 @@
 
 namespace Botble\RealEstate\Commands;
 
+use Botble\RealEstate\Enums\ModerationStatusEnum;
+use Botble\RealEstate\Enums\PropertyStatusEnum;
 use Botble\RealEstate\Models\Property;
 use Botble\RealEstate\Services\Trreb\TrrebPropertySyncer;
 use Illuminate\Console\Command;
@@ -19,6 +21,21 @@ class HydrateTrrebPropertiesCommand extends Command
 
         $query = Property::query()
             ->whereIn('source', TrrebPropertySyncer::SOURCES);
+
+        if (! $this->option('all-statuses')) {
+            // Exclude properties explicitly flagged as Unavailable / Not found in API
+            $query->whereNotIn('id', function ($sub) {
+                $sub->select('reference_id')
+                    ->from('re_custom_field_values')
+                    ->where('reference_type', Property::class)
+                    ->where('name', 'Contract Status')
+                    ->where('value', 'Unavailable');
+            });
+
+            // Exclude delisted, off-market, or non-approved properties
+            $query->where('status', '!=', PropertyStatusEnum::NOT_AVAILABLE)
+                ->where('moderation_status', '!=', ModerationStatusEnum::PENDING);
+        }
 
         if (! $this->option('force')) {
             $query->where(function ($q) {
@@ -97,6 +114,13 @@ class HydrateTrrebPropertiesCommand extends Command
             'f',
             InputOption::VALUE_NONE,
             'Re-fetch media for all TRREB properties even if they already have images.'
+        );
+
+        $this->addOption(
+            'all-statuses',
+            null,
+            InputOption::VALUE_NONE,
+            'Include unavailable, delisted, and not-found properties in hydration.'
         );
 
         $this->addOption(
