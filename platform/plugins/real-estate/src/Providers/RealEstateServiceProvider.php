@@ -877,10 +877,20 @@ class RealEstateServiceProvider extends ServiceProvider
             // to be refreshed at least every 24 hours, so this schedule is a
             // compliance obligation, not just a convenience.
             if (config('plugins.real-estate.trreb.enabled', config('plugins.real-estate.treeb.enabled'))) {
-                $schedule
+                $command = $schedule
                     ->command(SyncTrrebPropertiesCommand::class, ['--trigger=cron'])
-                    ->dailyAt((string) config('plugins.real-estate.trreb.schedule_at', config('plugins.real-estate.treeb.schedule_at', '03:00')))
                     ->withoutOverlapping();
+
+                $frequency = (string) config('plugins.real-estate.trreb.sync_frequency', config('plugins.real-estate.treeb.sync_frequency', 'everyThirtyMinutes'));
+
+                match ($frequency) {
+                    'everyFifteenMinutes' => $command->everyFifteenMinutes(),
+                    'everyThirtyMinutes' => $command->everyThirtyMinutes(),
+                    'hourly' => $command->hourly(),
+                    'twiceDaily' => $command->twiceDaily(3, 15),
+                    'daily' => $command->dailyAt((string) config('plugins.real-estate.trreb.schedule_at', config('plugins.real-estate.treeb.schedule_at', '03:00'))),
+                    default => str_contains($frequency, ' ') ? $command->cron($frequency) : $command->everyThirtyMinutes(),
+                };
             }
 
             // Reconciliation sweep. Webhooks are the primary incremental
