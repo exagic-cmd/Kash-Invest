@@ -112,6 +112,10 @@ class ProcessRedbricksWebhookJob implements ShouldQueue
 
     protected function isDeleteEvent(string $event): bool
     {
+        if (! str_starts_with($event, 'project.')) {
+            return false;
+        }
+
         foreach (['deleted', 'removed', 'archived'] as $suffix) {
             if (str_ends_with($event, '.' . $suffix)) {
                 return true;
