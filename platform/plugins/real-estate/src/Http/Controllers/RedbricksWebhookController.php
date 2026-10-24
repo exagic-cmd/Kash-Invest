@@ -83,6 +83,15 @@ class RedbricksWebhookController extends Controller
             return response()->json(['message' => 'Missing event or project id'], 422);
         }
 
+        if (str_contains($event, 'test') || (string) $externalId === '999999') {
+            Log::info('[Redbricks Webhook] Test event acknowledged', [
+                'event' => $event,
+                'external_id' => $externalId,
+            ]);
+
+            return response()->json(['status' => 'acknowledged_test'], 200);
+        }
+
         ProcessRedbricksWebhookJob::dispatch($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null);
 
         Log::info('[Redbricks Webhook] Accepted', [
@@ -125,12 +134,22 @@ class RedbricksWebhookController extends Controller
     protected function extractExternalId(array $payload): int|string|null
     {
         foreach ([
+            'floorplan.project_id',
+            'floorplan.project.id',
+            'document.project_id',
+            'document.project.id',
+            'data.floorplan.project_id',
+            'data.document.project_id',
             'data.project_id',
             'data.project.id',
             'project_id',
             'project.id',
+            'external_id',
+            'data.external_id',
             'data.id',
             'id',
+            'floorplan.id',
+            'document.id',
         ] as $path) {
             $value = Arr::get($payload, $path);
 
