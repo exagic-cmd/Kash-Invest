@@ -90,4 +90,11 @@ return [
      * Changing this away from a sub-24h cadence is a compliance decision.
      */
     'schedule_at' => env('TRREB_SCHEDULE_AT', env('TREEB_SCHEDULE_AT', '03:00')),
+
+    /*
+     * How often to check for incremental updates from the TRREB feed.
+     * Options: everyFifteenMinutes, everyThirtyMinutes, hourly, twiceDaily, daily.
+     * Default: everyThirtyMinutes (catches new listings and price changes quickly).
+     */
+    'sync_frequency' => env('TRREB_SYNC_FREQUENCY', env('TREEB_SYNC_FREQUENCY', 'everyThirtyMinutes')),
 ];

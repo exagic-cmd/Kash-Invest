@@ -237,9 +237,11 @@ class TrrebPropertySyncer
                 ->latest('finished_at')
                 ->value('finished_at');
 
-            if ($since) {
-                $clauses[] = sprintf('ModificationTimestamp gt %s', $since->clone()->utc()->format('Y-m-d\TH:i:s\Z'));
-            }
+            // Safety fallback: if no previous sync log exists, default to the last 24 hours
+            // so an incremental run never accidentally triggers a full 85,000-listing crawl.
+            $sinceDate = $since instanceof Carbon ? $since : ($since ? Carbon::parse($since) : Carbon::now()->subHours(24));
+
+            $clauses[] = sprintf('ModificationTimestamp gt %s', $sinceDate->clone()->utc()->format('Y-m-d\TH:i:s\Z'));
         }
 
         if ($types = $this->transactionTypeClause()) {
@@ -250,7 +252,7 @@ class TrrebPropertySyncer
         // receive listings that just went Sold/Leased/Expired — that transition is
         // the only signal the feed gives us that something has left the market,
         // and missing it means displaying a stale listing as available.
-        if (! $since && $statuses = $this->standardStatusClause()) {
+        if ($full && $statuses = $this->standardStatusClause()) {
             $clauses[] = $statuses;
         }
 
