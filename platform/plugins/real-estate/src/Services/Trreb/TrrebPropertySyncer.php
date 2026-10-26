@@ -95,6 +95,11 @@ class TrrebPropertySyncer
     /** Set when the run stopped early because of the testing cap. */
     protected bool $capReached = false;
 
+    /** In-memory lookup caches to eliminate redundant database queries */
+    protected array $modelLookupCache = [];
+
+    protected array $locationCache = [];
+
     public function __construct(protected TrrebClient $client)
     {
     }
@@ -391,11 +396,44 @@ class TrrebPropertySyncer
         $property->features()->sync($this->resolveFeatureIds($listing));
         $property->categories()->sync($this->resolveCategoryIds($listing));
 
-        $rooms = $this->client->roomsFor($listingKey);
-        $newCustomFields = $this->buildCustomFields($listing, $rooms);
-        $property->customFields()->delete();
-        foreach ($newCustomFields as $field) {
-            $property->customFields()->create($field);
+        if ($isNew) {
+            $rooms = config('plugins.real-estate.trreb.sync_rooms', true)
+                ? $this->client->roomsFor($listingKey)
+                : [];
+            $newCustomFields = $this->buildCustomFields($listing, $rooms);
+        } else {
+            // For existing properties, room dimensions are already known and never change.
+            // Avoid making 100 external HTTP requests per page to TRREB API!
+            $newCustomFields = $this->buildCustomFields($listing, []);
+            foreach ($oldCustomFields as $fieldName => $fieldValue) {
+                if (str_starts_with($fieldName, 'Room ')) {
+                    $newCustomFields[] = ['name' => $fieldName, 'value' => $fieldValue];
+                }
+            }
+        }
+
+        $customFieldChanges = $isNew ? [] : $this->diffCustomFields($oldCustomFields, $newCustomFields);
+
+        // Bulk insert custom fields only if new or values actually changed
+        if ($isNew || $customFieldChanges !== []) {
+            $property->customFields()->delete();
+
+            $now = Carbon::now();
+            $rows = [];
+            foreach ($newCustomFields as $field) {
+                $rows[] = [
+                    'name' => $field['name'],
+                    'value' => $field['value'],
+                    'reference_type' => Property::class,
+                    'reference_id' => $property->getKey(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            if ($rows !== []) {
+                DB::table('re_custom_field_values')->insert($rows);
+            }
         }
 
         if (config('plugins.real-estate.trreb.sync_open_houses', false)) {
@@ -406,13 +444,13 @@ class TrrebPropertySyncer
             }
         }
 
-        $customFieldChanges = $isNew ? [] : $this->diffCustomFields($oldCustomFields, $newCustomFields);
-
-        if (($isNew || ! $property->slugable()->exists()) && SlugHelper::isSupportedModel(Property::class)) {
+        if (($isNew || ! $property->slug) && SlugHelper::isSupportedModel(Property::class)) {
             $this->createSlug($property, $listing, $name, $listingKey);
         }
 
-        $this->ensureTranslation($property);
+        if ($isNew) {
+            $this->ensureTranslation($property);
+        }
 
         $this->recordOutcome(
             $isNew,
@@ -1161,6 +1199,11 @@ class TrrebPropertySyncer
     protected function findOrCreateByName(string $modelClass, string $name, array $attributes = []): mixed
     {
         $name = trim($name);
+        $cacheKey = $modelClass . ':' . $name;
+        if (isset($this->modelLookupCache[$cacheKey])) {
+            return $this->modelLookupCache[$cacheKey];
+        }
+
         $cleaned = (string) BaseHelper::clean($name);
 
         $model = $modelClass::query()
@@ -1168,7 +1211,7 @@ class TrrebPropertySyncer
             ->first();
 
         if ($model) {
-            return $model;
+            return $this->modelLookupCache[$cacheKey] = $model;
         }
 
         $model = $modelClass::query()->create([...$attributes, 'name' => $name]);
@@ -1177,7 +1220,7 @@ class TrrebPropertySyncer
             SlugHelper::createSlug($model);
         }
 
-        return $model;
+        return $this->modelLookupCache[$cacheKey] = $model;
     }
 
     /**
@@ -1220,35 +1263,47 @@ class TrrebPropertySyncer
         $countryId = $stateId = $cityId = null;
 
         $countryName = trim((string) Arr::get($listing, 'Country')) ?: 'Canada';
-        $country = Country::query()->firstOrCreate(['name' => Str::limit($countryName, 120, '')]);
-        if (SlugHelper::isSupportedModel(Country::class) && $country->wasRecentlyCreated) {
-            SlugHelper::createSlug($country);
+        $countryKey = 'country:' . $countryName;
+        if (! isset($this->locationCache[$countryKey])) {
+            $country = Country::query()->firstOrCreate(['name' => Str::limit($countryName, 120, '')]);
+            if (SlugHelper::isSupportedModel(Country::class) && $country->wasRecentlyCreated) {
+                SlugHelper::createSlug($country);
+            }
+            $this->locationCache[$countryKey] = $country->id;
         }
-        $countryId = $country->id;
+        $countryId = $this->locationCache[$countryKey];
 
         if ($stateName = trim((string) Arr::get($listing, 'StateOrProvince'))) {
-            $state = State::query()->where('name', $stateName)->first();
-            if (! $state) {
-                $state = State::query()->create([
-                    'name' => Str::limit($stateName, 120, ''),
-                    'country_id' => $countryId,
-                ]);
-                if (SlugHelper::isSupportedModel(State::class)) {
-                    SlugHelper::createSlug($state);
+            $stateKey = 'state:' . $stateName;
+            if (! isset($this->locationCache[$stateKey])) {
+                $state = State::query()->where('name', $stateName)->first();
+                if (! $state) {
+                    $state = State::query()->create([
+                        'name' => Str::limit($stateName, 120, ''),
+                        'country_id' => $countryId,
+                    ]);
+                    if (SlugHelper::isSupportedModel(State::class)) {
+                        SlugHelper::createSlug($state);
+                    }
                 }
+                $this->locationCache[$stateKey] = $state->id;
             }
-            $stateId = $state->id;
+            $stateId = $this->locationCache[$stateKey];
         }
 
         if ($cityName = trim((string) (Arr::get($listing, 'City') ?: Arr::get($listing, 'CityRegion')))) {
-            $city = City::query()->firstOrCreate(
-                ['name' => Str::limit($cityName, 120, '')],
-                ['state_id' => $stateId, 'country_id' => $countryId]
-            );
-            if (SlugHelper::isSupportedModel(City::class) && $city->wasRecentlyCreated) {
-                SlugHelper::createSlug($city);
+            $cityKey = 'city:' . $cityName;
+            if (! isset($this->locationCache[$cityKey])) {
+                $city = City::query()->firstOrCreate(
+                    ['name' => Str::limit($cityName, 120, '')],
+                    ['state_id' => $stateId, 'country_id' => $countryId]
+                );
+                if (SlugHelper::isSupportedModel(City::class) && $city->wasRecentlyCreated) {
+                    SlugHelper::createSlug($city);
+                }
+                $this->locationCache[$cityKey] = $city->id;
             }
-            $cityId = $city->id;
+            $cityId = $this->locationCache[$cityKey];
         }
 
         $data['country_id'] = $countryId;

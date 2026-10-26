@@ -39,9 +39,14 @@ class SyncTrrebPropertiesCommand extends Command
         $skip = $this->option('skip') !== null ? (int) $this->option('skip') : null;
         $since = $this->option('since') ? (string) $this->option('since') : null;
         $noImages = (bool) $this->option('no-images');
+        $noRooms = (bool) $this->option('no-rooms');
 
         if ($noImages) {
             config(['plugins.real-estate.trreb.sync_images' => false]);
+        }
+
+        if ($noRooms) {
+            config(['plugins.real-estate.trreb.sync_rooms' => false]);
         }
 
         if ($fresh) {
@@ -148,6 +153,13 @@ class SyncTrrebPropertiesCommand extends Command
             null,
             InputOption::VALUE_NONE,
             'Skip image downloading and S3 uploading during the sync (fast metadata only).'
+        );
+
+        $this->addOption(
+            'no-rooms',
+            null,
+            InputOption::VALUE_NONE,
+            'Skip room dimension API requests for new listings during the sync (super fast mode).'
         );
 
         $this->addOption(
