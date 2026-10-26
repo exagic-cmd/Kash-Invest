@@ -121,6 +121,7 @@ class TrrebPropertySyncer
         }
 
         $filter = $this->buildFilter($full, $since);
+        DB::disableQueryLog();
 
         $page = (int) floor($startSkip / $perPage);
         $skip = $startSkip;
@@ -158,6 +159,10 @@ class TrrebPropertySyncer
             $skip += $perPage;
 
             static::saveCheckpoint($skip, $page, $processed, $total);
+
+            if (function_exists('gc_collect_cycles')) {
+                gc_collect_cycles();
+            }
 
             if ($onProgress) {
                 $onProgress($page, $processed, $total);
@@ -1621,13 +1626,15 @@ class TrrebPropertySyncer
     {
         if ($isNew) {
             $this->created++;
-            $this->items[] = [
-                'property_id' => $property->getKey(),
-                'external_id' => $listingKey,
-                'name' => $name,
-                'action' => 'created',
-                'change_set' => null,
-            ];
+            if (count($this->items) < 200) {
+                $this->items[] = [
+                    'property_id' => $property->getKey(),
+                    'external_id' => $listingKey,
+                    'name' => $name,
+                    'action' => 'created',
+                    'change_set' => null,
+                ];
+            }
 
             return;
         }
@@ -1639,13 +1646,15 @@ class TrrebPropertySyncer
         }
 
         $this->updated++;
-        $this->items[] = [
-            'property_id' => $property->getKey(),
-            'external_id' => $listingKey,
-            'name' => $name,
-            'action' => 'updated',
-            'change_set' => ['fields' => $changes],
-        ];
+        if (count($this->items) < 200) {
+            $this->items[] = [
+                'property_id' => $property->getKey(),
+                'external_id' => $listingKey,
+                'name' => $name,
+                'action' => 'updated',
+                'change_set' => ['fields' => $changes],
+            ];
+        }
     }
 
     /**
