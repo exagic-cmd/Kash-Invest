@@ -878,8 +878,8 @@ class RealEstateServiceProvider extends ServiceProvider
             // compliance obligation, not just a convenience.
             if (config('plugins.real-estate.trreb.enabled', config('plugins.real-estate.treeb.enabled'))) {
                 $command = $schedule
-                    ->command(SyncTrrebPropertiesCommand::class, ['--trigger=cron'])
-                    ->withoutOverlapping();
+                    ->command(SyncTrrebPropertiesCommand::class, ['--trigger=cron', '--now'])
+                    ->withoutOverlapping(30);
 
                 $frequency = (string) config('plugins.real-estate.trreb.sync_frequency', config('plugins.real-estate.treeb.sync_frequency', 'everyThirtyMinutes'));
 
