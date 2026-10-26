@@ -93,6 +93,18 @@ class SyncTrrebPropertiesCommand extends Command
                 $result['failed'] ?? 0
             ));
 
+            \Botble\RealEstate\Models\ProjectSyncLog::query()->create([
+                'source' => TrrebPropertySyncer::SOURCE,
+                'status' => 'success',
+                'triggered_by' => $trigger,
+                'started_at' => \Carbon\Carbon::now(),
+                'finished_at' => \Carbon\Carbon::now(),
+                'created' => $result['created'] ?? 0,
+                'updated' => $result['updated'] ?? 0,
+                'unchanged' => $result['unchanged'] ?? 0,
+                'total' => ($result['created'] ?? 0) + ($result['updated'] ?? 0) + ($result['unchanged'] ?? 0) + ($result['failed'] ?? 0),
+            ]);
+
             return self::SUCCESS;
         }
 
