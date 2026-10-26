@@ -44,7 +44,9 @@ class SyncTrrebPropertiesJob implements ShouldQueue
     public function __construct(
         public string $triggeredBy = 'manual',
         public bool $full = false,
-        public int $startSkip = 0
+        public int $startSkip = 0,
+        public ?string $since = null,
+        public bool $noImages = false
     ) {
     }
 
@@ -52,6 +54,10 @@ class SyncTrrebPropertiesJob implements ShouldQueue
     {
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
+
+        if ($this->noImages) {
+            config(['plugins.real-estate.trreb.sync_images' => false]);
+        }
 
         $log = ProjectSyncLog::query()->create([
             'source' => TrrebPropertySyncer::SOURCE,
@@ -75,7 +81,7 @@ class SyncTrrebPropertiesJob implements ShouldQueue
         }
 
         try {
-            $result = $syncer->sync(full: $this->full, startSkip: $this->startSkip);
+            $result = $syncer->sync(full: $this->full, startSkip: $this->startSkip, since: $this->since);
         } catch (TrrebApiException $e) {
             $this->fail($log, $e->isAuthFailure()
                 ? 'PROPTX rejected the API token (HTTP ' . $e->getStatus() . '). Check TRREB_API_KEY.'

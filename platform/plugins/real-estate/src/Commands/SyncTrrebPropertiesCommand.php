@@ -37,11 +37,17 @@ class SyncTrrebPropertiesCommand extends Command
         $full = (bool) $this->option('full');
         $fresh = (bool) $this->option('fresh');
         $skip = $this->option('skip') !== null ? (int) $this->option('skip') : null;
+        $since = $this->option('since') ? (string) $this->option('since') : null;
+        $noImages = (bool) $this->option('no-images');
+
+        if ($noImages) {
+            config(['plugins.real-estate.trreb.sync_images' => false]);
+        }
 
         if ($fresh) {
             TrrebPropertySyncer::clearCheckpoint();
             $skip = 0;
-        } elseif ($skip === null && $full) {
+        } elseif ($skip === null && ($full || $since)) {
             $checkpoint = TrrebPropertySyncer::getCheckpoint();
             if ($checkpoint && ! empty($checkpoint['skip'])) {
                 $skip = (int) $checkpoint['skip'];
@@ -56,12 +62,14 @@ class SyncTrrebPropertiesCommand extends Command
         }
 
         $skip = $skip ?? 0;
-        $job = new SyncTrrebPropertiesJob($trigger, $full, $skip);
+        $job = new SyncTrrebPropertiesJob($trigger, $full, $skip, $since, $noImages);
 
         if ($this->option('now')) {
             $this->components->info(sprintf(
-                'Running the TRREB sync inline (%s, starting from skip offset %d)...',
+                'Running the TRREB sync inline (%s%s%s, starting from skip offset %d)...',
                 $full ? 'FULL feed' : 'incremental',
+                $since ? " since {$since}" : '',
+                $noImages ? ' [no images]' : '',
                 $skip
             ));
 
@@ -70,7 +78,7 @@ class SyncTrrebPropertiesCommand extends Command
                 $this->components->task(
                     sprintf('Page %d (%d/%d listings processed)', $page, $processed, $total)
                 );
-            }, full: $full, startSkip: $skip);
+            }, full: $full, startSkip: $skip, since: $since);
 
             $this->components->success(sprintf(
                 'TRREB sync finished: %d created, %d updated, %d unchanged, %d failed.',
@@ -126,6 +134,20 @@ class SyncTrrebPropertiesCommand extends Command
             'f',
             InputOption::VALUE_NONE,
             'Walk the entire active feed rather than using the incremental cutoff.'
+        );
+
+        $this->addOption(
+            'since',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Sync listings modified since this date/timestamp (e.g. 2026-10-10 or 2026-10-10T00:00:00Z).'
+        );
+
+        $this->addOption(
+            'no-images',
+            null,
+            InputOption::VALUE_NONE,
+            'Skip image downloading and S3 uploading during the sync (fast metadata only).'
         );
 
         $this->addOption(

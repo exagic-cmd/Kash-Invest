@@ -105,7 +105,7 @@ class TrrebPropertySyncer
      * @param  callable|null  $onProgress  fn(int $page, int $processed, int $total): void
      * @return array{created:int, updated:int, unchanged:int, failed:int, errors:array, items:array, cap_reached:bool}
      */
-    public function sync(?callable $onProgress = null, bool $full = false, int $startSkip = 0): array
+    public function sync(?callable $onProgress = null, bool $full = false, int $startSkip = 0, ?string $since = null): array
     {
         $perPage = max((int) config('plugins.real-estate.trreb.per_page', 100), 1);
         $maxRecords = max((int) config('plugins.real-estate.trreb.max_records', 0), 0);
@@ -115,7 +115,7 @@ class TrrebPropertySyncer
             $perPage = min($perPage, $maxRecords);
         }
 
-        $filter = $this->buildFilter($full);
+        $filter = $this->buildFilter($full, $since);
 
         $page = (int) floor($startSkip / $perPage);
         $skip = $startSkip;
@@ -224,24 +224,28 @@ class TrrebPropertySyncer
     /**
      * The OData $filter for this run: incremental watermark + scope from config.
      */
-    protected function buildFilter(bool $full = false): ?string
+    protected function buildFilter(bool $full = false, ?string $since = null): ?string
     {
         $clauses = [];
-        $since = null;
 
         // Incremental: only what changed since the last successful run (unless full run requested).
         if (! $full) {
-            $since = ProjectSyncLog::query()
-                ->whereIn('source', self::SOURCES)
-                ->where('status', 'success')
-                ->latest('finished_at')
-                ->value('finished_at');
+            if ($since) {
+                $sinceDate = Carbon::parse($since);
+            } else {
+                $lastFinished = ProjectSyncLog::query()
+                    ->whereIn('source', self::SOURCES)
+                    ->where('status', 'success')
+                    ->latest('finished_at')
+                    ->value('finished_at');
 
-            // Safety fallback: if no previous sync log exists, default to the last 24 hours
-            // so an incremental run never accidentally triggers a full 85,000-listing crawl.
-            $sinceDate = $since instanceof Carbon ? $since : ($since ? Carbon::parse($since) : Carbon::now()->subHours(24));
+                // Safety fallback: if no previous sync log exists, default to the last 24 hours
+                // so an incremental run never accidentally triggers a full 85,000-listing crawl.
+                $sinceDate = $lastFinished instanceof Carbon ? $lastFinished : ($lastFinished ? Carbon::parse($lastFinished) : Carbon::now()->subHours(24));
+            }
 
-            $clauses[] = sprintf('ModificationTimestamp gt %s', $sinceDate->clone()->utc()->format('Y-m-d\TH:i:s\Z'));
+            $op = $since ? 'ge' : 'gt';
+            $clauses[] = sprintf('ModificationTimestamp %s %s', $op, $sinceDate->clone()->utc()->format('Y-m-d\TH:i:s\Z'));
         }
 
         if ($types = $this->transactionTypeClause()) {
