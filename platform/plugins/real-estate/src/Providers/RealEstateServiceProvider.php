@@ -903,6 +903,19 @@ class RealEstateServiceProvider extends ServiceProvider
                     ->dailyAt((string) config('plugins.real-estate.redbricks.schedule_at', '04:00'))
                     ->withoutOverlapping();
             }
+
+            // Shared-hosting queue worker: runs every minute to process webhooks & background jobs
+            if (config('queue.default') === 'database') {
+                $schedule
+                    ->command('queue:work', [
+                        '--queue=redbricks-details,default,redbricks-media',
+                        '--stop-when-empty',
+                        '--max-time=50',
+                        '--tries=3',
+                    ])
+                    ->everyMinute()
+                    ->withoutOverlapping();
+            }
         });
 
         $this->registerTrrebApiSyncSource();

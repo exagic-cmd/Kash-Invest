@@ -92,6 +92,18 @@ class RedbricksWebhookController extends Controller
             return response()->json(['status' => 'acknowledged_test'], 200);
         }
 
+        if (config('plugins.real-estate.redbricks.sync_webhooks_inline', env('REDBRICKS_SYNC_WEBHOOKS_INLINE', false))) {
+            ProcessRedbricksWebhookJob::dispatchSync($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null);
+
+            Log::info('[Redbricks Webhook] Processed inline', [
+                'event' => $event,
+                'external_id' => $externalId,
+                'delivery_id' => $deliveryId,
+            ]);
+
+            return response()->json(['status' => 'processed_inline'], 200);
+        }
+
         ProcessRedbricksWebhookJob::dispatch($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null);
 
         Log::info('[Redbricks Webhook] Accepted', [
