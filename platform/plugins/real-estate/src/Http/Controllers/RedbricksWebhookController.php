@@ -93,7 +93,7 @@ class RedbricksWebhookController extends Controller
         }
 
         if (config('plugins.real-estate.redbricks.sync_webhooks_inline', env('REDBRICKS_SYNC_WEBHOOKS_INLINE', false))) {
-            ProcessRedbricksWebhookJob::dispatchSync($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null);
+            ProcessRedbricksWebhookJob::dispatchSync($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null, $payload);
 
             Log::info('[Redbricks Webhook] Processed inline', [
                 'event' => $event,
@@ -104,7 +104,7 @@ class RedbricksWebhookController extends Controller
             return response()->json(['status' => 'processed_inline'], 200);
         }
 
-        ProcessRedbricksWebhookJob::dispatch($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null);
+        ProcessRedbricksWebhookJob::dispatch($event, (string) $externalId, $deliveryId ? (string) $deliveryId : null, $payload);
 
         Log::info('[Redbricks Webhook] Accepted', [
             'event' => $event,

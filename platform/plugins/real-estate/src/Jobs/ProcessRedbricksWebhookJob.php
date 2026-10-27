@@ -2,6 +2,7 @@
 
 namespace Botble\RealEstate\Jobs;
 
+use Botble\RealEstate\Models\Project;
 use Botble\RealEstate\Services\Redbricks\RedbricksApiException;
 use Botble\RealEstate\Services\Redbricks\RedbricksProjectSyncer;
 use Illuminate\Bus\Queueable;
@@ -9,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -30,9 +32,8 @@ use Throwable;
  *   The event string is treated as a dotted prefix, so "project.created",
  *   "project.updated" and anything newer under "project.*" all route to a
  *   refresh. "project.deleted" / ".removed" / ".archived" route to a delete.
- *   Floor plan / document events also route to a refresh of the owning
- *   project, since those sub-resources are hydrated through the same code
- *   path as the project itself.
+ *   Floor plan / document events carry the full payload or route to a refresh
+ *   of the owning project.
  */
 class ProcessRedbricksWebhookJob implements ShouldQueue
 {
@@ -51,6 +52,7 @@ class ProcessRedbricksWebhookJob implements ShouldQueue
         public string $event,
         public string $externalId,
         public ?string $deliveryId = null,
+        public ?array $payload = null,
     ) {
         $this->onQueue(RedbricksProjectSyncer::DETAILS_QUEUE);
     }
@@ -63,19 +65,54 @@ class ProcessRedbricksWebhookJob implements ShouldQueue
 
         try {
             if ($this->isDeleteEvent($event)) {
-                $removed = $syncer->deleteOne($this->externalId);
+                if (str_starts_with($event, 'floorplan.') && $this->payload) {
+                    $floorPlanId = Arr::get($this->payload, 'floorplan.id') ?: $this->externalId;
+                    $project = Project::query()
+                        ->where('source', RedbricksProjectSyncer::SOURCE)
+                        ->where('unique_id', RedbricksProjectSyncer::SOURCE . '-' . $this->externalId)
+                        ->first();
+
+                    if ($project) {
+                        $syncer->deleteSingleFloorPlan($project, $floorPlanId);
+                    }
+                } else {
+                    $removed = $syncer->deleteOne($this->externalId);
+                }
 
                 Log::info('[Redbricks Webhook] Delete processed', [
                     'event' => $this->event,
                     'external_id' => $this->externalId,
                     'delivery_id' => $this->deliveryId,
-                    'removed' => $removed,
                 ]);
 
                 return;
             }
 
-            $project = $syncer->refreshOne($this->externalId);
+            // If it is a floorplan event with direct payload, sync the floorplan directly!
+            if (str_starts_with($event, 'floorplan.') && isset($this->payload['floorplan']) && is_array($this->payload['floorplan'])) {
+                // Ensure parent project exists or refresh it
+                $project = Project::query()
+                    ->where('source', RedbricksProjectSyncer::SOURCE)
+                    ->where('unique_id', RedbricksProjectSyncer::SOURCE . '-' . $this->externalId)
+                    ->first();
+
+                if (! $project) {
+                    $project = $syncer->refreshOne($this->externalId, enqueueHydration: false);
+                }
+
+                if ($project) {
+                    $syncer->syncSingleFloorPlan($project, $this->payload['floorplan'], downloadImages: true);
+
+                    Log::info('[Redbricks Webhook] Floorplan synced directly from payload', [
+                        'event' => $this->event,
+                        'project' => $project->name,
+                        'floorplan_id' => Arr::get($this->payload, 'floorplan.id'),
+                        'floorplan_name' => Arr::get($this->payload, 'floorplan.name'),
+                    ]);
+                }
+            } else {
+                $project = $syncer->refreshOne($this->externalId, enqueueHydration: true, forceDetails: true);
+            }
 
             Log::info('[Redbricks Webhook] Refresh processed', [
                 'event' => $this->event,
@@ -112,7 +149,7 @@ class ProcessRedbricksWebhookJob implements ShouldQueue
 
     protected function isDeleteEvent(string $event): bool
     {
-        if (! str_starts_with($event, 'project.')) {
+        if (! str_starts_with($event, 'project.') && ! str_starts_with($event, 'floorplan.') && ! str_starts_with($event, 'document.')) {
             return false;
         }
 

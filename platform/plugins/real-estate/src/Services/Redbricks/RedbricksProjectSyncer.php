@@ -176,7 +176,7 @@ class RedbricksProjectSyncer
      * sync() path so a webhook-driven refresh follows the exact same staged
      * ingest as a cron-driven one.
      */
-    public function refreshOne(int|string $externalId, bool $enqueueHydration = true): ?Project
+    public function refreshOne(int|string $externalId, bool $enqueueHydration = true, bool $forceDetails = false): ?Project
     {
         $this->pendingDetailsHydration = [];
 
@@ -188,15 +188,19 @@ class RedbricksProjectSyncer
 
         $this->importProject($listing);
 
-        if ($enqueueHydration) {
-            $this->enqueuePendingHydration();
-        }
-
         /** @var Project|null $project */
         $project = Project::query()
             ->where('source', self::SOURCE)
             ->where('unique_id', self::SOURCE . '-' . $externalId)
             ->first();
+
+        if ($project && $forceDetails) {
+            $this->pendingDetailsHydration[] = $project->getKey();
+        }
+
+        if ($enqueueHydration) {
+            $this->enqueuePendingHydration();
+        }
 
         return $project;
     }
@@ -374,9 +378,9 @@ class RedbricksProjectSyncer
      * Idempotent: a re-run against an already hydrated project refreshes its
      * sub-resources in place.
      */
-    public function hydrateDetails(Project $project, bool $enqueueMedia = true): bool
+    public function hydrateDetails(Project $project, bool $enqueueMedia = true, bool $forceSubResources = false): bool
     {
-        $externalId = $project->unique_id;
+        $externalId = str_replace(self::SOURCE . '-', '', (string) $project->unique_id);
 
         if (! $externalId) {
             return false;
@@ -385,11 +389,14 @@ class RedbricksProjectSyncer
         $payload = $project->raw_payload ?: [];
         $listing = (array) Arr::get($payload, 'project', []);
 
-        $floorPlans = $this->wantsSubResource('sync_floor_plans')
+        $syncFloorPlans = $forceSubResources || $this->wantsSubResource('sync_floor_plans');
+        $syncDocuments = $forceSubResources || $this->wantsSubResource('sync_documents');
+
+        $floorPlans = $syncFloorPlans
             ? $this->fetchSubResource(fn (): array => $this->client->floorPlansFor($externalId))
             : [];
 
-        $documents = $this->wantsSubResource('sync_documents')
+        $documents = $syncDocuments
             ? $this->fetchSubResource(fn (): array => $this->client->documentsFor($externalId))
             : [];
 
@@ -425,6 +432,93 @@ class RedbricksProjectSyncer
         }
 
         return true;
+    }
+
+    /**
+     * Upsert a single floor plan row directly (used by webhooks to apply updates with zero latency).
+     *
+     * @param array<string, mixed> $plan
+     */
+    public function syncSingleFloorPlan(Project $project, array $plan, bool $downloadImages = false): ProjectFloorPlan
+    {
+        $externalId = Arr::get($plan, 'id');
+
+        [$floorMin, $floorMax] = $this->floorRange($plan);
+
+        $row = ProjectFloorPlan::query()->updateOrCreate(
+            ['project_id' => $project->getKey(), 'external_id' => (string) $externalId],
+            [
+                'floorplan_uuid' => Arr::get($plan, 'floorplan_uuid'),
+                'name' => Arr::get($plan, 'name'),
+                'bedrooms' => $this->stringOrNull(Arr::get($plan, 'bedrooms')),
+                'bathrooms' => $this->stringOrNull(Arr::get($plan, 'bathrooms')),
+                'size' => $this->floatOrNull(Arr::get($plan, 'size')),
+                'exposure' => Arr::get($plan, 'exposure'),
+                'availability' => Arr::get($plan, 'availability'),
+                'current_price' => $this->floatOrNull(Arr::get($plan, 'current_price')),
+                'current_psf' => $this->floatOrNull(Arr::get($plan, 'current_psf')),
+                'launch_price' => $this->floatOrNull(Arr::get($plan, 'launch_price')),
+                'floor_min' => $floorMin,
+                'floor_max' => $floorMax,
+                'image_full' => Arr::get($plan, 'images.full'),
+                'image_medium' => Arr::get($plan, 'images.medium'),
+                'image_thumbnail' => Arr::get($plan, 'images.thumbnail'),
+                'price_history' => Arr::get($plan, 'price_history', []),
+            ]
+        );
+
+        if ($downloadImages && empty($row->local_image)) {
+            $imageUrl = Arr::get($plan, 'images.full')
+                ?: Arr::get($plan, 'images.medium')
+                ?: Arr::get($plan, 'images.thumbnail');
+
+            if ($imageUrl && ($localPath = $this->downloadFloorPlanImage($imageUrl))) {
+                $row->local_image = $localPath;
+                $row->saveQuietly();
+            }
+        }
+
+        $payload = $project->raw_payload ?: [];
+        $existingPlans = Arr::get($payload, 'floor_plans', []);
+        $updatedList = [];
+        $found = false;
+
+        foreach ($existingPlans as $p) {
+            if (is_array($p) && (string) Arr::get($p, 'id') === (string) $externalId) {
+                $updatedList[] = array_merge($p, $plan);
+                $found = true;
+            } else {
+                $updatedList[] = $p;
+            }
+        }
+
+        if (! $found) {
+            $updatedList[] = $plan;
+        }
+
+        $payload['floor_plans'] = $updatedList;
+        $project->raw_payload = $payload;
+        $project->floor_plans = $this->toRepeater($updatedList);
+        $project->saveQuietly();
+
+        return $row;
+    }
+
+    public function deleteSingleFloorPlan(Project $project, int|string $floorPlanId): void
+    {
+        $project->floorPlanRows()->where('external_id', (string) $floorPlanId)->delete();
+
+        $payload = $project->raw_payload ?: [];
+        $existingPlans = Arr::get($payload, 'floor_plans', []);
+        $updatedList = array_values(array_filter(
+            $existingPlans,
+            fn ($p) => is_array($p) && (string) Arr::get($p, 'id') !== (string) $floorPlanId
+        ));
+
+        $payload['floor_plans'] = $updatedList;
+        $project->raw_payload = $payload;
+        $project->floor_plans = $this->toRepeater($updatedList);
+        $project->saveQuietly();
     }
 
     /**
