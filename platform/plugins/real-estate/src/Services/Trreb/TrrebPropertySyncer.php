@@ -365,7 +365,11 @@ class TrrebPropertySyncer
         // Match ONLY our own PROPTX rows. Manual and imported properties have a
         // different source, so they are never matched or overwritten.
         $property = Property::query()
-            ->whereIn('source', self::SOURCES)
+            ->where(function ($q) {
+                $q->whereIn('source', self::SOURCES)
+                    ->orWhereNull('source')
+                    ->orWhere('source', '');
+            })
             ->where('unique_id', $listingKey)
             ->first();
 
@@ -905,7 +909,7 @@ class TrrebPropertySyncer
         ksort($images);
         $images = array_values($images);
 
-        if ($images !== []) {
+        if ($images !== [] && $property->exists) {
             $property->images = $images;
             $property->saveQuietly();
         }
