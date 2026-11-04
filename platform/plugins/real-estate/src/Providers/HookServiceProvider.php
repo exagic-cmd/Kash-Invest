@@ -49,6 +49,7 @@ use Botble\Theme\ThemeOption\Fields\TextareaField;
 use Botble\Theme\ThemeOption\Fields\TextField;
 use Botble\Theme\ThemeOption\ThemeOptionSection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -1059,8 +1060,12 @@ class HookServiceProvider extends ServiceProvider
         }
     }
 
-    public function handleSingleView(Slug|array $slug): Slug|array
+    public function handleSingleView(Slug|array $slug): Slug|array|RedirectResponse
     {
+        // HandleFrontPages::handle() returns a RedirectResponse when the URL
+        // slug no longer matches the entity's canonical slug (e.g. after a
+        // Redbricks project rename). The old narrow Slug|array return type
+        // caused a TypeError on every such redirect.
         return (new HandleFrontPages())->handle($slug);
     }
 
