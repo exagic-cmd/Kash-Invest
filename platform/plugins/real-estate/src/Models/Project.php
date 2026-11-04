@@ -397,9 +397,13 @@ class Project extends BaseModel
      */
     public function slugable(): MorphOne
     {
+        // Columns must be table-qualified: latestOfMany() builds a self-join
+        // subquery aliased `latestOfMany` that also exposes `reference_id`
+        // and `reference_type`, so an unqualified SELECT of those raises a
+        // 1052 "ambiguous column" error at runtime.
         return $this
             ->morphOne(Slug::class, 'reference')
-            ->select(['id', 'key', 'reference_type', 'reference_id', 'prefix'])
+            ->select(['slugs.id', 'slugs.key', 'slugs.reference_type', 'slugs.reference_id', 'slugs.prefix'])
             ->latestOfMany('id');
     }
 
