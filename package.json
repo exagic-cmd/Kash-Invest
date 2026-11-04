@@ -9,7 +9,7 @@
     ]
   },
   "scripts": {
-    "dev": "node api.js && node vite-build.mjs",
+    "dev": "node init && node vite-build.mjs",
     "development": "node vite-build.mjs",
     "prod": "cross-env NODE_ENV=production node vite-build.mjs",
     "production": "cross-env NODE_ENV=production node vite-build.mjs",

@@ -72,6 +72,13 @@ class PublicController extends BaseController
             return $result;
         }
 
+        // Also pass through any Symfony response (RedirectResponse, Response,
+        // JsonResponse, …). Needed for e.g. the slug-rename 301 flow, where a
+        // request on a stale URL slug returns a redirect to the canonical URL.
+        if ($result instanceof \Symfony\Component\HttpFoundation\Response) {
+            return $result;
+        }
+
         if (isset($result['slug']) && $result['slug'] !== $key) {
             $prefix = SlugHelper::getPrefix(Arr::first($result['data'])::class);
 
