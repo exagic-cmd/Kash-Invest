@@ -397,14 +397,21 @@ class Project extends BaseModel
      */
     public function slugable(): MorphOne
     {
-        // Columns must be table-qualified: latestOfMany() builds a self-join
-        // subquery aliased `latestOfMany` that also exposes `reference_id`
-        // and `reference_type`, so an unqualified SELECT of those raises a
-        // 1052 "ambiguous column" error at runtime.
+        // latestOfMany() generated a self-join whose outer SELECT ran into a
+        // 1052 ambiguous-column error under this Laravel/Botble combination.
+        // whereIn(MAX(id)) is the same intent — pick the newest slug row per
+        // parent — using a non-correlated subquery that keeps the outer query
+        // single-table and so can't be ambiguous.
         return $this
             ->morphOne(Slug::class, 'reference')
-            ->select(['slugs.id', 'slugs.key', 'slugs.reference_type', 'slugs.reference_id', 'slugs.prefix'])
-            ->latestOfMany('id');
+            ->select(['id', 'key', 'reference_type', 'reference_id', 'prefix'])
+            ->whereIn('id', function ($query): void {
+                $query
+                    ->selectRaw('MAX(id)')
+                    ->from('slugs')
+                    ->where('reference_type', self::class)
+                    ->groupBy('reference_id');
+            });
     }
 
     protected function customFieldsArray(): Attribute
