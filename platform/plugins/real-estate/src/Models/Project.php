@@ -12,12 +12,14 @@ use Botble\RealEstate\Enums\ProjectStatusEnum;
 use Botble\RealEstate\Models\Traits\UniqueId;
 use Botble\RealEstate\Models\ProjectSyncLogItem;
 use Botble\RealEstate\QueryBuilders\ProjectBuilder;
+use Botble\Slug\Models\Slug;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -384,6 +386,21 @@ class Project extends BaseModel
     public function customFields(): MorphMany
     {
         return $this->morphMany(CustomFieldValue::class, 'reference', 'reference_type', 'reference_id')->with('customField.options');
+    }
+
+    /**
+     * Override Botble's auto-registered `slugable` relation so the LATEST slug
+     * row wins when a project has more than one. Redbricks renames insert a
+     * new slug row without deleting the old, so the old URL keeps resolving to
+     * this project — HandleFrontPages then 301s it to the canonical (latest)
+     * slug returned here.
+     */
+    public function slugable(): MorphOne
+    {
+        return $this
+            ->morphOne(Slug::class, 'reference')
+            ->select(['id', 'key', 'reference_type', 'reference_id', 'prefix'])
+            ->latestOfMany('id');
     }
 
     protected function customFieldsArray(): Attribute

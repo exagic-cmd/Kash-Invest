@@ -258,9 +258,9 @@ class RedbricksProjectSyncer
 
         $project->fill($data)->save();
 
-        if (! $project->slugable()->exists()) {
-            $this->createSlug($project, $name);
-        }
+        // createSlug() is idempotent and inserts a new slug row on rename,
+        // keeping the old row so prior URLs 301 to the current one.
+        $this->createSlug($project, $name);
 
         $this->syncCustomFields($project, $listing);
 
@@ -680,11 +680,11 @@ class RedbricksProjectSyncer
             return;
         }
 
-        // Self-healing: anything created by an earlier run that died before its
-        // slug was written gets one now, rather than 404ing forever.
-        if (! $existing->slugable()->exists()) {
-            $this->createSlug($existing, $name);
-        }
+        // Always reconcile the slug against the current name. createSlug() is
+        // idempotent (no-ops when the latest slug already matches), inserts a
+        // new row when Redbricks renames the project, and self-heals rows
+        // created by an earlier run that died before its slug was written.
+        $this->createSlug($existing, $name);
 
         $changes = $this->diff($existing, $data);
 
@@ -1217,7 +1217,7 @@ class RedbricksProjectSyncer
 
         return match (true) {
             str_contains($status, 'sold') => ProjectStatusEnum::SOLD,
-            str_contains($status, 'complete') => ProjectStatusEnum::FINISHED,
+            str_contains($status, 'complete') => ProjectStatusEnum::SOLD,
             default => ProjectStatusEnum::SELLING,
         };
     }
@@ -1320,19 +1320,35 @@ class RedbricksProjectSyncer
     }
 
     /**
-     * Give a freshly imported project a unique, stable public URL.
+     * Give a project its canonical public URL and preserve any prior URLs so
+     * old links keep resolving.
      *
-     * SlugHelper::createSlug() keys its firstOrNew on (reference_type,
-     * reference_id, prefix) and does not check whether the slug *key* is already
-     * taken, so two projects with the same name — or a re-import after a purge —
-     * happily create duplicate keys. SlugHelper::getSlug() then resolves the
-     * lowest-id match, which may point at a project that no longer exists.
-     * Counting up until the key is free keeps the URL self-healing.
+     * When Redbricks renames a project we insert a NEW slug row rather than
+     * overwriting the old key, so the old URL continues to resolve to this
+     * project. `Project::slugable()` returns the latest row as canonical, and
+     * `HandleFrontPages` 301-redirects any request whose URL slug differs from
+     * that canonical — so the old URL ends up redirecting to the new one.
+     *
+     * Idempotent: a no-op when the latest slug already matches the current
+     * name. Counts up (-2, -3 …) if the desired key is taken by some other
+     * project, so re-imports after a purge are self-healing.
      */
     protected function createSlug(Project $project, string $name): void
     {
         $prefix = (string) SlugHelper::getPrefix(Project::class, 'projects');
         $baseKey = Str::slug($name) ?: ('project-' . $project->getKey());
+
+        $current = Slug::query()
+            ->where('reference_type', Project::class)
+            ->where('reference_id', $project->getKey())
+            ->where('prefix', $prefix)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($current && $current->key === $baseKey) {
+            return;
+        }
+
         $key = $baseKey;
         $counter = 1;
 
@@ -1350,14 +1366,16 @@ class RedbricksProjectSyncer
             $key = $baseKey . '-' . (++$counter);
         }
 
-        Slug::query()->updateOrCreate(
-            [
-                'reference_type' => Project::class,
-                'reference_id' => $project->getKey(),
-                'prefix' => $prefix,
-            ],
-            ['key' => $key]
-        );
+        if ($current && $current->key === $key) {
+            return;
+        }
+
+        Slug::query()->create([
+            'reference_type' => Project::class,
+            'reference_id' => $project->getKey(),
+            'prefix' => $prefix,
+            'key' => $key,
+        ]);
     }
 
     /**
